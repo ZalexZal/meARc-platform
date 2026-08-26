@@ -1,0 +1,70 @@
+/* ---------------------------------------------------------------------------
+   AR Trail design tokens.
+
+   The same fourteen semantic roles as Assets/Scripts/UI/AppTheme.cs in the Unity
+   app. One vocabulary, two products. If you change a value here, change it there
+   in the same commit — a drift between them is invisible until someone puts a
+   screenshot of the portal next to a screenshot of the app.
+
+   The rule that made this work in the app carries over unchanged and is the most
+   important styling rule in the project:  NOTHING HARDCODES A COLOUR.
+   Every rule anywhere in the portal reads from a var() below.
+   --------------------------------------------------------------------------- */
+
+:root {
+  /* Light is the bare :root so the un-stamped "system" state resolves. */
+  --background:      #F1F1EF;
+  --surface:         #FFFFFF;
+  --surface-alt:     #E8E9E6;
+  --line:            #D3D5D1;
+  --text-primary:    #16181B;
+  --text-secondary:  #464B52;
+  --text-muted:      #7A8088;
+  --accent:          #0F7A6B;
+  --on-accent:       #FFFFFF;
+  --scrim:           rgba(0, 0, 0, 0.35);
+
+  /* Status is deliberately NOT derived from the accent. VPS calibration state
+     must never read as branding, and the accent must never read as "good". */
+  --status-good:     #41762B;
+  --status-fair:     #A96400;
+  --status-poor:     #B3261E;
+  --status-none:     #1F6FB2;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --background:      #0B0D10;
+    --surface:         #1A1F27;
+    --surface-alt:     #272D37;
+    --line:            #343B47;
+    --text-primary:    #F3F5F7;
+    --text-secondary:  #A7ADB5;
+    --text-muted:      #727982;
+    --accent:          #45C4B0;
+    --on-accent:       #04201C;
+    --scrim:           rgba(0, 0, 0, 0.55);
+    --status-good:     #74D96B;
+    --status-fair:     #E0A040;
+    --status-poor:     #F0736A;
+    --status-none:     #5EAEEA;
+  }
+}
+
+/* An explicit choice wins over the OS setting, in both directions. */
+:root[data-theme="dark"] {
+  --background:      #0B0D10;
+  --surface:         #1A1F27;
+  --surface-alt:     #272D37;
+  --line:            #343B47;
+  --text-primary:    #F3F5F7;
+  --text-secondary:  #A7ADB5;
+  --text-muted:      #727982;
+  --accent:          #45C4B0;
+  --on-accent:       #04201C;
+  --scrim:           rgba(0, 0, 0, 0.55);
+  --status-good:     #74D96B;
+  --status-fair:     #E0A040;
+  --status-poor:     #F0736A;
+  --status-none:     #5EAEEA;
+}

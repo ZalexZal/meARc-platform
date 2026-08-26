@@ -136,17 +136,77 @@ The map is included. A dark portal with a blazing white map is the most common
 version of this mistake. MapLibre styles are JSON, so a dark base style is
 swapped in on theme change rather than filtered with CSS.
 
-### 8. Accent colour is the only open brand decision
+### 8. Accent: Teal — decided 2026-08-26
 
-The neutrals, the text ramp and the status colours in `AppTheme` are solved,
-tuned and shipped. Re-picking them would be churn.
+```
+Accent    light #0F7A6B   dark #45C4B0
+OnAccent  light #FFFFFF   dark #04201C
+```
 
-What is genuinely open is **the accent** — the one colour that is the brand. It
+Measured, not eyeballed:
+
+| Check | Light | Dark |
+|---|---|---|
+| Accent vs Background | 4.62:1 | 9.06:1 |
+| Accent vs Surface | 5.23:1 | — |
+| OnAccent on Accent | 5.23:1 | 7.96:1 |
+
+All pass 4.5:1. Light is the tighter of the two at 4.62:1, so **do not lighten
+the light-mode teal** — it has almost no headroom above the threshold.
+
+#### The consequence: StatusGood had to move
+
+Teal at hue 171° sat 25° from `StatusGood` at 145°, with a luminance contrast
+between them of **1.10:1**. Two colours that close in both hue and lightness are
+hard to tell apart side by side, and under red-green colour vision deficiency —
+roughly 8% of men — they are close to identical. The VPS calibration readout uses
+`StatusGood`, and it now lives in an interface whose accent is teal.
+
+So `StatusGood` moved away from the accent rather than the other way round: the
+accent is a brand decision that was just made deliberately, while the status
+colours are functional signals whose only job is to be unmistakable.
+
+```
+StatusGood   light #2E7D4F -> #41762B     hue gap 26.5° -> 69.2°
+             dark  #5FCF8E -> #74D96B     hue gap 25.4° -> 55.5°
+```
+
+Contrast against their backgrounds is unchanged or better (light 4.46 -> 4.82,
+dark 10.01 -> 11.01). Reverting is two lines in `AppTheme.cs` if the new green
+looks wrong on the device.
+
+**The deeper fix is not colour.** Widening the hue gap helps, but red-green
+deficiency compresses that whole part of the spectrum regardless. Calibration
+state must never be carried by colour alone — the existing readout text and the
+`VpsIndicatorController` shape are what actually make it legible, and they stay.
+
+#### Markers are not the accent
+
+Worth stating because it is easy to conflate: teal is **chrome** — buttons,
+links, selected states, the app's identity. Individual markers carry their own
+`style_key` and `colour_hex`, chosen per marker by whoever made them (§6, §7).
+A creator colour-coding a trail in red, amber and green is untouched by this
+decision, and colour-coded classification on plain shapes still works from day
+one with no marker art.
+
+### Where the accent lives
+
+Two files, and they must change together:
+
+- `ARTrail/Assets/Scripts/UI/AppTheme.cs` — `Light()` and `Dark()`
+- `NOIT APP/web/tokens.css` — `--accent`, `--on-accent`
+
+
+
+The neutrals and the text ramp in `AppTheme` are solved, tuned and shipped.
+Re-picking them would be churn.
+
+What was genuinely open was **the accent** — the one colour that is the brand. It
 currently sits at `#8B82E8` violet in dark and `#4A42A0` in light. Two values,
 because an accent that carries enough contrast on `#0B0D10` is too pale on
 `#F1F1EF`; every candidate needs a light and a dark variant.
 
-Constraints any candidate must satisfy:
+Constraints the chosen accent had to satisfy:
 
 - **4.5:1 contrast** against both `Background` and `Surface`, in its own theme.
 - **`OnAccent` legible on it** — the colour of text sitting on an accent button.
