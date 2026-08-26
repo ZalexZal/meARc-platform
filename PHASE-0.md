@@ -136,62 +136,135 @@ rows and you find out you lost the race instead of silently overwriting someone.
 
 ## Step 3 — Seed one world and one marker by hand
 
-Before any web page exists, prove the database works on its own. SQL Editor:
+Before any web page exists, prove the database works on its own.
+
+**Verified already, so you can skip worrying about it:** the project URL, the anon
+key, the `markers_near` grant and the RLS setup were all tested from outside the
+dashboard on 2026-08-26 and work. If something fails below, it is the SQL in
+front of you, not the project setup.
+
+### 3a. Get a real coordinate
+
+1. Open **google.com/maps**.
+2. Find the building you want the marker to stand on. Zoom in far enough that
+   individual buildings are distinguishable.
+3. **Right-click exactly on the building's facade** — the wall you will be
+   looking at when you hold the phone up.
+4. The **very top item** of the menu that opens is two numbers, like
+   `42.484200, 26.503500`. That top item is a button.
+5. **Left-click it.** The pair is now on your clipboard.
+6. Paste it into Notepad. **The first number is latitude, the second is
+   longitude.** Write that down next to them; you will need to know which is
+   which twice more.
+
+Choosing the spot matters more than the precision does:
+
+- **Somewhere you can physically walk to**, because step 7 means standing there.
+- **Open sky and visible building facades.** ARCore localizes against Google's
+  imagery of the streetscape. A courtyard, a narrow alley or heavy tree cover
+  makes the field test fail for reasons that have nothing to do with your code.
+- **Not your own home**, if you would rather not have your address in a database
+  you may later make public.
+
+### 3b. Insert the world
+
+1. In the Supabase dashboard, click **SQL Editor** in the left sidebar.
+2. Click **+ New query**.
+3. Paste this exactly as it is — nothing in it needs editing:
 
 ```sql
--- One world.
 insert into public.worlds (name, join_code, mode, status, default_language)
 values ('Yambol Test', public.generate_join_code(6), 'guide', 'published', 'bg')
 returning id, join_code;
 ```
 
-Copy the `id` it returns. Then:
+4. Press **Ctrl + Enter**, or click the green **Run** button at the bottom right.
+5. A results table appears underneath with two columns, `id` and `join_code`.
+6. **Copy the `id` value.** It is a UUID — 36 characters with dashes, like
+   `3f2a9c14-8b7e-4d21-9f60-1c5e7a8b2d33`. Click the cell to select the text.
+7. Paste it into Notepad under your coordinate.
+
+The `join_code` is a six-character code from the ambiguity-free alphabet — no
+`O`/`0`, no `I`/`1`/`l`. Nothing uses it yet; Phase 3 is where the app asks for
+it. Worth keeping anyway.
+
+### 3c. Insert the marker
+
+1. **+ New query** again (or select all in the editor and overwrite).
+2. Paste this:
 
 ```sql
--- One marker. REPLACE the uuid and the coordinate.
 insert into public.markers (world_id, location, style_key, colour_hex, content, status)
 values (
   'PASTE-THE-WORLD-UUID-HERE',
-  st_makepoint(26.5035, 42.4842)::geography,   -- lng FIRST, then lat
+  st_makepoint(LONGITUDE, LATITUDE)::geography,
   'default',
-  '#C2483A',
+  '#45C4B0',
   '{"bg": {"title": "Безистен", "body": "Тест маркер."},
     "en": {"title": "Bezisten", "body": "Test marker."}}'::jsonb,
   'published'
 );
 ```
 
-### The coordinate-order trap — read this twice
+3. **Replace three things:**
+   - `PASTE-THE-WORLD-UUID-HERE` → the uuid from 3b. **Keep the single quotes.**
+   - `LONGITUDE` → your **second** number.
+   - `LATITUDE` → your **first** number.
 
-**Google Maps gives you `42.4842, 26.5035` — latitude first.**
-**PostGIS `st_makepoint` takes `(x, y)` — longitude first.**
+   There are no quotes around the two numbers. If you accidentally leave them in,
+   Postgres will tell you so rather than doing something silently wrong.
 
-They are backwards from each other. Swap them and your marker lands in Somalia,
-the RPC returns nothing because you are 3000 km outside the radius, and you will
-spend an hour suspecting ARCore. Every time you write `st_makepoint`, say "lng,
-lat" out loud.
+4. Run it. Expected: **"Success. No rows returned."**
 
-To get a real coordinate: Google Maps → right-click the exact spot on the
-building → the top item in the menu is the pair `42.4842, 26.5035` → click to
-copy.
+#### The coordinate-order trap — the one that will actually get you
 
-### Verify the RPC
+**Google Maps gives you `lat, lng`. PostGIS `st_makepoint` takes `lng, lat`.**
+
+They are backwards from each other. In Bulgaria latitude is about `42` and
+longitude about `26`, so a swap is easy to spot: if the first number inside
+`st_makepoint` starts with a 4, you have swapped them.
+
+Swap them and the marker lands in Somalia, the RPC returns nothing because you
+are three thousand kilometres outside the radius, and you will spend an hour
+suspecting ARCore. Say "lng, lat" out loud every time you type `st_makepoint`.
+
+### 3d. Verify it came back
+
+New query, paste, replace the uuid, and note that **this one takes lat first** —
+the RPC signature is in human order on purpose, precisely because `st_makepoint`
+is not:
 
 ```sql
 select * from public.markers_near(
   'PASTE-THE-WORLD-UUID-HERE',
-  42.4842,     -- lat first here; the RPC takes them in human order on purpose
-  26.5035,
+  LATITUDE,
+  LONGITUDE,
   500
 );
 ```
 
-One row back, with `distance_m` near 0. That row is the exact JSON the phone
-will receive. If you get zero rows, check in this order: is `status` set to
-`published` (drafts are filtered out by design), did you swap lng/lat, is the
-world uuid right.
+**Expected: exactly one row, with `distance_m` very close to 0.** That row is
+byte-for-byte what the phone will receive.
 
----
+Zero rows means one of three things, in order of likelihood:
+
+1. **You swapped lng/lat** in 3c. Check the marker: run
+   `select st_astext(location) from public.markers;` — it prints
+   `POINT(26.5 42.48)`, longitude first. If it says `POINT(42.48 26.5)`, that is
+   the bug.
+2. **`status` is not `published`.** The RPC filters drafts out by design.
+3. **The world uuid does not match** between 3b and 3c.
+
+### 3e. The verification that actually counts
+
+The SQL Editor runs with elevated database privileges. **It proves the data is
+there; it does not prove the phone can reach it.** Those are different questions
+— the phone arrives as `anon`, through PostgREST, subject to RLS and function
+grants.
+
+Tell me when 3a–3d are done and I will call `markers_near` from outside the
+dashboard with the anon key, exactly as the app will. That is the check that
+matters before you build anything to a device.
 
 ## Step 4 — The throwaway insert page
 
