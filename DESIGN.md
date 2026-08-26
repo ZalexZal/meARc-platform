@@ -17,7 +17,7 @@ against from the first line, not retrofitted.
 | 5 | Aesthetic | Portal and app share one design language. |
 | 6 | Map base | Standard street map, not satellite. |
 | 7 | Dark mode | Yes. Light and dark, both products. |
-| 8 | Brand | No logo, no name yet. Accent colour to be chosen from samples. |
+| 8 | Brand | No logo, no name yet. Accent: **Teal** (`#0F7A6B` / `#45C4B0`). |
 | 9 | References | None. |
 
 ---
