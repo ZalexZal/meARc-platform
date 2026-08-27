@@ -6,3 +6,13 @@ dist/
 web/config.local.js
 *.log
 .DS_Store
+
+# Unity — a blank project got created in this folder by mistake.
+# The real Unity project is C:\Users\zalex\ARTrail, its own repo.
+[Ll]ibrary/
+[Tt]emp/
+[Oo]bj/
+[Bb]uild/
+[Ll]ogs/
+[Uu]serSettings/
+[Mm]emoryCaptures/
