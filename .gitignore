@@ -16,3 +16,5 @@ web/config.local.js
 [Ll]ogs/
 [Uu]serSettings/
 [Mm]emoryCaptures/
+Packages/
+ProjectSettings/
