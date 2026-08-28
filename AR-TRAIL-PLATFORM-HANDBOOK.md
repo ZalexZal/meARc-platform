@@ -610,6 +610,14 @@ outdoors?
 
 Things that are genuinely not known and should not be asserted either way.
 
+- **Observed 2026-08-28, Yambol:** Geospatial localized to a reported horizontal
+  accuracy of **0.5 m** outdoors, and the marker landed where it was placed. That is
+  the good end of the "metres" band in §9 and better than this document assumed.
+  One reading, one location, one weather condition - not a guarantee.
+- **Occlusion confirmed failing open**, as designed: indoors with no localization and
+  therefore no Streetscape Geometry, markers render straight through walls. That is
+  §8's stated behaviour, not a fault. It also means indoors can never test occlusion -
+  the meshes only exist once Earth tracking is up. Still unanswered outdoors.
 - **Streetscape Geometry coverage in Yambol and towns like it.** Needs Google's 3D
   building data, thorough in large cities and patchy in small towns. Check by ticking
   **Show Occluders** on `OcclusionService` and building. Not blocking — occlusion fails
