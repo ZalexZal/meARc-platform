@@ -3,10 +3,24 @@
 Complete reference for the project. Everything a person (or another assistant) needs to
 pick this up cold and continue without re-deriving decisions.
 
-**Status: design only, nothing built.** No claim in this document has been verified
-against running code, because there is no code yet. Where something is inherited from
-the AR building app and *was* proven there, it says so explicitly. Everything else is a
-decision, not a fact.
+**Status: Phase 0 passed on 2026-08-28. The gate is open.**
+
+A marker placed by clicking a web map in a browser was seen standing on its real
+location in Yambol, in the colour chosen in that browser, anchored by ARCore. The
+whole chain is proven end to end: browser click -> Postgres row -> `markers_near`
+RPC -> phone -> runtime `BuildingData` -> terrain anchor in the street.
+
+What is now **fact**, not decision:
+
+- The RPC seam (§4) works as designed; the app never touches the `markers` table.
+- The runtime `CreateInstance` ScriptableObject pattern (§2) carried the entire
+  existing UI across to a multi-tenant backend with one new file.
+- Terrain anchors at 1.5 m resolve in Yambol with no altitude data (§8, §9).
+- Fork over clean start (§2, §13) was correct.
+- PostGIS `geography` + `ST_DWithin` returns what the phone needs (§6).
+
+Everything from Phase 1 onward is still a decision, not a fact. Where something is
+inherited from the AR building app and *was* proven there, it says so explicitly.
 
 This document is the sibling of `AR Architecture Guide` (the AR building app handbook).
 It does not supersede it. That project continues; this one branches from it.
@@ -633,5 +647,6 @@ Things that are genuinely not known and should not be asserted either way.
 
 ---
 
-*Written 2026-08-25. Nothing in this document has been verified against running code.
-Update §"Honest status" the moment Phase 0 produces a marker on a real building.*
+*Written 2026-08-25. Phase 0 verified against running code on 2026-08-28: marker `A`
+(`#72007A`, world `c1bd0005`) placed from a browser and observed standing on its real
+location in Yambol. Phases 1-11 remain unverified.*

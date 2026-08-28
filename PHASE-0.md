@@ -1,5 +1,10 @@
 # Phase 0 — one marker, end to end
 
+> **PASSED 2026-08-28.** Marker `A` (`#72007A`) was placed by clicking a web map
+> and observed standing on its real location in Yambol, anchored by ARCore. Every
+> step below is now a record of what was done, not a plan. Kept because the traps
+> and the reasoning still apply to Phases 1-11.
+
 The gate for the whole project. It answers one question and no others:
 
 > Does a coordinate typed in a browser reliably become a marker standing on the
