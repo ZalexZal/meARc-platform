@@ -132,26 +132,41 @@ around every dot in whichever of white or near-black contrasts more with the
 marker itself, not by the marker colour. That is what keeps a teal pin legible on
 a teal-accented map.
 
+## Proximity alerts
+
+`ProximityAlerts` fires when the reader walks within 60 m of a marker they have
+not read yet, and rearms at 110 m so standing on the boundary does not chime
+repeatedly. `ProximityToast` slides a card in on any tab; tapping it opens the
+marker, which is where **Guide me there** already lives.
+
+This is the in-app half, and the setting says so under it. A notification while
+the app is *closed* needs Unity's mobile notifications package, Android
+background location permission and a foreground service to hold a fix — a
+separate piece of work, not a line in this one.
+
+## The walkthrough
+
+`TutorialFlow`: four cards on first run, skippable, replayable from Settings.
+It explains the two things nothing else can — that markers are pinned to real
+coordinates rather than floating in front of the camera, and that the camera is
+somewhere the reader goes rather than something the app does to them. The
+progress dot carries position by width as well as colour.
+
 ## Deliberately not built
 
 - **Welcome, terms and join-code screens.** They need accounts and the
   `join_world(code)` RPC, which is Phase 1. Building them now would mean shipping
   buttons that do nothing.
-- **Report a marker.** Needs a destination — see the open questions.
-
-## Known placeholders, inherited
-
-- The **nearby-buildings notification** toggle records a preference and schedules
-  nothing.
-- **Replay tutorial** opens a page that says the walkthrough will live there.
-
-Both predate this pass and are left as they were rather than quietly hidden.
+- **Report a marker.** Decided against for v1 on 2026-08-29: hiding already
+  solves the reader's actual problem, and reporting only starts to matter once
+  strangers are publishing markers. Revisit with the portal.
 
 ## Open questions
 
-1. **Where do marker reports go?** An email address, a Supabase table, a form?
-   Until there is a destination there is nothing honest for the button to do.
-2. **Does the drawn map stay?** Raster tiles are a drop-in under the content
-   layer. This is still the decision that moves the estimate most.
-3. **Copy.** The strings still say "buildings" in places where the data model has
+1. **Does the drawn map stay?** Raster tiles are a drop-in under the content
+   layer. Recommendation on 2026-08-29 was to judge it on device in Yambol
+   first — that is a twenty-minute test against a multi-day build, and the thing
+   that would flip it is specific: whether you can tell which side of a street a
+   marker is on.
+2. **Copy.** The strings still say "buildings" in places where the data model has
    become markers. Worth a pass in both languages.
