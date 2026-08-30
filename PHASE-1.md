@@ -255,3 +255,86 @@ and it is a real one.
 
 **Node.js is not installed on this machine.** It is not needed for Phase 1 or 2,
 and it is a prerequisite for 3.
+
+---
+
+## Running it
+
+> Written 2026-08-30. `supabase/migrations/0002_phase1_identity.sql` implements
+> every step above. It is safe to run twice: everything is created if missing and
+> every policy is dropped before it is made, so a half-finished run is repeated
+> rather than unpicked.
+
+### Before
+
+Turn on what the migration assumes, or anonymous viewing will not work.
+
+1. Supabase dashboard → **Authentication** → **Sign In / Providers**.
+2. **Email**: on. **Confirm email**: OFF for now (decision 4). Turn it on before
+   one other person signs up.
+3. **Anonymous sign-ins**: on. This is what makes code-only viewing possible.
+
+### Running
+
+1. Dashboard → **SQL Editor** → **New query**.
+2. Paste the whole of `0002_phase1_identity.sql`.
+3. **Run**. Expect "Success. No rows returned."
+
+If it stops partway, read the error, fix it, and run the whole file again.
+
+### The moment it takes effect
+
+The instant this runs, the anon key stops being able to write. The throwaway
+marker-dropper at `web/index.html` **will stop working** — it inserts markers
+anonymously, and there is no longer a policy that allows that. That is the point
+of the migration, not a fault in it. Dropping markers moves to the creator
+portal in Phase 3; until then, use the SQL editor or a service-key script.
+
+Reading still works. `markers_near` allows a published, non-private world, so
+the Unity app keeps showing markers with no login at all.
+
+### Verifying — not in the SQL editor
+
+The SQL editor runs with elevated privileges and proves nothing about what a
+client can do. These use the anon key, which is public by design.
+
+```bash
+URL="https://tajbebyhmvppqlswyjiq.supabase.co"
+ANON="<the anon key, the same one in the app>"
+
+# 1. An anonymous session, the way the app will make one.
+curl -s "$URL/auth/v1/signup" -H "apikey: $ANON"      -H "Content-Type: application/json" -d '{}' | head -c 400
+# Take "access_token" from the response.
+TOKEN="<access_token>"
+
+# 2. Reading markers in a published world still works.
+curl -s "$URL/rest/v1/rpc/markers_near" -H "apikey: $ANON"      -H "Authorization: Bearer $ANON" -H "Content-Type: application/json"      -d '{"world_id":"c1bd0005-be21-409f-9e28-40faf3abb661",
+          "lat":42.4841,"lng":26.5035,"radius_m":500}'
+# Expect a JSON array. An empty array means the world is not published.
+
+# 3. Writing a marker with the anon key does not.
+curl -s -o /dev/null -w '%{http_code}
+' "$URL/rest/v1/markers"      -H "apikey: $ANON" -H "Authorization: Bearer $ANON"      -H "Content-Type: application/json"      -d '{"world_id":"c1bd0005-be21-409f-9e28-40faf3abb661",
+          "location":"SRID=4326;POINT(26.5 42.5)"}'
+# Expect 401 or 403. A 201 means the door is still open - stop and read the log.
+
+# 4. Reading the markers table directly does not, either.
+curl -s "$URL/rest/v1/markers?select=*" -H "apikey: $ANON"      -H "Authorization: Bearer $ANON"
+# Expect an empty array: there is no select policy, so there is nothing to see.
+
+# 5. Redeeming a join code, as a signed-in anonymous user.
+curl -s "$URL/rest/v1/rpc/join_world" -H "apikey: $ANON"      -H "Authorization: Bearer $TOKEN" -H "Content-Type: application/json"      -d '{"p_code":"T97S25"}'
+# Expect the world's uuid.
+```
+
+Check 3 is the one that matters. If it returns 201, the migration has not taken
+and the database is still open.
+
+### What the app needs afterwards
+
+Nothing, to keep working. Reading is unchanged.
+
+To use the new pieces it needs an auth client: anonymous sign-in on first run,
+`accept_terms(version)` after the terms screen, and `join_world(code)` behind the
+code entry. Those are the three onboarding screens deliberately left unbuilt in
+Phase 2 — there was no RPC behind them until now.
