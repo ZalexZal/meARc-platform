@@ -35,27 +35,50 @@ It is reached from the map's bottom panel and has a Back to map button of its ow
 
 ## The map
 
-Drawn, not tiled. Nothing is fetched, so it works with no signal and costs nothing
-to render. The price is no streets; it is paid back by a scale bar and two
-distance rings around the reader, which answer "how far is that" more directly
-than a tile of a town centre at 200 m does.
+OpenStreetMap raster tiles under the markers.
+
+Tiles are placed by projecting each tile's own north-west and south-east corners
+through `MapView.Project` — the same call the pins go through. That is what keeps
+a pin over the right building: both answers come from the same question in the
+same units, rather than one being in metres and the other in a tile grid.
 
 - North up. Pins sit at their true bearing and true distance.
 - Pan by dragging, zoom by pinching, and a **Recentre** control that appears only
-  once the reader has moved away — it is labelled, not icon-only, because
-  recentring has no universally read symbol and this is the worst moment to make
-  someone guess.
-- The reader's dot carries an accuracy circle at the reported horizontal accuracy,
-  so the map shows how much it is guessing.
+  once the reader has moved away.
+- Every tile is cached to disk on first sight, so a street walked once works with
+  no signal afterwards.
+- Inverted for the dark theme, once per tile at decode time. A white map behind
+  dark chrome glares at night and washes out in sun.
+- The reader's dot has a white outer ring in both themes. Over a dark map a dark
+  halo is no halo, and this is the one mark on screen that must never be hard to
+  find.
+- A scale bar and two distance rings, because a tile of a town centre still does
+  not answer "how far is that".
 - Guidance draws a straight ray to the target. **Not a route** — the app does not
   know the streets, and pretending it did would send someone into a wall.
 - Pins are named while there are eight or fewer; past that only the selected one
-  keeps its label, because two names crossing each other are worse than none.
+  keeps its label.
 
-The projection is a local east/north offset in metres scaled to pixels.
-Swapping in raster tiles later means adding a tile layer under the content and
-leaving the rest of `MapView` alone, because pins are placed from metres, not
-from a tile's pixel grid.
+> **Before release.** `MapTileLayer.urlTemplate` points at
+> `tile.openstreetmap.org`. Their [tile usage policy](https://operations.osmfoundation.org/policies/tiles/)
+> forbids that for a released app — it is fine for development at this volume and
+> nothing more. Shipping means pointing it at MapTiler, Thunderforest, Stadia or a
+> self-hosted renderer. It is one string, deliberately. The attribution line is
+> already on screen and is required whichever provider you use.
+
+## Icons
+
+Fourteen icons, rasterized from signed distance fields in a 24×24 box — the same
+box Material and Lucide use, so weights and proportions are comparable rather than
+invented per icon.
+
+They are drawn rather than typed because the font atlas carries Latin and Cyrillic
+and nothing else; a Material Icons glyph renders as an empty box on device. The
+first attempt assembled them from stacked rectangles and circles in the builder,
+and the camera came out looking like an apple — a round body with a stem off to
+one side. Shapes assembled by eye do that.
+
+Every shape was rendered and checked before it shipped.
 
 ## Guide me there
 
@@ -112,6 +135,26 @@ an empty state and a dead end. Retry bypasses the fetch throttle, because
 answering "not yet" to a button press is how a retry button earns a reputation
 for doing nothing.
 
+## Performance
+
+The first build was laggy, and the map was not the reason.
+
+`MapView` laid itself out every frame, writing colours, sizes and positions
+whether or not anything had moved. A uGUI canvas rebuilds and re-batches **in
+full** whenever any element on it is dirtied, and setting a colour marks it dirty
+even when the value is unchanged — so every frame was rebuilding all four panels,
+the nav bar and the marker sheet. `BearingArrow` did the same on every arrow, and
+`TapFeedback` wrote a CanvasGroup alpha every frame on every disabled button.
+
+| Change | Why |
+|---|---|
+| Nothing is written unless the value changed | The single largest cost. Unchanged writes still rebuild the canvas. |
+| Layout runs only when something asks for it | `MarkDirty()` on pose, pan, zoom, theme, guidance. Standing still costs nothing. |
+| The map has its own nested canvas | Panning no longer re-batches the chrome. It needed its own `GraphicRaycaster` too — a graphic registers against its nearest canvas, so the split would otherwise have cost every tap on the map. |
+| Arrows tick at 4 Hz, not 60 | A walking reader turns far slower than sixty hertz. |
+| The camera feed stops blitting off-tab | A full-screen texture drawn every frame behind an opaque panel. The session stays up; localization is the slow part. |
+| Tile textures capped at 96 | About 25 MB, on a phone also running an AR session. |
+
 ## Measured, not eyeballed
 
 | What | Was | Now |
@@ -163,10 +206,7 @@ progress dot carries position by width as well as colour.
 
 ## Open questions
 
-1. **Does the drawn map stay?** Raster tiles are a drop-in under the content
-   layer. Recommendation on 2026-08-29 was to judge it on device in Yambol
-   first — that is a twenty-minute test against a multi-day build, and the thing
-   that would flip it is specific: whether you can tell which side of a street a
-   marker is on.
+1. **Which tile provider ships?** See the box under The map. This is the one
+   decision that has to happen before anyone but you installs the app.
 2. **Copy.** The strings still say "buildings" in places where the data model has
    become markers. Worth a pass in both languages.
