@@ -1,6 +1,18 @@
 # Phase 2 — the app UI
 
-> **Built 2026-08-29.** Compiles clean against Unity 6000.4.10f1. Not yet run on device.
+> **Built 2026-08-29. Map confirmed on device 2026-08-30.**
+>
+> Walked in Yambol: OpenStreetMap tiles load and align, markers appear at the
+> places they were dropped, and the reader's dot tracks correctly as they move.
+>
+> That validates the part most likely to have been silently wrong. Pins and tiles
+> are placed by two different code paths that both go through `MapView.Project`
+> in metres; if that projection were off, the markers would have drifted from
+> their buildings as the map panned. They did not.
+>
+> Not yet exercised on device: the camera tab, guidance across the map/camera
+> switch, the compass-driven edge pills, proximity alerts, the first-run
+> walkthrough, and light mode.
 
 This is the Glass Trail concept from the approved prototype, built into the Unity
 app. It replaces the three-tab Camera / Search / Settings shell.
