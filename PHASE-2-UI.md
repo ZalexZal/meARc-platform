@@ -1,6 +1,7 @@
 # Phase 2 — the app UI
 
-> **Built 2026-08-29. Map confirmed on device 2026-08-30.**
+> **Built 2026-08-29. Map confirmed on device 2026-08-30. The way in and the
+> marker's pieces built 2026-09-01.**
 >
 > Walked in Yambol: OpenStreetMap tiles load and align, markers appear at the
 > places they were dropped, and the reader's dot tracks correctly as they move.
@@ -207,14 +208,128 @@ coordinates rather than floating in front of the camera, and that the camera is
 somewhere the reader goes rather than something the app does to them. The
 progress dot carries position by width as well as colour.
 
+## The way in — built 2026-09-01
+
+Four screens, in the treatments Alex chose.
+
+| Screen | Treatment | What it does |
+|---|---|---|
+| Welcome | Plain | Two sentences, two ways on. "I have a code" still goes through the terms. |
+| Terms | Plain | Six sections, scrolling, the button outside the scroll. |
+| My trails | Card over a blurred map | One card per trail. Four states, and only one of them is a list. |
+| Enter a code | Card over a blurred map | Six boxes over one invisible input. |
+
+`DoorFlow` decides which is up **from state, not from button presses**. Anything
+that changes the state — accepting the terms, joining a trail, signing in —
+calls `Evaluate()` again and the right door opens. That is what makes the
+reopened case work: tapping the trail name on the map opens the same screen the
+launch flow opens, rather than a second one that has to be kept in step with it.
+
+### The blur is a photograph
+
+`FrostedBackdrop` takes one screen capture when a door opens and blurs it with
+four halving blits — each bilinearly averages four texels, so the fourth is a
+sixteenth of the screen with a wide neighbourhood behind every pixel, and drawn
+back at full size it reads as soft rather than as pixellated. A still, which is
+right: nothing behind a modal should be moving.
+
+Every part of it can fail — a device that will not read the framebuffer, the
+editor, batch mode. **The scrim underneath is not decoration.** At 0.80 the card
+is legible whether or not the picture ever arrives, and the card doors also
+carry a solid header band so the door's own title is never printed across
+whatever the map had in that corner.
+
+The capture waits for the end of the frame, so the card has to wait for the
+capture — otherwise the still has the card in it and the card is then drawn on
+top of a picture of itself.
+
+### The trails list cannot show a marker count
+
+The obvious thing to put under a trail's name is "12 markers", and the schema
+forbids it: `markers` has no select policy, so nothing but `markers_near` ever
+returns a marker, and that answers "what is near this point" rather than "how
+many are there". A count would mean either a second RPC written to leak one, or
+a guess. **Role and mode** are true, already loaded, and more use anyway.
+
+### Phase 1's services reach a scene
+
+`SupabaseConfig`, `SupabaseAuth`, `TrailService` and `TermsService` were written
+on 2026-08-30 and never added to anything. The builder now puts them on
+`AppServices`. This is why the way in had nothing to ask.
+
+## Inside a marker — built 2026-09-01
+
+The sheet gained a list of pieces and a page each piece opens into: a video, a
+recording, the question. All in the same sheet, which is the whole reason the
+sheet treatment was chosen — opening a video does not take the reader off the
+map, it swaps what the sheet in front of the map is showing.
+
+**The sheet's body now scrolls and its two actions are pinned.** It had to: a
+list of pieces has nowhere to go in a fixed stack, and the description had been
+quietly cut off at the bottom for every marker with more than about forty words
+in it.
+
+### Both media kinds go through VideoPlayer
+
+The obvious way to play a recording is an `AudioSource` with
+`UnityWebRequestMultimedia`, and it is the wrong one: that path wants the whole
+file in memory before a sound comes out, and it understands mp3, ogg and wav.
+`VideoPlayer` hands the URL to the platform's own media stack, which streams it
+and knows what a phone actually records in. **A recording is a video page with no
+picture**, and the layout closes the gap by itself.
+
+Nothing autoplays. Sound starting by itself in a street is startling, and it
+spends someone's data without asking — which is also why the size is shown
+before the first tap on mobile data.
+
+### The four creator rules are four endings
+
+Retry re-arms. Lock counts down. Deduct shows the score moving. Skip closes the
+question for good. **The rule is announced before the first attempt**, not sprung
+afterwards: somebody about to lose five points for a guess is entitled to know.
+
+An option the server has rejected keeps its cross and stays unpressable for the
+rest of the visit. Re-offering an answer known to be wrong is how somebody spends
+a second deduction on it.
+
+A failure to reach the server is drawn as "couldn't check that" and **never as a
+wrong answer**. Silence is not a verdict, and treating it as one would deduct
+somebody's points for walking into a basement.
+
+## What the pictures found that the code did not
+
+Four bugs, none visible by reading:
+
+1. **Every translucent surface in the app was opaque.** `UIFactory.Fill` set the
+   alpha, then added a `ThemedElement` whose `OnEnable` repainted the graphic at
+   full alpha *before* `preserveAlpha` had been set — so `Apply` faithfully
+   preserved the 1.0 it had just written. A 16% accent chip drew as a solid block
+   with its own label invisible on top of it. Fixed by setting the alpha last.
+2. **The terms printed through themselves.** A `LayoutElement` with a fixed
+   preferred height plus a `ContentSizeFitter` on the same wrapping label is two
+   answers to one question, and the layout group believes the fixed one.
+3. **The rule named Retry could be answered exactly once.** A wrong answer muted
+   every option — right for Lock and Skip, wrong for the two rules that are
+   supposed to let the reader carry on.
+4. **`05-marker-sheet` had never been a picture of the marker sheet.** Raising a
+   bottom sheet's GameObject is not the same as opening it; the sheet was
+   enabled, correct, and parked 890 units below the bottom edge. Every run of the
+   harness had photographed a dimmed map.
+
+The harness also gained `DeadControls`, which names any control with neither a
+persistent listener nor a component holding a reference to it — the "are there
+buttons that do nothing" check, run on every render. **Sixty controls, none
+dead.**
+
 ## Deliberately not built
 
-- **Welcome, terms and join-code screens.** They need accounts and the
-  `join_world(code)` RPC, which is Phase 1. Building them now would mean shipping
-  buttons that do nothing.
 - **Report a marker.** Decided against for v1 on 2026-08-29: hiding already
   solves the reader's actual problem, and reporting only starts to matter once
   strangers are publishing markers. Revisit with the portal.
+- **A real answer check.** `check_answer`, `marker_answers` and `marker_progress`
+  are Phase 2.5 and are not applied. Until they are, every check comes back
+  `Unavailable` and the sheet says so. The screens are finished; the verdict
+  behind them is not.
 
 ## Open questions
 

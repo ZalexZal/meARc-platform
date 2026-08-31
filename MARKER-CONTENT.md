@@ -191,6 +191,25 @@ and the app cannot show a thing the database will not hold. The order is forced.
 
 ---
 
+## Settled while building it, 2026-09-01
+
+- **Both media kinds play through `VideoPlayer`.** An `AudioSource` with
+  `UnityWebRequestMultimedia` wants the whole file in memory and understands
+  three formats; `VideoPlayer` streams and uses the platform's own media stack.
+  The portal can accept what a phone records rather than what Unity decodes.
+- **`media` and `task` are not localised into `en`/`bg` blocks.** A video is one
+  file whatever language the reader has chosen, and the question carries its own
+  per-language prompt inside itself.
+- **The trails list shows role and mode, not a marker count.** A count cannot be
+  had without an RPC written to leak one — `markers` has no select policy. This
+  is the first place the security model has cost a piece of UI, and the trade is
+  the right way round.
+- **A rejected option stays rejected.** It keeps its cross and stays unpressable
+  for the rest of the visit, so a second attempt cannot spend a second deduction
+  on an answer already known to be wrong.
+- **A creator's rule is announced before the first attempt.** Somebody about to
+  lose five points for a guess is entitled to know that beforehand.
+
 ## Open questions
 
 1. **Does `educational` stay a mode, or become a flag on Freefall?**
