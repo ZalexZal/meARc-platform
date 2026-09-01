@@ -426,6 +426,75 @@ than no harness**, because it is trusted.
   load. It now holds three of the map's own markers, faint and at three sizes —
   the subject of the sentence underneath them.
 
+## The app closed itself on a fresh install — 2026-09-01
+
+The first launch after installing closed the app. The second worked. It stayed
+that way for as long as nobody reinstalled, which is why it survived several
+rounds of testing.
+
+**ARCore claims the camera the moment an `ARSession` is enabled**, and the session
+was enabled in the scene from launch. That was deliberate — `CameraTabController`
+said so in its own class doc: turning the session off stops Geospatial
+localization, and localization is the slow part. The cost was not obvious: a
+camera permission dialog in front of somebody who has not seen the app yet, and
+the activity finished inside that flow.
+
+### Proving it rather than believing it
+
+The log gave the shape — the CAMERA prompt, then
+`ActivityClientController.finishActivity`, then the process gone, with **no Java
+exception and no native tombstone**, so it was being closed rather than crashing.
+That is a story, not a cause. Two runs settled it:
+
+| Run | Setup | Result |
+|---|---|---|
+| A | Fresh install, permission not granted, dialog answered | **died** |
+| B | Fresh install, `pm grant CAMERA` first so no dialog can appear | **alive** |
+
+Worth recording how nearly this went wrong. An earlier pair of runs had *both*
+survive, which looked like the theory collapsing. The phone had gone to sleep
+between them: with the keyguard up the app never really foregrounds and no dialog
+appears, so the test was measuring nothing. **A test that cannot fail is not
+evidence**, and the tell was that the control run passed too.
+
+### The fix, and why it is not "start the session later"
+
+The session now starts off and comes up the first time the reader opens the
+Camera tab. Leaving that tab still does not stop it, so the original localization
+argument is untouched — the only change is that it no longer starts before it is
+wanted. The permission is asked for at that same moment, where the reader has
+just asked for the camera themselves, and refusing it leaves a working map and a
+banner rather than a closed app.
+
+ARCore also went from **Required to Optional**. It was a hard launch dependency
+for a feature on one of four tabs, which is what let it decide when the camera
+was claimed — and it kept the app off phones where the map, the browse list and
+the settings would all have worked.
+
+The general rule: **an app that opens on a map has no business opening the camera
+first.** The crash was the loud version of a decision that was wrong anyway.
+
+## Leaving a trail — 2026-09-01
+
+The database has allowed this since `0002`; no client could do it.
+`members_delete_owner_or_self` already matches `user_id` against `auth.uid()`, so
+a reader can only ever delete their own membership however the request is shaped.
+The trail and its markers are untouched — what goes is the claim on them, and
+rejoining is the same code again.
+
+It is a **word, not an icon**. There is no symbol that reliably means "give up
+your place on this trail", and the one control on the card that undoes something
+should not be the one the reader has to guess at.
+
+It **asks twice** — arms, says Confirm, goes quiet after four seconds — because it
+sits a centimetre from the control that opens the trail and undoing it means
+finding whoever has the code. A dialog would be the other way; two taps on the
+same control is fewer moving parts and says the same thing, as long as the label
+changes.
+
+Leaving the trail you are standing in clears the selection and the map goes back
+to asking which trail. That is honest: there is no longer one to draw.
+
 ## Deliberately not built
 
 - **Report a marker.** Decided against for v1 on 2026-08-29: hiding already
