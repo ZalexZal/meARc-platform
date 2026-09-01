@@ -1,7 +1,8 @@
 # Phase 2 — the app UI
 
 > **Built 2026-08-29. Map confirmed on device 2026-08-30. The way in and the
-> marker's pieces built 2026-09-01.**
+> marker's pieces built 2026-09-01, and reworked the same day once someone
+> actually tried to type a code into them.**
 >
 > Walked in Yambol: OpenStreetMap tiles load and align, markers appear at the
 > places they were dropped, and the reader's dot tracks correctly as they move.
@@ -320,6 +321,110 @@ The harness also gained `DeadControls`, which names any control with neither a
 persistent listener nor a component holding a reference to it — the "are there
 buttons that do nothing" check, run on every render. **Sixty controls, none
 dead.**
+
+## What using it found — 2026-09-01
+
+Three faults, none of which a screenshot could have shown, and none of which
+existed in the code as written. They existed in the code as *run*.
+
+### The code boxes scrambled after the fourth character
+
+`CodeBoxes` filtered the typed string inside `onValueChanged` and wrote the
+cleaned version back with `SetTextWithoutNotify`. On Android that is a fight
+with the operating system, once a frame.
+
+`TMP_InputField.LateUpdate` compares its own `m_Text` against the soft keyboard's
+buffer, and whenever the two differ it **rebuilds `m_Text` from the keyboard** and
+calls `UpdateStringPositionFromKeyboard`, which moves the caret to wherever the
+native field's selection is. Writing a corrected string back from
+`onValueChanged` makes them differ deliberately: the keyboard holds `abcd`, we
+hold `ABCD`, and each overwrites the other every frame while the caret drifts out
+from under the reader. Android capitalises the first character on its own, so the
+fight starts at the second keystroke and the caret has visibly wandered by the
+fourth or fifth.
+
+**The fix is `onValidateInput`.** TMP calls it from inside that same rebuild loop
+and from `Append` for a hardware key, so a character is corrected *before* it is
+ever stored — and TMP then writes the corrected text back to the keyboard itself.
+One authority on what the text is, instead of two.
+
+The general rule this is an instance of: **never write to an input field from its
+own change callback.** Validate on the way in.
+
+### The way in was a locked room
+
+`Evaluate` opened the trail list whenever no trail was selected. `Close` called
+`Evaluate`. The only way to select a trail was a join code, and `join_world` is
+in migration `0002`, which is not applied. Two screens, each of which led only to
+the other, with the nav bar hidden behind both — and the trail chip that would
+have been the way back was `interactable = false` whenever the reader held fewer
+than two trails, which includes holding none.
+
+Closing is now unconditional and remembered. **The map is worth having without a
+trail** — it still shows the reader where they are — so there is always somewhere
+to go, and the chip at the top of it says "Choose a trail" and is pressable.
+
+A gate that cannot be opened is not a gate.
+
+### The card screens were not cards
+
+Both were drawn as a full-bleed opaque band stapled to the top of the screen,
+with the list floating loose on the dimmed map below it — and the map's own dock
+still legible underneath, so half the controls on screen were ones the reader
+could not press. That is most of what made them look assembled rather than
+designed.
+
+They are cards now, in the sense the word was meant in: a surface with a real
+shadow, resting on the bottom edge, **sized to what is in it**, over a map whose
+own bar, scale, attribution and dock are switched off before the shutter. The
+blurred still is then a blurred *map*, not a blurred screenshot of the app.
+
+Three things carried the change and are worth keeping:
+
+- **A larger corner radius for cards** (52 rather than 28). A radius reads as a
+  proportion of the thing it is on; 28 is right on a button and looks like an
+  unstyled rectangle on a card nine hundred wide.
+- **A real shadow.** A surface with an edge and no shadow sits in the same plane
+  as its background — the eye reads it as a region of the picture rather than an
+  object above it.
+- **The card hugs its contents.** A fixed list height left a quarter of the card
+  empty under two trails and nearly half of it empty under an empty state.
+
+### The harness was photographing screens the app never draws
+
+Two of the pictures used to sign off the previous build were not of the app.
+
+The door shots kept the map's own controls up, because the harness enables panels
+by path and nothing told it that `DoorFlow` takes them down. And the trail card's
+sizing had never run in a render at all: the harness sets the list's state
+directly rather than through `Refresh`, so the card was always photographed at
+the height it was built with. Worse, a layout group on a switched-off object
+reports nothing, so the first attempt at fixing that measured an empty screen and
+collapsed the list to zero.
+
+Both fixed. **A harness that photographs a layout the app never draws is worse
+than no harness**, because it is trusted.
+
+### Smaller things the same pass found
+
+- `MapTabController.Refresh` overwrote the trail's name with "Map" on every
+  refresh — the word the tab bar already says two inches below it. `TrailChipView`
+  owns that label; the line was a leftover.
+- A filled code box was painted `Surface`, which is the colour of the card it
+  sits on, so a box disappeared the moment it had a letter in it.
+- The lit edge under the active box was a short line along the inside of the
+  bottom edge, which at that size reads as a rendering artefact. It is a blinking
+  caret down the middle now, and the six boxes are grouped three and three —
+  a six-character code is held in the head in two halves.
+- The marker sheet's description ran into the "Guide me there" button. Widening
+  the gap only moved the clip line, which then cut the Cyrillic through the middle
+  of the letters. **No fixed boundary fixes this** — text wraps where it wraps.
+  It has a fade now: a strip of the sheet's own surface over the last of the
+  scroll, so a half line reads as text continuing below the fold.
+- The welcome screen had eight hundred and seventy pixels of nothing between the
+  wordmark and the headline, which reads as a screen whose picture failed to
+  load. It now holds three of the map's own markers, faint and at three sizes —
+  the subject of the sentence underneath them.
 
 ## Deliberately not built
 
