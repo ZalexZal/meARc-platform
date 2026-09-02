@@ -495,6 +495,89 @@ changes.
 Leaving the trail you are standing in clears the selection and the map goes back
 to asking which trail. That is honest: there is no longer one to draw.
 
+## Two silent faults, found 2026-09-03
+
+Both had the same shape: the thing that failed reported success, and the thing
+that reported failure was four steps away from the cause.
+
+### Markers never arrived after joining
+
+The reader entered the code, the trail appeared in the list, the strip said
+"You are here" - and the map stayed empty. Nothing logged a warning, because
+nothing had failed.
+
+`markers_near` answers an empty list both to "nothing is near you" and to "you
+are not a member of this trail". That is deliberate: an error would confirm a
+world exists to someone guessing ids. It also means an empty answer fetched
+before the reader joined is indistinguishable from a real one, and nothing went
+back to ask again.
+
+Two things conspired.
+
+- **The first fetch raced sign-in.** It waited for a GPS position but not for a
+  session. When it won that race the request went out with the anon key, which
+  is a member of nothing.
+- **The refetch guard could not see the join.** It compared world ids, and the
+  fallback world is the same world the test code joins. `SelectedId` after
+  joining equalled the fallback before it, so the guard saw no change and sat
+  still through the one event it existed to catch.
+
+The fix is one wait and one extra field: the first fetch waits for auth to
+settle, bounded so no network still falls through to the cache, and the guard
+tracks who asked as well as what was asked for.
+
+Proved before it was fixed, by walking the app's exact path with curl -
+anonymous sign-in, `join_world`, `markers_near`. As a member: three rows. With
+the anon key: `[]`. The symptom reproduced outside the app, which is what ruled
+the server out rather than assuming it.
+
+**The lesson is about the log, not the guard.** Every failure path warned. The
+success-with-nothing path said nothing at all, so the one case that actually
+happened was the one case with no trace. The fetch now logs what it asked and
+as whom, on every call.
+
+### The camera fed on nothing
+
+Separately, the camera tab drew black while the radar tracked, the session ran
+and markers spawned in AR.
+
+Command-line builds lose the entries in `PlayerSettings.preloadedAssets` that no
+scene references: XR Management's Android settings, OpenXR's, and the two
+shaders that paint the ARCore feed. Nothing fails. The player builds, ARCore
+tracks - and XR Management never finds its settings, so it never starts the
+ARCore loader. The log says `No active ARCoreCameraSubsystem is available`,
+which points at XR Plug-in Management, where everything is configured correctly.
+It is a [known Unity CI fault](https://github.com/Unity-Technologies/arfoundation-samples/issues/1090),
+not something this project did.
+
+`BuildApk` now puts them back before building, matched **by local file id**.
+Both XR settings files hold one settings object per build target, and the file's
+main asset is the wrapper around them - so loading by path alone preloads the
+wrapper, which looks right in the inspector and puts nothing usable in the
+player.
+
+**The repair was briefly worse than the fault.** Its first version dropped nulls
+from the list before saving. A null there does not reliably mean the asset is
+gone; it can equally mean the asset database has not resolved it yet. The
+tidy-up deleted live references and wrote the result to `ProjectSettings`. Nulls
+are now left exactly where they are, and the method refuses to save a list
+shorter than the one it was handed. A stale null costs nothing at runtime.
+Removing a real one costs the camera feed, silently, until somebody builds and
+looks.
+
+Unity rewrites the mangled list to disk again on exit, so `ProjectSettings.asset`
+will keep showing up as modified after a headless build. The committed copy is
+the correct one; the build repairs its own in-memory copy either way.
+
+### What the screenshots could not settle
+
+`adb exec-out screencap` does not capture the camera surface. Every shot of the
+camera tab is black whether the feed is running or not, so the harness cannot
+answer this one and did not - the evidence that ARCore is streaming is
+`dumpsys media.camera` showing the app holding camera 0 open, plus
+`XRGeneral Settings awakening` and `[Markers] Placed "A"` in the log. A picture
+that looks the same in both states is not a test.
+
 ## Deliberately not built
 
 - **Report a marker.** Decided against for v1 on 2026-08-29: hiding already
