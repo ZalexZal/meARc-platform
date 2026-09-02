@@ -274,9 +274,21 @@ create policy worlds_delete_owner on public.worlds
   for delete using (public.world_role(id) = 'owner');
 
 -- --- world_members ----------------------------------------------------------
+-- Your own row, and the whole roster if you own the trail.
+--
+-- This said "world_role(world_id) is not null" until 0003, which reads as "any
+-- membership row of any world you are a member of" - every row, not yours. One
+-- reader who joined a trail received the user id of everybody else who had
+-- joined it. Corrected here as well as in 0003 because this file is the one that
+-- gets re-run, and Postgres ORs permissive policies together: leaving the old
+-- one here means re-running this migration silently reopens the hole.
 drop policy if exists members_select_own_worlds on public.world_members;
-create policy members_select_own_worlds on public.world_members
-  for select using (public.world_role(world_id) is not null);
+drop policy if exists members_select_own        on public.world_members;
+create policy members_select_own on public.world_members
+  for select using (
+    user_id = auth.uid()
+    or public.world_role(world_id) = 'owner'
+  );
 
 -- No insert policy. join_world is the only way in.
 
