@@ -81,33 +81,29 @@ for (const theme of ['light', 'dark']) {
 
       // ---- the things a picture will not tell you --------------------------
 
-      const overflow = await page.evaluate(
-        () => document.documentElement.scrollWidth - document.documentElement.clientWidth
-      );
-      if (overflow > 1) {
-        const culprits = await page.evaluate(() => {
-          const limit = document.documentElement.clientWidth;
-          return Array.from(document.querySelectorAll('body *'))
-            .map((el) => {
-              const r = el.getBoundingClientRect();
-              return { el, over: Math.round(r.right - limit), left: Math.round(r.left) };
-            })
-            .filter((x) => x.over > 1)
-            .sort((a, b) => b.over - a.over)
-            .slice(0, 4)
-            .map((x) => {
-              const e = x.el;
-              const id = e.tagName.toLowerCase() +
-                (e.className && typeof e.className === 'string'
-                  ? '.' + e.className.trim().split(/\s+/).slice(0, 3).join('.')
-                  : '');
-              return `${id} (+${x.over}px, left ${x.left})`;
-            });
-        });
-        fail(`page scrolls sideways by ${overflow}px -> ${culprits.join(' ; ')}`);
-      } else {
-        pass('no sideways scroll');
-      }
+        // No element may reach past the viewport.
+      //
+      // This replaced "can the page be scrolled sideways", which was the right
+      // question until the root started clipping - after that it can never
+      // fail, and a check that cannot fail is not evidence. This one found the
+      // real answer on the board page: nothing was over the line, and the
+      // number came from Chromium counting padding into scrollWidth.
+      const past = await page.evaluate(() => {
+        const limit = document.documentElement.clientWidth;
+        return Array.from(document.querySelectorAll('body *'))
+          .filter((el) => {
+            const r = el.getBoundingClientRect();
+            return r.width > 0 && r.right > limit + 1;
+          })
+          .slice(0, 3)
+          .map((el) => el.tagName.toLowerCase() +
+            (typeof el.className === 'string' && el.className
+              ? '.' + el.className.trim().split(/\s+/).slice(0, 3).join('.') : '') +
+            ` (right ${Math.round(el.getBoundingClientRect().right)} > ${limit})`);
+      });
+      past.length === 0
+        ? pass('nothing reaches past the viewport')
+        : fail(`past the right edge: ${past.join(' ; ')}`);
 
       // A display face that silently fell back is the exact failure the brief
       // warns about for Cyrillic, and it looks fine in a screenshot.

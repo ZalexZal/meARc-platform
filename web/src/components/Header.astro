@@ -72,8 +72,27 @@ const links: { label: UIKey; to: string }[] = [
         {lang === 'bg' ? 'EN' : 'BG'}
       </a>
 
-      <a href={href('/signin')} class="btn btn-quiet hidden sm:inline-flex">{t('nav.signin')}</a>
-      <a href={href('/signup')} class="btn btn-primary">{t('nav.signup')}</a>
+      <!-- Both sets ship; the script below keeps the right one. Rendering the
+           signed-out pair and swapping after load would flash "Sign up" at
+           somebody who is already signed in, on every page. -->
+      <span class="contents" data-auth-out hidden>
+        <a href={href('/signin')} class="btn btn-quiet hidden sm:inline-flex">{t('nav.signin')}</a>
+        <a href={href('/signup')} class="btn btn-primary">{t('nav.signup')}</a>
+      </span>
+      <span class="contents" data-auth-in hidden>
+        <a href={href('/account')} class="btn btn-quiet">{t('nav.account')}</a>
+        <a href={href('/create')} class="btn btn-primary hidden sm:inline-flex">{t('nav.create')}</a>
+      </span>
     </div>
   </div>
 </header>
+
+<script>
+  import { who } from '../lib/session';
+
+  // Neither pair is visible until this decides, so nobody sees the wrong one.
+  const { user, anonymous } = await who();
+  const signedIn = Boolean(user) && !anonymous;
+  document.querySelector(signedIn ? '[data-auth-in]' : '[data-auth-out]')
+    ?.removeAttribute('hidden');
+</script>

@@ -1,0 +1,213 @@
+---
+import { useTranslations, localise, type Lang } from '../i18n/ui';
+
+interface Props { lang: Lang; }
+const { lang } = Astro.props;
+const t = useTranslations(lang);
+const href = localise(lang);
+
+const strings = {
+  stops: t('acct.stops'), points: t('acct.points'), pending: t('acct.pending'),
+  team: t('acct.team'), open: t('games.open'),
+  owner: t('acct.role.owner'), editor: t('acct.role.editor'), viewer: t('acct.role.viewer'),
+  published: t('ed.published'), draft: t('ed.draft'), board: t('ed.board'),
+  deleteCost: t('acct.deleteCost'), confirm: t('acct.deleteConfirm'), cancel: t('acct.deleteCancel'),
+  failed: t('err.generic'),
+  editHref: href('/trail'), boardHref: href('/board'),
+};
+---
+
+<section class="mx-auto max-w-4xl px-4 py-16 sm:px-6" hidden data-guarded>
+  <header class="flex flex-wrap items-end justify-between gap-4">
+    <div>
+      <h1 class="text-3xl sm:text-4xl">{t('acct.title')}</h1>
+      <p class="mt-2 text-sm text-[var(--ink-dim)]">
+        {t('acct.signedInAs')} <span class="data" data-acct-email></span>
+      </p>
+    </div>
+    <button class="btn btn-quiet" type="button" data-signout>{t('acct.signout')}</button>
+  </header>
+
+  <!-- My trails -->
+  <section class="mt-14">
+    <div class="flex flex-wrap items-center justify-between gap-3">
+      <h2 class="text-xl">{t('acct.myTrails')}</h2>
+      <a class="btn btn-primary" href={href('/create')}>{t('acct.newTrail')}</a>
+    </div>
+    <p class="mt-4 text-sm text-[var(--ink-dim)]" data-trails-empty hidden>{t('acct.myTrailsEmpty')}</p>
+    <ul class="mt-5 grid gap-4 sm:grid-cols-2" data-trails></ul>
+  </section>
+
+  <!-- Where I have walked -->
+  <section class="mt-14">
+    <h2 class="text-xl">{t('acct.history')}</h2>
+    <p class="mt-4 text-sm text-[var(--ink-dim)]" data-history-empty hidden>{t('acct.historyEmpty')}</p>
+    <ul class="mt-5 space-y-3" data-history></ul>
+  </section>
+
+  <!-- My data -->
+  <section class="mt-14">
+    <h2 class="text-xl">{t('acct.data')}</h2>
+    <div class="mt-5 grid gap-4 sm:grid-cols-2">
+      <div class="card p-5">
+        <button class="btn btn-quiet w-full" type="button" data-export>{t('acct.export')}</button>
+        <p class="mt-3 text-xs text-[var(--ink-faint)]">{t('acct.exportHint')}</p>
+      </div>
+      <div class="card p-5" style="border-color: var(--alert)">
+        <button class="btn btn-quiet w-full" type="button" data-delete
+                style="border-color: var(--alert); color: var(--alert)">
+          {t('acct.delete')}
+        </button>
+        <p class="mt-3 text-xs text-[var(--ink-faint)]">{t('acct.deleteHint')}</p>
+
+        <!-- What it costs, before the button. Filled from what_delete_removes. -->
+        <div class="mt-4 hidden" data-delete-panel>
+          <p class="text-xs text-[var(--alert)]" data-delete-cost></p>
+          <ul class="data mt-2 space-y-1 text-xs text-[var(--ink-dim)]" data-delete-list></ul>
+          <div class="mt-4 flex gap-2">
+            <button class="btn btn-quiet flex-1" type="button" data-delete-cancel
+                    style="min-height:38px">{t('acct.deleteCancel')}</button>
+            <button class="btn flex-1" type="button" data-delete-confirm
+                    style="min-height:38px;background:var(--alert);color:#fff">
+              {t('acct.deleteConfirm')}
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+</section>
+
+<p class="mx-auto max-w-4xl px-4 py-24 text-center text-[var(--ink-dim)]" data-acct-loading>
+  {t('games.loading')}
+</p>
+
+<script type="application/json" data-acct-strings set:html={JSON.stringify(strings)}></script>
+
+<script>
+  import { db, signOut } from '../lib/supabase';
+  import { requireUser, reveal, escapeHtml, text } from '../lib/session';
+
+  const S = JSON.parse(document.querySelector('[data-acct-strings]')!.textContent || '{}');
+  const q = (sel: string) => document.querySelector(sel);
+
+  const user = await requireUser({ needsReal: false });
+  const client = db()!;
+
+  text(q('[data-acct-email]'), user.email ?? '—');
+  q('[data-acct-loading]')?.remove();
+  reveal();
+
+  q('[data-signout]')?.addEventListener('click', async () => {
+    await signOut();
+    location.href = '/';
+  });
+
+  // ------------------------------------------------------------- my trails
+  {
+    const { data, error } = await client.rpc('my_worlds');
+    const list = q('[data-trails]')!;
+    if (error || !data || data.length === 0) {
+      q('[data-trails-empty]')?.removeAttribute('hidden');
+    } else {
+      list.innerHTML = data.map((w: any) => `
+        <li class="card p-5">
+          <div class="flex items-start justify-between gap-3">
+            <h3 class="text-lg">${escapeHtml(w.name)}</h3>
+            <span class="eyebrow shrink-0">${w.status === 'published' ? S.published : S.draft}</span>
+          </div>
+          <p class="data mt-3 text-xs text-[var(--ink-dim)]">
+            ${w.marker_count} ${S.stops} · ${w.team_count} ${S.team.toLowerCase()}
+            ${Number(w.pending) > 0
+              ? ` · <span style="color:var(--lamp)">${w.pending} ${S.pending}</span>`
+              : ''}
+          </p>
+          <div class="mt-4 flex gap-2">
+            <a class="btn btn-quiet" style="min-height:38px"
+               href="${S.editHref}?id=${encodeURIComponent(w.id)}">${S.open}</a>
+            <a class="btn btn-quiet" style="min-height:38px"
+               href="${S.boardHref}?id=${encodeURIComponent(w.id)}">${escapeHtml(S.board)}</a>
+          </div>
+        </li>`).join('');
+    }
+  }
+
+  // --------------------------------------------------------- where I walked
+  {
+    const { data, error } = await client.rpc('my_history');
+    const list = q('[data-history]')!;
+    const rows = (data ?? []).filter((h: any) => h.role === 'viewer' || h.team_id);
+
+    if (error || rows.length === 0) {
+      q('[data-history-empty]')?.removeAttribute('hidden');
+    } else {
+      list.innerHTML = rows.map((h: any) => `
+        <li class="card flex flex-wrap items-center justify-between gap-3 p-4">
+          <div class="min-w-0">
+            <h3 class="truncate text-base">${escapeHtml(h.world_name)}</h3>
+            <p class="mt-0.5 text-xs text-[var(--ink-faint)]">
+              ${h.team_name ? escapeHtml(S.team) + ': ' + escapeHtml(h.team_name) : '—'}
+            </p>
+          </div>
+          <p class="data shrink-0 text-xs text-[var(--ink-dim)]">
+            ${h.stops_solved} ${S.stops} · ${h.points} ${S.points}
+            ${Number(h.pending) > 0
+              ? ` · <span style="color:var(--lamp)">${h.pending} ${S.pending}</span>`
+              : ''}
+          </p>
+        </li>`).join('');
+    }
+  }
+
+  // ------------------------------------------------------------- my data
+  q('[data-export]')?.addEventListener('click', async (event) => {
+    const button = event.currentTarget as HTMLButtonElement;
+    button.disabled = true;
+    const { data, error } = await client.rpc('export_my_data');
+    button.disabled = false;
+    if (error) { alert(S.failed); return; }
+
+    // Straight to a file. A screenful of JSON is not "download everything".
+    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `artrail-my-data-${new Date().toISOString().slice(0, 10)}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+  });
+
+  q('[data-delete]')?.addEventListener('click', async () => {
+    const { data, error } = await client.rpc('what_delete_removes');
+    if (error) { alert(S.failed); return; }
+
+    const trails = data?.trails_owned ?? [];
+    const panel = q('[data-delete-panel]')!;
+    const cost = q('[data-delete-cost]')!;
+    const list = q('[data-delete-list]')!;
+
+    if (trails.length) {
+      text(cost, S.deleteCost);
+      list.innerHTML = trails.map((tr: any) =>
+        `<li>${escapeHtml(tr.name)} — ${tr.markers} ${S.stops}, ${tr.teams} ${escapeHtml(S.team.toLowerCase())}</li>`
+      ).join('');
+    } else {
+      text(cost, '');
+      list.innerHTML = '';
+    }
+    panel.classList.remove('hidden');
+  });
+
+  q('[data-delete-cancel]')?.addEventListener('click', () => {
+    q('[data-delete-panel]')?.classList.add('hidden');
+  });
+
+  q('[data-delete-confirm]')?.addEventListener('click', async (event) => {
+    const button = event.currentTarget as HTMLButtonElement;
+    button.disabled = true;
+    const { error } = await client.rpc('delete_my_account');
+    if (error) { button.disabled = false; alert(error.message); return; }
+    await signOut();
+    location.href = '/';
+  });
+</script>

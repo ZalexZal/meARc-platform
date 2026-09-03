@@ -166,6 +166,15 @@
 html {
   -webkit-text-size-adjust: 100%;
   scroll-behavior: smooth;
+
+  /* The page never scrolls sideways, and this is the element that decides it.
+     Overflow on the root propagates to the viewport; overflow on body does not,
+     so the rule further down was only ever decoration.
+
+     clip, not hidden: hidden turns the root into a scroll container and takes
+     position: sticky on the header with it. clip has the same visual effect
+     without the scrollport. */
+  overflow-x: clip;
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -181,8 +190,9 @@ body {
   line-height: 1.6;
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
-  /* The page never scrolls sideways. Anything wide gets its own scroller. */
-  overflow-x: hidden;
+  /* Kept as a second line of defence for anything that escapes the root's clip.
+     The root is what actually stops the viewport moving - see above. */
+  overflow-x: clip;
 }
 
 h1, h2, h3, h4 {

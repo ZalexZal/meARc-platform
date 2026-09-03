@@ -1,0 +1,580 @@
+---
+import { useTranslations, localise, type Lang } from '../i18n/ui';
+
+interface Props { lang: Lang; }
+const { lang } = Astro.props;
+const t = useTranslations(lang);
+const href = localise(lang);
+
+const strings = {
+  lang,
+  stops: t('ed.stops'), noStops: t('ed.noStops'), addHint: t('ed.addHint'),
+  save: t('ed.save'), saved: t('ed.saved'), saving: t('ed.saving'),
+  del: t('ed.delete'), notYours: t('ed.notYours'), failed: t('err.generic'),
+  reviewEmpty: t('ed.reviewEmpty'), accept: t('ed.accept'), reject: t('ed.reject'),
+  boardEmpty: t('ed.boardEmpty'), published: t('ed.published'), draft: t('ed.draft'),
+  publish: t('ed.publish'), unpublish: t('ed.unpublish'),
+  points: t('acct.points'), you: t('board.you'),
+  rank: t('board.rank'), team: t('board.team'), bPoints: t('board.points'),
+  bSolved: t('board.solved'), time: t('board.time'),
+  boardHref: href('/board'),
+};
+---
+
+<section class="mx-auto max-w-7xl px-4 py-10 sm:px-6" hidden data-guarded>
+  <header class="flex flex-wrap items-start justify-between gap-4">
+    <div class="min-w-0">
+      <a class="eyebrow hover:text-[var(--ink)]" href={href('/account')}>← {t('acct.title')}</a>
+      <h1 class="mt-2 truncate text-2xl sm:text-3xl" data-trail-name></h1>
+      <p class="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-[var(--ink-dim)]">
+        <span class="eyebrow" data-trail-mode></span>
+        <span class="eyebrow" data-trail-status></span>
+      </p>
+    </div>
+
+    <div class="flex flex-wrap items-center gap-2">
+      <div class="card flex items-center gap-2 px-3 py-2">
+        <span class="eyebrow">{t('ed.code')}</span>
+        <code class="data text-base font-medium text-[var(--signal)]" data-trail-code></code>
+        <button class="text-xs text-[var(--ink-faint)] underline-offset-2 hover:text-[var(--ink)] hover:underline"
+                type="button" data-rotate title={t('ed.rotateHint')}>{t('ed.rotate')}</button>
+      </div>
+      <button class="btn btn-quiet" type="button" data-publish></button>
+    </div>
+  </header>
+
+  <div class="mt-8 grid gap-6 lg:grid-cols-[1.35fr_1fr]">
+    <!-- The map. Click to place, click a pin to select, drag a pin to move. -->
+    <div>
+      <div class="card overflow-hidden" style="padding:0">
+        <div class="h-[420px] w-full sm:h-[540px]" data-map></div>
+      </div>
+      <p class="mt-2 text-xs text-[var(--ink-faint)]">{t('ed.addHint')}</p>
+    </div>
+
+    <!-- The stop being edited, or the list when none is. -->
+    <div>
+      <div class="flex items-center justify-between gap-3">
+        <h2 class="text-lg">{t('ed.stops')} <span class="data text-sm text-[var(--ink-faint)]" data-stop-count></span></h2>
+      </div>
+
+      <p class="mt-3 text-sm text-[var(--ink-dim)]" data-stops-empty hidden>{t('ed.noStops')}</p>
+      <ul class="mt-3 space-y-2" data-stops></ul>
+
+      <!-- Marker editor -->
+      <form class="card mt-5 hidden space-y-4 p-5" data-marker-form>
+        <div class="grid grid-cols-2 gap-3">
+          <label class="block text-sm">
+            <span class="mb-1 block font-medium">{t('ed.titleBg')}</span>
+            <input class="field" name="titleBg" maxlength="80" />
+          </label>
+          <label class="block text-sm">
+            <span class="mb-1 block font-medium">{t('ed.titleEn')}</span>
+            <input class="field" name="titleEn" maxlength="80" />
+          </label>
+        </div>
+
+        <label class="block text-sm">
+          <span class="mb-1 block font-medium">{t('ed.bodyBg')}</span>
+          <textarea class="field" name="bodyBg" rows="2" maxlength="600"></textarea>
+        </label>
+        <label class="block text-sm">
+          <span class="mb-1 block font-medium">{t('ed.bodyEn')}</span>
+          <textarea class="field" name="bodyEn" rows="2" maxlength="600"></textarea>
+        </label>
+
+        <div class="grid grid-cols-3 gap-3">
+          <label class="block text-sm">
+            <span class="mb-1 block font-medium">{t('ed.lat')}</span>
+            <input class="field data" name="lat" inputmode="decimal" />
+          </label>
+          <label class="block text-sm">
+            <span class="mb-1 block font-medium">{t('ed.lng')}</span>
+            <input class="field data" name="lng" inputmode="decimal" />
+          </label>
+          <label class="block text-sm">
+            <span class="mb-1 block font-medium">{t('ed.step')}</span>
+            <input class="field data" name="step" inputmode="numeric" placeholder="—" />
+          </label>
+        </div>
+
+        <label class="block text-sm">
+          <span class="mb-1 block font-medium">{t('ed.answerKind')}</span>
+          <select class="field" name="kind">
+            <option value="none">{t('ed.answerNone')}</option>
+            <option value="exact">{t('ed.answerExact')}</option>
+            <option value="choice">{t('ed.answerChoice')}</option>
+            <option value="free">{t('ed.answerFree')}</option>
+          </select>
+        </label>
+
+        <div class="hidden" data-when-exact>
+          <label class="block text-sm">
+            <span class="mb-1 block font-medium">{t('ed.accepted')}</span>
+            <textarea class="field" name="accepted" rows="3"></textarea>
+          </label>
+          <p class="mt-1 text-xs text-[var(--ink-faint)]">{t('ed.acceptedHint')}</p>
+        </div>
+
+        <div class="hidden" data-when-choice>
+          <label class="block text-sm">
+            <span class="mb-1 block font-medium">{t('ed.correctChoice')}</span>
+            <input class="field data" name="correctChoice" inputmode="numeric" />
+          </label>
+        </div>
+
+        <div class="hidden" data-when-scored>
+          <label class="block text-sm">
+            <span class="mb-1 block font-medium">{t('ed.pointsLabel')}</span>
+            <input class="field data" name="points" inputmode="numeric" value="10" />
+          </label>
+        </div>
+
+        <p class="hidden rounded-lg border border-[var(--alert)] bg-[var(--alert-wash)] px-3 py-2 text-sm text-[var(--alert)]"
+           data-marker-error role="alert"></p>
+
+        <div class="flex gap-2">
+          <button class="btn btn-primary flex-1" type="submit" data-marker-save>{t('ed.save')}</button>
+          <button class="btn btn-quiet" type="button" data-marker-delete
+                  style="border-color:var(--alert);color:var(--alert)">{t('ed.delete')}</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Review queue -->
+  <section class="mt-14">
+    <h2 class="text-lg">
+      {t('ed.review')}
+      <span class="data ml-1 text-sm" data-review-count style="color:var(--lamp)"></span>
+    </h2>
+    <p class="mt-3 text-sm text-[var(--ink-dim)]" data-review-empty hidden>{t('ed.reviewEmpty')}</p>
+    <ul class="mt-4 space-y-3" data-review></ul>
+  </section>
+
+  <!-- Leaderboard -->
+  <section class="mt-14">
+    <div class="flex items-center justify-between gap-3">
+      <h2 class="text-lg">{t('ed.board')}</h2>
+      <a class="text-sm text-[var(--signal)] underline-offset-2 hover:underline" data-board-link>{t('games.open')}</a>
+    </div>
+    <p class="mt-3 text-sm text-[var(--ink-dim)]" data-board-empty hidden>{t('ed.boardEmpty')}</p>
+    <div class="scroll-x mt-4"><table class="w-full text-sm" data-board></table></div>
+  </section>
+</section>
+
+<p class="mx-auto max-w-7xl px-4 py-24 text-center text-[var(--ink-dim)]" data-editor-loading>
+  {t('games.loading')}
+</p>
+
+<script type="application/json" data-editor-strings set:html={JSON.stringify(strings)}></script>
+
+<script>
+  import 'maplibre-gl/dist/maplibre-gl.css';
+  // maplibre-gl 5 has no default export. Map is aliased because the global Map
+  // is used a few lines down for the pin index.
+  import { Map as MapLibreMap, Marker as MapMarker, NavigationControl } from 'maplibre-gl';
+  import { db } from '../lib/supabase';
+  import { requireUser, reveal, param, escapeHtml, text, duration } from '../lib/session';
+
+  const S = JSON.parse(document.querySelector('[data-editor-strings]')!.textContent || '{}');
+  const q = (s: string) => document.querySelector(s);
+
+  await requireUser({ needsReal: true });
+  const client = db()!;
+  const worldId = param('id');
+
+  if (!worldId) { location.replace('/account'); throw new Error('no id'); }
+
+  // ---------------------------------------------------------------- the trail
+  const { data: summary } = await client.rpc('trail_summary', { p_world: worldId });
+  const trail = Array.isArray(summary) ? summary[0] : summary;
+
+  // my_worlds is the only call that reveals the join code, and it only returns
+  // trails this account owns or edits - so it doubles as the ownership check.
+  const { data: mine } = await client.rpc('my_worlds');
+  const owned = (mine ?? []).find((w: any) => w.id === worldId);
+
+  if (!owned) {
+    q('[data-editor-loading]')!.textContent = S.notYours;
+    throw new Error('not yours');
+  }
+
+  text(q('[data-trail-name]'), owned.name);
+  text(q('[data-trail-mode]'), owned.mode);
+  text(q('[data-trail-code]'), owned.join_code);
+  q('[data-board-link]')!.setAttribute('href', `${S.boardHref}?id=${encodeURIComponent(worldId)}`);
+
+  let status = owned.status;
+  const paintStatus = () => {
+    text(q('[data-trail-status]'), status === 'published' ? S.published : S.draft);
+    text(q('[data-publish]'), status === 'published' ? S.unpublish : S.publish);
+  };
+  paintStatus();
+
+  q('[data-editor-loading]')?.remove();
+  reveal();
+
+  // ------------------------------------------------------------------ the map
+  //
+  // OpenFreeMap: no key, no quota, and the style is swappable in one line if it
+  // ever needs to be. The app's own tile decision is separate and still open.
+  const map = new MapLibreMap({
+    container: q('[data-map]') as HTMLElement,
+    style: 'https://tiles.openfreemap.org/styles/liberty',
+    center: [26.5060, 42.4841],
+    zoom: 15,
+  });
+  map.addControl(new NavigationControl({ showCompass: false }), 'top-right');
+
+  // MapLibre measures its container once, at construction. This page reveals the
+  // container a moment earlier in the same tick, so the measurement can land on
+  // a box that has not been laid out yet - and the canvas keeps that wrong size,
+  // painting a pale rectangle in one corner and nothing anywhere else.
+  //
+  // Two resizes rather than one: the first catches the layout, the second catches
+  // fonts arriving and reflowing the column beside it.
+  requestAnimationFrame(() => map.resize());
+  setTimeout(() => map.resize(), 400);
+  new ResizeObserver(() => map.resize()).observe(q('[data-map]') as HTMLElement);
+
+  let markers: any[] = [];
+  let pins = new Map<string, any>();
+  let selected: string | null = null;
+
+  const form = q('[data-marker-form]') as HTMLFormElement;
+  const field = (name: string) => form.elements.namedItem(name) as HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement;
+
+  function showKindFields() {
+    const kind = (field('kind') as HTMLSelectElement).value;
+    q('[data-when-exact]')!.classList.toggle('hidden', kind !== 'exact');
+    q('[data-when-choice]')!.classList.toggle('hidden', kind !== 'choice');
+    q('[data-when-scored]')!.classList.toggle('hidden', kind === 'none');
+  }
+  field('kind').addEventListener('change', showKindFields);
+
+  function select(id: string | null) {
+    selected = id;
+    pins.forEach((pin, pid) => {
+      pin.getElement().style.filter = pid === id ? 'drop-shadow(0 0 6px var(--signal))' : '';
+    });
+
+    if (!id) { form.classList.add('hidden'); return; }
+
+    const m = markers.find((x) => x.id === id);
+    if (!m) return;
+
+    (field('titleBg') as HTMLInputElement).value = m.content?.bg?.title ?? '';
+    (field('titleEn') as HTMLInputElement).value = m.content?.en?.title ?? '';
+    (field('bodyBg') as HTMLTextAreaElement).value = m.content?.bg?.body ?? '';
+    (field('bodyEn') as HTMLTextAreaElement).value = m.content?.en?.body ?? '';
+    (field('lat') as HTMLInputElement).value = String(m.lat ?? '');
+    (field('lng') as HTMLInputElement).value = String(m.lng ?? '');
+    (field('step') as HTMLInputElement).value = m.step ?? '';
+    (field('kind') as HTMLSelectElement).value = m.answer_kind ?? 'none';
+    (field('points') as HTMLInputElement).value = String(m.points ?? 10);
+    (field('accepted') as HTMLTextAreaElement).value = (m.accepted ?? []).join('\n');
+    (field('correctChoice') as HTMLInputElement).value =
+      m.correct_choice === null || m.correct_choice === undefined ? '' : String(m.correct_choice);
+
+    showKindFields();
+    form.classList.remove('hidden');
+    q('[data-marker-error]')!.classList.add('hidden');
+  }
+
+  function drawList() {
+    const list = q('[data-stops]')!;
+    text(q('[data-stop-count]'), markers.length ? `(${markers.length})` : '');
+    q('[data-stops-empty]')!.toggleAttribute('hidden', markers.length > 0);
+
+    list.innerHTML = markers.map((m) => {
+      const title = m.content?.[S.lang]?.title || m.content?.bg?.title || m.content?.en?.title || '—';
+      return `
+        <li>
+          <button type="button" data-pick="${m.id}"
+            class="flex w-full items-center gap-3 rounded-lg border border-[var(--line)] px-3 py-2.5 text-left text-sm transition-colors hover:bg-[var(--surface-2)]">
+            <span class="data w-6 shrink-0 text-xs text-[var(--ink-faint)]">${m.step ?? '·'}</span>
+            <span class="min-w-0 flex-1 truncate">${escapeHtml(title)}</span>
+            ${m.answer_kind && m.answer_kind !== 'none'
+              ? `<span class="data shrink-0 text-xs" style="color:var(--lamp)">${m.points ?? 0}</span>` : ''}
+            ${m.status !== 'published'
+              ? `<span class="eyebrow shrink-0">${S.draft}</span>` : ''}
+          </button>
+        </li>`;
+    }).join('');
+
+    list.querySelectorAll('[data-pick]').forEach((b) =>
+      b.addEventListener('click', () => {
+        const id = (b as HTMLElement).dataset.pick!;
+        select(id);
+        const m = markers.find((x) => x.id === id);
+        if (m) map.easeTo({ center: [m.lng, m.lat], zoom: Math.max(map.getZoom(), 16) });
+      })
+    );
+  }
+
+  function drawPinsWhenReady() {
+    if (map.loaded()) drawPins();
+    else map.once('load', drawPins);
+  }
+
+  function drawPins() {
+    pins.forEach((p) => p.remove());
+    pins = new Map();
+
+    for (const m of markers) {
+      const el = document.createElement('div');
+      el.style.cssText =
+        'width:18px;height:18px;border-radius:50%;cursor:pointer;' +
+        `background:${m.colour_hex || '#45C4B0'};border:2px solid #fff;` +
+        'box-shadow:0 1px 4px rgba(0,0,0,.5)';
+
+      const pin = new MapMarker({ element: el, draggable: true })
+        .setLngLat([m.lng, m.lat])
+        .addTo(map);
+
+      el.addEventListener('click', (e) => { e.stopPropagation(); select(m.id); });
+
+      pin.on('dragend', async () => {
+        const { lng, lat } = pin.getLngLat();
+        const { error } = await client.rpc('move_marker', { p_marker: m.id, p_lat: lat, p_lng: lng });
+        if (error) { alert(error.message); await load(); return; }
+        m.lat = lat; m.lng = lng;
+        if (selected === m.id) {
+          (field('lat') as HTMLInputElement).value = String(lat);
+          (field('lng') as HTMLInputElement).value = String(lng);
+        }
+      });
+
+      pins.set(m.id, pin);
+    }
+  }
+
+  async function load() {
+    const { data, error } = await client.rpc('trail_markers', { p_world: worldId });
+    if (error) { alert(error.message); return; }
+
+    // trail_markers does not carry the answer itself, only its kind and points.
+    // The accepted strings live in marker_answers, which the creator may read.
+    const { data: answers } = await client
+      .from('marker_answers')
+      .select('marker_id,kind,accepted,correct_choice,points');
+
+    const byId = new Map((answers ?? []).map((a: any) => [a.marker_id, a]));
+    markers = (data ?? []).map((m: any) => ({ ...m, ...(byId.get(m.id) ?? {}) }));
+
+    drawList();
+    drawPinsWhenReady();
+    if (selected && !markers.some((m) => m.id === selected)) select(null);
+  }
+
+  // Load the data now, not when the map says it is ready.
+  //
+  // This used to be map.on('load', load), which meant a slow or blocked tile
+  // server left a creator staring at a trail with no stops in it - the list, the
+  // editor and the delete button all gone, because a basemap somewhere else was
+  // late. The pins need the map; the list does not.
+  await load();
+
+  // Click bare map to place a new stop.
+  map.on('click', async (event) => {
+    const { lng, lat } = event.lngLat;
+    const { data, error } = await client.rpc('place_marker', {
+      p_world: worldId, p_lat: lat, p_lng: lng,
+      p_content: {}, p_status: 'draft',
+    });
+    if (error) { alert(error.message); return; }
+    await load();
+    const id = Array.isArray(data) ? data[0]?.id : (data as any)?.id;
+    if (id) select(id);
+  });
+
+  // ------------------------------------------------------------------- saving
+  form.addEventListener('submit', async (event) => {
+    event.preventDefault();
+    if (!selected) return;
+
+    const err = q('[data-marker-error]') as HTMLElement;
+    err.classList.add('hidden');
+
+    const button = q('[data-marker-save]') as HTMLButtonElement;
+    const label = button.textContent;
+    button.disabled = true;
+    button.textContent = S.saving;
+
+    const num = (name: string) => {
+      const raw = (field(name) as HTMLInputElement).value.trim();
+      return raw === '' ? null : Number(raw);
+    };
+
+    const content: Record<string, any> = {};
+    const bgT = (field('titleBg') as HTMLInputElement).value.trim();
+    const enT = (field('titleEn') as HTMLInputElement).value.trim();
+    const bgB = (field('bodyBg') as HTMLTextAreaElement).value.trim();
+    const enB = (field('bodyEn') as HTMLTextAreaElement).value.trim();
+    if (bgT || bgB) content.bg = { ...(bgT && { title: bgT }), ...(bgB && { body: bgB }) };
+    if (enT || enB) content.en = { ...(enT && { title: enT }), ...(enB && { body: enB }) };
+
+    const fail = (message: string) => {
+      button.disabled = false; button.textContent = label;
+      err.textContent = message; err.classList.remove('hidden');
+    };
+
+    // The one field a creator will get wrong: a coordinate typed with a comma,
+    // or a pair swapped. Caught here so the map does not silently jump to sea.
+    const lat = num('lat'), lng = num('lng');
+    if (lat === null || lng === null || Number.isNaN(lat) || Number.isNaN(lng)) {
+      fail(S.lang === 'bg' ? 'Координатите трябва да са числа.' : 'Coordinates must be numbers.');
+      return;
+    }
+    if (lat < -90 || lat > 90 || lng < -180 || lng > 180) {
+      fail(S.lang === 'bg' ? 'Координатите са извън обхват.' : 'Coordinates are out of range.');
+      return;
+    }
+
+    const { error: upErr } = await client
+      .from('markers')
+      .update({ content, step: num('step'), status: 'published' })
+      .eq('id', selected);
+
+    if (upErr) { fail(upErr.message); return; }
+
+    const moved = await client.rpc('move_marker', { p_marker: selected, p_lat: lat, p_lng: lng });
+    if (moved.error) { fail(moved.error.message); return; }
+
+    const kind = (field('kind') as HTMLSelectElement).value;
+    if (kind === 'none') {
+      await client.rpc('clear_marker_answer', { p_marker: selected });
+    } else {
+      const accepted = (field('accepted') as HTMLTextAreaElement).value
+        .split('\n').map((x) => x.trim()).filter(Boolean);
+
+      if (kind === 'exact' && accepted.length === 0) {
+        fail(S.lang === 'bg' ? 'Дай поне един приеман отговор.' : 'Give at least one accepted answer.');
+        return;
+      }
+      const choice = num('correctChoice');
+      if (kind === 'choice' && (choice === null || choice < 0)) {
+        fail(S.lang === 'bg' ? 'Дай номер на верния отговор.' : 'Give the correct index.');
+        return;
+      }
+
+      const { error: aErr } = await client.rpc('set_marker_answer', {
+        p_marker: selected,
+        p_kind: kind,
+        p_accepted: kind === 'exact' ? accepted : null,
+        p_correct_choice: kind === 'choice' ? choice : null,
+        p_points: num('points') ?? 10,
+      });
+      if (aErr) { fail(aErr.message); return; }
+    }
+
+    button.disabled = false;
+    button.textContent = S.saved;
+    setTimeout(() => { button.textContent = label; }, 1400);
+    await load();
+  });
+
+  q('[data-marker-delete]')?.addEventListener('click', async () => {
+    if (!selected) return;
+    const { error } = await client.from('markers').delete().eq('id', selected);
+    if (error) { alert(error.message); return; }
+    select(null);
+    await load();
+  });
+
+  // ------------------------------------------------------- code and publishing
+  q('[data-rotate]')?.addEventListener('click', async () => {
+    const { data, error } = await client.rpc('rotate_join_code', { p_world: worldId });
+    if (error) { alert(error.message); return; }
+    text(q('[data-trail-code]'), data);
+  });
+
+  q('[data-publish]')?.addEventListener('click', async () => {
+    const next = status === 'published' ? 'draft' : 'published';
+    const { error } = await client
+      .from('worlds')
+      .update({ status: next, visibility: next === 'published' ? 'unlisted' : 'private' })
+      .eq('id', worldId);
+    if (error) { alert(error.message); return; }
+    status = next;
+    paintStatus();
+  });
+
+  // --------------------------------------------------------- the review queue
+  async function loadReview() {
+    const { data, error } = await client.rpc('review_queue', { p_world: worldId });
+    const list = q('[data-review]')!;
+    const rows = data ?? [];
+
+    text(q('[data-review-count]'), rows.length ? String(rows.length) : '');
+    q('[data-review-empty]')!.toggleAttribute('hidden', rows.length > 0);
+    if (error || rows.length === 0) { list.innerHTML = ''; return; }
+
+    list.innerHTML = rows.map((r: any) => {
+      const title = r.marker_title?.[S.lang]?.title || r.marker_title?.bg?.title || '—';
+      return `
+        <li class="card flex flex-wrap items-start justify-between gap-4 p-4">
+          <div class="min-w-0 flex-1">
+            <p class="eyebrow">${escapeHtml(title)} · ${escapeHtml(r.team_name)}</p>
+            <p class="mt-1.5 break-words text-sm">${escapeHtml(r.submitted)}</p>
+          </div>
+          <div class="flex shrink-0 gap-2">
+            <button class="btn btn-primary" style="min-height:36px" data-accept="${r.submission_id}">${S.accept}</button>
+            <button class="btn btn-quiet" style="min-height:36px;border-color:var(--alert);color:var(--alert)"
+                    data-reject="${r.submission_id}">${S.reject}</button>
+          </div>
+        </li>`;
+    }).join('');
+
+    // Keyboard-driven: a creator with sixty of these will not click sixty times.
+    // A/D accept or reject whatever is at the top of the queue.
+    const decide = async (id: string, correct: boolean) => {
+      const { error: rErr } = await client.rpc('review_answer', { p_submission: id, p_correct: correct });
+      if (rErr) { alert(rErr.message); return; }
+      await Promise.all([loadReview(), loadBoard()]);
+    };
+
+    list.querySelectorAll('[data-accept]').forEach((b) =>
+      b.addEventListener('click', () => decide((b as HTMLElement).dataset.accept!, true)));
+    list.querySelectorAll('[data-reject]').forEach((b) =>
+      b.addEventListener('click', () => decide((b as HTMLElement).dataset.reject!, false)));
+
+    document.onkeydown = (event) => {
+      if (event.target instanceof HTMLInputElement || event.target instanceof HTMLTextAreaElement) return;
+      const first = rows[0];
+      if (!first) return;
+      if (event.key === 'a') decide(first.submission_id, true);
+      if (event.key === 'd') decide(first.submission_id, false);
+    };
+  }
+
+  // ------------------------------------------------------------- the board
+  async function loadBoard() {
+    const { data, error } = await client.rpc('world_leaderboard', { p_world: worldId });
+    const table = q('[data-board]') as HTMLTableElement;
+    const rows = data ?? [];
+
+    q('[data-board-empty]')!.toggleAttribute('hidden', rows.length > 0);
+    if (error || rows.length === 0) { table.innerHTML = ''; return; }
+
+    table.innerHTML = `
+      <thead><tr class="border-b border-[var(--line)] text-left text-xs text-[var(--ink-faint)]">
+        <th class="py-2 pr-3">${escapeHtml(S.rank)}</th>
+        <th class="py-2 pr-3">${escapeHtml(S.team)}</th>
+        <th class="py-2 pr-3 text-right">${escapeHtml(S.bPoints)}</th>
+        <th class="py-2 pr-3 text-right">${escapeHtml(S.bSolved)}</th>
+        <th class="py-2 text-right">${escapeHtml(S.time)}</th>
+      </tr></thead>
+      <tbody>${rows.map((r: any) => `
+        <tr class="border-b border-[var(--line-soft)]">
+          <td class="data py-2 pr-3">${r.rank}</td>
+          <td class="py-2 pr-3">${escapeHtml(r.team_name)}${r.is_mine ? ` <span class="eyebrow">${S.you}</span>` : ''}</td>
+          <td class="data py-2 pr-3 text-right">${r.points}</td>
+          <td class="data py-2 pr-3 text-right text-[var(--ink-dim)]">${r.stops_solved}</td>
+          <td class="data py-2 text-right text-[var(--ink-dim)]">${duration(r.elapsed_seconds)}</td>
+        </tr>`).join('')}</tbody>`;
+  }
+
+  await Promise.all([loadReview(), loadBoard()]);
+</script>
