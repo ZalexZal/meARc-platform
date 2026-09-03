@@ -178,7 +178,19 @@ try {
         // style's background colour. The only honest signal is whether it ever
         // asked for a tile.
         let tileRequests = 0;
-        page.on('request', (r) => { if (/tiles\.openfreemap\.org\/planet/.test(r.url())) tileRequests++; });
+        // Only the numbered tile paths. The tilejson at /planet is one request
+        // that always succeeds and tells you nothing, and counting it let a dead
+        // map pass with "1 tile".
+        // The real shape is /planet/<dated build>/{z}/{x}/{y}.pbf, and that dated
+        // segment has underscores and letters in it. A pattern expecting digits
+        // then a slash matched nothing and reported a working map as dead - the
+        // opposite of the earlier mistake, from the same habit of guessing a URL
+        // instead of reading one.
+        page.on('request', (r) => {
+          if (/tiles\.openfreemap\.org\/planet\/[^/]+\/\d+\/\d+\/\d+\.pbf/.test(r.url())) {
+            tileRequests++;
+          }
+        });
         page.on('console', (m) => { if (m.type() === 'error') errors.push(m.text()); });
         page.on('pageerror', (e) => errors.push(String(e)));
 
@@ -267,9 +279,106 @@ try {
 
           // A sized canvas told us nothing: it filled its box perfectly while
           // the worker was dead and the map had drawn no map at all.
-          tileRequests > 0
+          // One is enough, now that the pattern only matches real .pbf tiles: a
+          // map with a dead worker fetches exactly zero of those, and a live one
+          // at this zoom may legitimately need only one. The earlier threshold of
+          // four was a number picked to make a symptom go away, which is how a
+          // check stops being evidence.
+          tileRequests >= 1
             ? ok(`map fetched ${tileRequests} tile(s)`)
-            : bad('map fetched no tiles - it is drawing an empty background');
+            : bad('map fetched no tiles - the worker is dead and it is painting a background');
+
+          // ---- the tabbed form ------------------------------------------
+          //
+          // Nothing is editable until a stop is chosen, which is deliberate,
+          // so the form checks all run after picking the first one.
+          const firstStop = await page.$('[data-stops] [data-pick]');
+          if (!firstStop) { bad('no stop to select'); }
+          else {
+            await firstStop.click();
+            await page.waitForTimeout(700);
+
+            const formOpen = await page.evaluate(() =>
+              !document.querySelector('[data-marker-form]')?.classList.contains('hidden'));
+            formOpen ? ok('picking a stop opens the form') : bad('the form stayed hidden');
+
+            const tabIds = await page.evaluate(() =>
+              Array.from(document.querySelectorAll('[data-tab]')).map((b) => b.dataset.tab));
+            tabIds.length === 5
+              ? ok(`five tabs: ${tabIds.join(', ')}`)
+              : bad(`expected 5 tabs, found ${tabIds.length}`);
+
+            // Each tab must reveal its own panel and hide the rest. A tab that
+            // shows nothing is worse than no tab.
+            let tabTrouble = [];
+            for (const id of tabIds) {
+              await page.click(`[data-tab="${id}"]`);
+              await page.waitForTimeout(150);
+              const state = await page.evaluate((wanted) => {
+                const shown = Array.from(document.querySelectorAll('[data-panel]'))
+                  .filter((p) => !p.classList.contains('hidden'))
+                  .map((p) => p.dataset.panel);
+                const panel = document.querySelector(`[data-panel="${wanted}"]`);
+                const fields = panel
+                  ? panel.querySelectorAll('input, textarea, select, button').length : 0;
+                return { shown, fields };
+              }, id);
+
+              if (state.shown.length !== 1 || state.shown[0] !== id) {
+                tabTrouble.push(`${id} showed [${state.shown.join(',')}]`);
+              } else if (state.fields === 0) {
+                tabTrouble.push(`${id} is empty`);
+              }
+            }
+            tabTrouble.length === 0
+              ? ok('every tab shows its own panel, and none is empty')
+              : bad(`tabs: ${tabTrouble.join(' ; ')}`);
+
+            // The bug that started this: choosing "multiple choice" must give
+            // somewhere to type the options.
+            await page.click('[data-tab="answer"]');
+            await page.selectOption('[name="kind"]', 'choice');
+            await page.waitForTimeout(200);
+            const choiceUi = await page.evaluate(() => {
+              const box = document.querySelector('[data-when-choice]');
+              return box && !box.classList.contains('hidden')
+                && Boolean(document.querySelector('[data-add-choice]'));
+            });
+            choiceUi
+              ? ok('multiple choice offers somewhere to write the options')
+              : bad('multiple choice still has no options editor');
+
+            await page.click('[data-add-choice]');
+            await page.click('[data-add-choice]');
+            await page.waitForTimeout(200);
+            const rows = await page.evaluate(() =>
+              document.querySelectorAll('[data-choices] [data-choice-bg]').length);
+            const ticks = await page.evaluate(() =>
+              document.querySelectorAll('[data-choices] [data-choice-correct]').length);
+            rows === 2 && ticks === 2
+              ? ok('options can be added, each with a correct-answer tick')
+              : bad(`expected 2 option rows with ticks, found ${rows}/${ticks}`);
+
+            // Radius and cooldown are the two fields the schema gained.
+            const hasNew = await page.evaluate(() => ({
+              radius: Boolean(document.querySelector('[name="radius"]')),
+              cooldown: Boolean(document.querySelector('[name="cooldown"]')),
+              after: Boolean(document.querySelector('[name="afterBg"]')),
+            }));
+            hasNew.radius && hasNew.cooldown && hasNew.after
+              ? ok('radius, cooldown and the afterword all have fields')
+              : bad(`missing fields: ${JSON.stringify(hasNew)}`);
+
+            const panels = await page.evaluate(() => ({
+              hints: Boolean(document.querySelector('[data-add-hint]')),
+              image: Boolean(document.querySelector('[data-file-image]')),
+              audio: Boolean(document.querySelector('[data-file-audio]')),
+              video: Boolean(document.querySelector('[data-add-video]')),
+            }));
+            panels.hints && panels.image && panels.audio && panels.video
+              ? ok('hints and all three media inputs are present')
+              : bad(`missing: ${JSON.stringify(panels)}`);
+          }
         }
 
         if (p.name.startsWith('board')) {

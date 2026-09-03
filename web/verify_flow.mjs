@@ -52,6 +52,12 @@ const api = async (path, { token, method = 'POST', body } = {}) => {
 
 const rpc = (name, args, token) => api(`/rest/v1/rpc/${name}`, { token, body: args });
 
+// A plain table read as the player, for the checks that are about what a table
+// refuses rather than what a function returns.
+let playerToken = null;
+const curlAsPlayer = async (path) =>
+  (await api(path, { token: playerToken, method: 'GET' })).body;
+
 const stamp = Date.now();
 const made = [];
 
@@ -116,6 +122,7 @@ try {
   say('0. two confirmed accounts and one anonymous walker');
   const creator = await account('creator');
   const player = await account('player');
+  playerToken = player.token;
   const stranger = await account('stranger');
   ok(`creator ${creator.id.slice(0, 8)}, player ${player.id.slice(0, 8)}, stranger ${stranger.id.slice(0, 8)}`);
 
@@ -144,12 +151,18 @@ try {
   const mFree = await place(42.4866, 26.5065, 'Кулата', 3);
   (mExact && mChoice && mFree) ? ok('three markers placed') : bad('place_marker failed');
 
+  // Cooldown 0 on this one: it is answered wrong and then immediately right a
+  // few lines down, which is the whole point of those two checks. The cooldown
+  // gets a marker of its own in section 8.
   const a1 = await rpc('set_marker_answer',
-    { p_marker: mExact, p_kind: 'exact', p_accepted: ['Безистен', 'bezisten'], p_points: 10 }, creator.token);
+    { p_marker: mExact, p_kind: 'exact', p_accepted: ['Безистен', 'bezisten'],
+      p_points: 10, p_cooldown_seconds: 0 }, creator.token);
   const a2 = await rpc('set_marker_answer',
-    { p_marker: mChoice, p_kind: 'choice', p_correct_choice: 2, p_points: 20 }, creator.token);
+    { p_marker: mChoice, p_kind: 'choice', p_correct_choices: [2], p_points: 20,
+      p_cooldown_seconds: 0 }, creator.token);
   const a3 = await rpc('set_marker_answer',
-    { p_marker: mFree, p_kind: 'free', p_points: 30 }, creator.token);
+    { p_marker: mFree, p_kind: 'free', p_points: 30,
+      p_after_text: { bg: 'Браво.', en: 'Well done.' } }, creator.token);
   (a1.status < 300 && a2.status < 300 && a3.status < 300)
     ? ok('answers set: exact 10, choice 20, free 30')
     : bad(`set_marker_answer: ${a1.raw.slice(0,120)} | ${a2.raw.slice(0,120)} | ${a3.raw.slice(0,120)}`);
@@ -264,6 +277,123 @@ try {
   /42501|not yours|no such/i.test(strangerReview.raw)
     ? ok('a stranger cannot review')
     : bad(`stranger reviewed: ${strangerReview.raw.slice(0,200)}`);
+
+  // ------------------------------------------- what 0014 and 0015 added
+  say('5b. radius, cooldown, several correct options, hints and the afterword');
+
+  // --- radius -------------------------------------------------------------
+  const wide = await rpc('place_marker', {
+    p_world: worldId, p_lat: 42.4900, p_lng: 26.5100, p_status: 'published',
+    p_content: { bg: { title: 'Радиус' } }, p_radius_m: 250,
+  }, creator.token);
+  const wideId = wide.body?.id;
+  const listed = await rpc('trail_markers', { p_world: worldId }, creator.token);
+  const wideRow = (listed.body ?? []).find((m) => m.id === wideId);
+  wideRow?.radius_m === 250
+    ? ok('a stop keeps the radius it was placed with')
+    : bad(`radius came back as ${wideRow && wideRow.radius_m}`);
+
+  const overlaps = await rpc('overlapping_stops', { p_world: worldId }, creator.token);
+  Array.isArray(overlaps.body)
+    ? ok(`overlap check answers (${overlaps.body.length} pair(s) too close)`)
+    : bad(`overlapping_stops: ${overlaps.raw.slice(0, 140)}`);
+
+  // --- several correct options --------------------------------------------
+  const multi = (await rpc('place_marker', {
+    p_world: worldId, p_lat: 42.4855, p_lng: 26.5075, p_status: 'published',
+    p_content: { bg: { title: 'Избор', choices: ['А', 'Б', 'В', 'Г'] } },
+  }, creator.token)).body?.id;
+  await rpc('set_marker_answer', {
+    p_marker: multi, p_kind: 'choice', p_correct_choices: [1, 3],
+    p_points: 40, p_cooldown_seconds: 0,
+  }, creator.token);
+
+  const onlyOne = await rpc('check_answer', { p_marker: multi, p_submitted: '1' }, player.token);
+  onlyOne.body?.verdict === 'incorrect'
+    ? ok('one of two correct options is not the answer')
+    : bad(`half an answer scored: ${onlyOne.raw.slice(0, 140)}`);
+
+  const tooMany = await rpc('check_answer', { p_marker: multi, p_submitted: '1,3,0' }, player.token);
+  tooMany.body?.verdict === 'incorrect'
+    ? ok('the right two plus a wrong one is not the answer')
+    : bad(`superset scored: ${tooMany.raw.slice(0, 140)}`);
+
+  const bothRight = await rpc('check_answer', { p_marker: multi, p_submitted: '3,1' }, player.token);
+  bothRight.body?.verdict === 'correct' && bothRight.body?.points === 40
+    ? ok('both correct options, in any order, scores')
+    : bad(`both options: ${bothRight.raw.slice(0, 140)}`);
+
+  // --- the cooldown --------------------------------------------------------
+  const guarded = (await rpc('place_marker', {
+    p_world: worldId, p_lat: 42.4835, p_lng: 26.5090, p_status: 'published',
+    p_content: { bg: { title: 'Изчакване' } },
+  }, creator.token)).body?.id;
+  await rpc('set_marker_answer', {
+    p_marker: guarded, p_kind: 'exact', p_accepted: ['вярно'],
+    p_points: 15, p_cooldown_seconds: 45,
+  }, creator.token);
+
+  const firstMiss = await rpc('check_answer', { p_marker: guarded, p_submitted: 'грешно' }, player.token);
+  firstMiss.body?.verdict === 'incorrect' && firstMiss.body?.cooldown_seconds === 45
+    ? ok('a wrong answer says how long the wait is')
+    : bad(`first miss: ${firstMiss.raw.slice(0, 160)}`);
+
+  const tooSoon = await rpc('check_answer', { p_marker: guarded, p_submitted: 'вярно' }, player.token);
+  tooSoon.body?.verdict === 'wait' && tooSoon.body?.seconds_left > 0
+    ? ok(`the right answer during the cooldown is refused (${tooSoon.body.seconds_left}s left)`)
+    : bad(`cooldown not enforced: ${tooSoon.raw.slice(0, 160)}`);
+
+  // And it must not be usable as an oracle: guessing during the wait must not
+  // record anything, or the count of attempts leaks which one was right.
+  const subs = await pg.query(
+    'select count(*)::int as n from public.marker_submissions where marker_id = $1', [guarded]);
+  subs.rows[0].n === 1
+    ? ok('nothing was recorded during the cooldown')
+    : bad(`${subs.rows[0].n} submissions recorded; the wait is an oracle`);
+
+  // --- hints cost points ---------------------------------------------------
+  const hinted = (await rpc('place_marker', {
+    p_world: worldId, p_lat: 42.4870, p_lng: 26.5040, p_status: 'published',
+    p_content: { bg: { title: 'Подсказка' } },
+  }, creator.token)).body?.id;
+  await rpc('set_marker_answer', {
+    p_marker: hinted, p_kind: 'exact', p_accepted: ['кула'],
+    p_points: 30, p_cooldown_seconds: 0,
+  }, creator.token);
+
+  const hintRow = await pg.query(
+    `insert into public.marker_hints (marker_id, ord, body, cost)
+     values ($1, 1, '{"bg":"Погледни нагоре.","en":"Look up."}'::jsonb, 5)
+     returning id`, [hinted]);
+  const hintId = hintRow.rows[0].id;
+
+  const peek = await curlAsPlayer(`/rest/v1/marker_hints?select=body&limit=5`);
+  Array.isArray(peek) && peek.length === 0
+    ? ok('a player cannot read hint text directly')
+    : bad(`player read ${peek && peek.length} hint row(s)`);
+
+  const list = await rpc('marker_hint_list', { p_marker: hinted }, player.token);
+  const listedHint = Array.isArray(list.body) ? list.body[0] : null;
+  listedHint && listedHint.cost === 5 && !('body' in listedHint)
+    ? ok('the hint list shows the price and not the hint')
+    : bad(`hint list: ${list.raw.slice(0, 160)}`);
+
+  const opened = await rpc('reveal_hint', { p_hint: hintId }, player.token);
+  opened.body?.body?.bg === 'Погледни нагоре.' && opened.body?.points_left === 25
+    ? ok('revealing a 5-point hint on a 30-point stop leaves 25')
+    : bad(`reveal_hint: ${opened.raw.slice(0, 160)}`);
+
+  const paidFor = await rpc('check_answer', { p_marker: hinted, p_submitted: 'Кула' }, player.token);
+  paidFor.body?.verdict === 'correct' && paidFor.body?.points === 25
+    ? ok('and solving it scores 25, not 30')
+    : bad(`hinted solve: ${paidFor.raw.slice(0, 160)}`);
+
+  // --- the afterword -------------------------------------------------------
+  const beforeSolve = await rpc('markers_near',
+    { p_world_id: worldId, p_lat: 42.4866, p_lng: 26.5065, p_radius_m: 500 }, player.token);
+  /Браво|Well done/.test(beforeSolve.raw)
+    ? bad('the afterword is on the phone before the stop is solved')
+    : ok('markers_near carries no afterword');
 
   // ------------------------------------------------- the anonymous upgrade
   say('6. an anonymous walker signs up and keeps their progress');

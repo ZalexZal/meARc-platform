@@ -19,17 +19,9 @@ export default defineConfig({
   vite: {
     plugins: [tailwindcss()],
 
-    // MapLibre ships its tile parser as a web worker, resolved through
-    // `new URL(..., import.meta.url)`. Vite's dependency pre-bundling rewrites
-    // that URL and the worker never starts.
-    //
-    // Nothing reports it. The style JSON downloads, 111 layers parse, and then
-    // the map sits there with styleLoaded false and no source caches, having
-    // asked for exactly four files and not one tile. No console error, no
-    // failed request, a correctly sized canvas painting the style's background
-    // colour - which reads as "the map is empty" rather than "the map is
-    // broken".
-    optimizeDeps: { exclude: ['maplibre-gl'] },
-    worker: { format: 'es' },
+    // maplibre-gl is imported from its pre-bundled distribution, which carries
+    // its worker inside it - see the comment in TrailEditor.astro. Excluding it
+    // from pre-bundling here only ever fixed the dev server; the production
+    // build broke the worker just the same, and did it silently.
   },
 });
