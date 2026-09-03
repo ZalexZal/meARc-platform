@@ -214,7 +214,10 @@ if echo "$probe" | missing; then
   bad "migration 0007 is not applied, so the award_progress check cannot run"
 else
   r=$(rpc award_progress "{\"p_team\":\"$FAKE\",\"p_marker\":\"$FAKE\",\"p_points\":9999,\"p_by\":\"$UID_A\"}" "${hA[@]}")
-  if echo "$r" | missing; then
+  # Unreachable arrives two ways: PostgREST cannot find a function the role may
+  # not execute, and Postgres says permission denied. Both are the right answer;
+  # anything that looks like the function having run is not.
+  if echo "$r" | missing || echo "$r" | refused; then
     ok "0007 is applied, and award_progress is still not callable by a client"
   else
     bad "award_progress answered a client: $(echo "$r" | cut200)"

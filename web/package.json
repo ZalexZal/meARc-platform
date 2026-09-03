@@ -23,6 +23,7 @@
     "esbuild": true
   },
   "devDependencies": {
+    "pg": "^8.23.0",
     "playwright": "^1.62.1"
   }
 }

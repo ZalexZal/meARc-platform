@@ -200,7 +200,9 @@ as $$
     on t.world_id = w.id
    and t.id = public.my_team(w.id)
   where m.user_id = auth.uid()
-  order by 11 desc nulls last, w.name;
+  -- 10 is last_activity, the tenth and final output column. This said 11,
+  -- which Postgres rejects outright rather than guessing.
+  order by 10 desc nulls last, w.name;
 $$;
 
 revoke all on function public.my_history() from public;
