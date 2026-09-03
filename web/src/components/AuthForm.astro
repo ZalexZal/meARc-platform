@@ -1,0 +1,127 @@
+---
+import { useTranslations, localise, type Lang } from '../i18n/ui';
+
+interface Props { lang: Lang; mode: 'signin' | 'signup'; }
+const { lang, mode } = Astro.props;
+const t = useTranslations(lang);
+const href = localise(lang);
+const up = mode === 'signup';
+---
+
+<section class="mx-auto flex max-w-md flex-col px-4 py-20 sm:px-6">
+  <h1 class="text-3xl">{up ? t('auth.signup.title') : t('auth.signin.title')}</h1>
+
+  <form class="card mt-8 space-y-5 p-6" data-auth-form data-mode={mode} novalidate>
+    {up && (
+      <div>
+        <label class="mb-1.5 block text-sm font-medium" for="name">{t('auth.name')}</label>
+        <input class="field" id="name" name="name" type="text" autocomplete="nickname" maxlength="40" />
+        <p class="mt-1.5 text-xs text-[var(--ink-faint)]">{t('auth.nameHelp')}</p>
+      </div>
+    )}
+
+    <div>
+      <label class="mb-1.5 block text-sm font-medium" for="email">{t('auth.email')}</label>
+      <input class="field" id="email" name="email" type="email" required autocomplete="email" />
+    </div>
+
+    <div>
+      <label class="mb-1.5 block text-sm font-medium" for="password">{t('auth.password')}</label>
+      <input
+        class="field" id="password" name="password" type="password" required minlength="8"
+        autocomplete={up ? 'new-password' : 'current-password'}
+      />
+    </div>
+
+    <!-- Errors sit next to the control that produced them, not in a banner at
+         the top of a form the reader has already scrolled past. -->
+    <p
+      class="hidden rounded-lg border border-[var(--alert)] bg-[var(--alert-wash)] px-3 py-2.5 text-sm text-[var(--alert)]"
+      data-auth-error role="alert"
+    ></p>
+
+    <button class="btn btn-primary w-full" type="submit" data-auth-submit>
+      {up ? t('auth.submitUp') : t('auth.submitIn')}
+    </button>
+
+    <p class="text-center text-sm text-[var(--ink-dim)]">
+      {up ? t('auth.haveAccount') : t('auth.noAccount')}
+      <a class="ml-1 font-medium text-[var(--signal)] underline-offset-2 hover:underline"
+         href={href(up ? '/signin' : '/signup')}>
+        {up ? t('auth.submitIn') : t('auth.submitUp')}
+      </a>
+    </p>
+  </form>
+
+  <div class="card mt-6 hidden p-6 text-center" data-auth-done>
+    <h2 class="text-xl">{t('auth.checkInbox')}</h2>
+    <p class="mt-2 text-sm text-[var(--ink-dim)]">{t('auth.checkInboxBody')}</p>
+    <p class="data mt-4 hidden text-xs text-[var(--ink-faint)]" data-auth-ids></p>
+  </div>
+</section>
+
+<script>
+  import { signUp, signIn, configured } from '../lib/supabase';
+
+  const form = document.querySelector('[data-auth-form]') as HTMLFormElement | null;
+  if (form) {
+    const mode = form.dataset.mode;
+    const errorBox = document.querySelector('[data-auth-error]') as HTMLElement;
+    const submit = document.querySelector('[data-auth-submit]') as HTMLButtonElement;
+    const done = document.querySelector('[data-auth-done]') as HTMLElement;
+    const ids = document.querySelector('[data-auth-ids]') as HTMLElement;
+
+    const show = (message: string) => {
+      errorBox.textContent = message;
+      errorBox.classList.remove('hidden');
+    };
+
+    form.addEventListener('submit', async (event) => {
+      event.preventDefault();
+      errorBox.classList.add('hidden');
+
+      if (!configured()) {
+        show('The site was built without Supabase credentials, so accounts are not available here.');
+        return;
+      }
+
+      const data = new FormData(form);
+      const email = String(data.get('email') ?? '').trim();
+      const password = String(data.get('password') ?? '');
+      const name = String(data.get('name') ?? '').trim();
+
+      if (!email || !password) { show('Fill in both fields.'); return; }
+      if (mode === 'signup' && password.length < 8) {
+        show('The password needs to be at least 8 characters.');
+        return;
+      }
+
+      submit.disabled = true;
+      const label = submit.textContent;
+      submit.textContent = '…';
+
+      const result = mode === 'signup'
+        ? await signUp(email, password, name || undefined)
+        : await signIn(email, password);
+
+      submit.disabled = false;
+      submit.textContent = label;
+
+      if (result.error) { show(result.error); return; }
+
+      if (mode === 'signup') {
+        form.classList.add('hidden');
+        done.classList.remove('hidden');
+
+        // The claim that matters, printed rather than asserted: an upgrade keeps
+        // the id, so the progress hanging off it survives.
+        if ('upgraded' in result && result.upgraded) {
+          ids.textContent = `${result.idBefore} -> ${result.idAfter}`;
+          ids.classList.remove('hidden');
+        }
+      } else {
+        window.location.href = '/';
+      }
+    });
+  }
+</script>

@@ -1,0 +1,101 @@
+---
+import { useTranslations, localise, type Lang } from '../i18n/ui';
+
+interface Props { lang: Lang; }
+const { lang } = Astro.props;
+const t = useTranslations(lang);
+const href = localise(lang);
+
+// The strip the app actually draws at the bottom of its map: where you are, and
+// what the next stop is. Shown here rather than described, because it is the
+// one screen that explains the product without a paragraph.
+const strip = lang === 'bg'
+  ? { here: 'Ти си тук', hereMeta: '1 от 3 намерени', next: 'Ески джамия', nextMeta: 'Спирка 2 от 3' }
+  : { here: 'You are here', hereMeta: '1 of 3 found', next: 'Eski Mosque', nextMeta: 'Stop 2 of 3' };
+---
+
+<section class="relative overflow-hidden border-b border-[var(--line-soft)]">
+  <div class="map-grid absolute inset-0" aria-hidden="true"></div>
+
+  <div class="relative mx-auto max-w-6xl px-4 pb-24 pt-20 sm:px-6 sm:pb-28 sm:pt-24">
+    <div class="grid items-center gap-16 lg:grid-cols-[1.1fr_.9fr] lg:gap-12">
+      <div>
+        <p class="eyebrow flex items-center gap-2">
+          <span class="inline-block h-1.5 w-1.5 rounded-full bg-[var(--signal)]"></span>
+          {t('hero.eyebrow')}
+        </p>
+
+        <h1 class="mt-5 text-4xl leading-[1.03] sm:text-5xl">{t('hero.title')}</h1>
+
+        <p class="mt-6 max-w-xl text-lg text-[var(--ink-dim)]">{t('hero.lede')}</p>
+
+        <div class="mt-9 flex flex-wrap items-center gap-3">
+          <a href={href('/#how')} class="btn btn-primary">{t('hero.cta')}</a>
+          <a href={href('/signup')} class="btn btn-quiet">{t('hero.secondary')}</a>
+        </div>
+
+        <dl class="mt-14 grid grid-cols-1 gap-px overflow-hidden rounded-xl border border-[var(--line)] bg-[var(--line)] sm:grid-cols-3">
+          {[
+            { n: '3', k: 'stats.markers' as const },
+            { n: '0.5 m', k: 'stats.accuracy' as const },
+            { n: '2', k: 'stats.languages' as const },
+          ].map((s) => (
+            <div class="bg-[var(--surface)] px-5 py-5">
+              <dt class="data text-2xl text-[var(--signal)]">{s.n}</dt>
+              <dd class="mt-1 text-sm text-[var(--ink-dim)]">{t(s.k)}</dd>
+            </div>
+          ))}
+        </dl>
+      </div>
+
+      <!-- What the walker is actually holding. Not a stock photo of a phone:
+           the app's own map, rings and next-stop strip, drawn in the same
+           colours the client draws them in. -->
+      <div class="relative mx-auto w-full max-w-sm lg:max-w-none" aria-hidden="true">
+        <div
+          class="map-grid-fine relative aspect-[3/4] overflow-hidden rounded-2xl border border-[var(--line)] bg-[var(--ground-deep)] shadow-[var(--shadow-lift)]"
+        >
+          <!-- distance rings, centred on the reader -->
+          <div class="absolute left-1/2 top-[42%] -translate-x-1/2 -translate-y-1/2">
+            {[120, 200, 292].map((size, i) => (
+              <div
+                class="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 rounded-full border border-[var(--signal)]"
+                style={`width:${size}px;height:${size}px;opacity:${0.5 - i * 0.13}`}
+              ></div>
+            ))}
+            <div class="absolute left-1/2 top-1/2 h-3.5 w-3.5 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-white bg-[var(--signal)]"></div>
+          </div>
+
+          <!-- two markers, one found, one not -->
+          <svg class="absolute inset-0 h-full w-full" viewBox="0 0 300 400" fill="none">
+            <path d="M150 168 C 176 150, 196 120, 214 96" stroke="var(--signal)" stroke-width="1.5"
+                  stroke-dasharray="4 5" opacity=".55" />
+            <circle cx="214" cy="94" r="7" fill="var(--signal)" />
+            <circle cx="214" cy="94" r="2.6" fill="var(--signal-ink)" />
+            <circle cx="72" cy="248" r="6" fill="var(--lamp)" opacity=".9" />
+          </svg>
+
+          <!-- the next-stop strip -->
+          <div class="absolute inset-x-3 bottom-3 rounded-xl border border-[var(--line)] bg-[color-mix(in_srgb,var(--surface)_92%,transparent)] p-3 backdrop-blur-sm">
+            <div class="flex items-start gap-2.5">
+              <span class="mt-1.5 h-2 w-2 shrink-0 rounded-full bg-[var(--signal)]"></span>
+              <div class="min-w-0">
+                <p class="truncate text-[13px] font-semibold leading-tight">{strip.here}</p>
+                <p class="truncate text-[11px] text-[var(--ink-faint)]">{strip.hereMeta}</p>
+              </div>
+            </div>
+            <div class="my-2 ml-1 h-4 w-px bg-[var(--line)]"></div>
+            <div class="flex items-start gap-2.5">
+              <span class="mt-1.5 h-2 w-2 shrink-0 rounded-full bg-[var(--lamp)]"></span>
+              <div class="min-w-0 flex-1">
+                <p class="truncate text-[13px] font-semibold leading-tight">{strip.next}</p>
+                <p class="truncate text-[11px] text-[var(--ink-faint)]">{strip.nextMeta}</p>
+              </div>
+              <span class="data shrink-0 text-[12px] text-[var(--signal)]">~180 m</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>

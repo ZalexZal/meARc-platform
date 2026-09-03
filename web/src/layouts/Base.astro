@@ -1,0 +1,92 @@
+---
+import '../styles/global.css';
+import { langFromUrl, useTranslations, localise, type UIKey } from '../i18n/ui';
+import Header from '../components/Header.astro';
+import Footer from '../components/Footer.astro';
+
+interface Props {
+  title?: string;
+  description?: string;
+}
+
+const lang = langFromUrl(Astro.url);
+const t = useTranslations(lang);
+const href = localise(lang);
+
+const { title, description } = Astro.props;
+const pageTitle = title ?? t('meta.title' as UIKey);
+const pageDescription = description ?? t('meta.description' as UIKey);
+
+// The same page in the other language, so the switch lands on the equivalent
+// page rather than dumping everyone on the home page.
+const path = Astro.url.pathname.replace(/^\/en/, '') || '/';
+const other = lang === 'bg' ? `/en${path === '/' ? '' : path}` : path;
+---
+
+<!doctype html>
+<html lang={lang} data-theme-default>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{pageTitle}</title>
+    <meta name="description" content={pageDescription} />
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      rel="stylesheet"
+      href="https://fonts.googleapis.com/css2?family=Unbounded:wght@400;600;800&family=Onest:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500&display=swap"
+    />
+
+    <meta property="og:title" content={pageTitle} />
+    <meta property="og:description" content={pageDescription} />
+    <meta property="og:type" content="website" />
+    <link rel="alternate" hreflang="bg" href={new URL(path, Astro.site)} />
+    <link rel="alternate" hreflang="en" href={new URL(`/en${path === '/' ? '' : path}`, Astro.site)} />
+
+    <script is:inline>
+      // Before first paint, so a reader who chose light does not get one frame
+      // of dark. Wrapped because storage throws outright in some privacy modes,
+      // and a theme preference is never worth a blank page.
+      try {
+        const saved = localStorage.getItem('artrail-theme');
+        if (saved === 'light' || saved === 'dark') {
+          document.documentElement.setAttribute('data-theme', saved);
+        }
+      } catch (e) {}
+    </script>
+  </head>
+
+  <body>
+    <a
+      href="#main"
+      class="sr-only focus:not-sr-only focus:absolute focus:z-50 focus:m-3 focus:rounded-lg focus:bg-[var(--surface)] focus:px-4 focus:py-3 focus:text-[var(--ink)] focus:shadow-lg"
+    >
+      {lang === 'bg' ? 'Към съдържанието' : 'Skip to content'}
+    </a>
+
+    <Header lang={lang} otherHref={other} />
+    <main id="main"><slot /></main>
+    <Footer lang={lang} />
+
+    <script is:inline>
+      // The toggle writes an explicit choice, which then beats the OS setting in
+      // both directions - the reason the stylesheet carries a data-theme block
+      // as well as a media query.
+      document.addEventListener('click', (event) => {
+        const button = event.target.closest('[data-theme-toggle]');
+        if (!button) return;
+
+        const root = document.documentElement;
+        const current =
+          root.getAttribute('data-theme') ??
+          (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+        const next = current === 'dark' ? 'light' : 'dark';
+
+        root.setAttribute('data-theme', next);
+        try { localStorage.setItem('artrail-theme', next); } catch (e) {}
+      });
+    </script>
+  </body>
+</html>

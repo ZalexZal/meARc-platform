@@ -1,0 +1,7 @@
+---
+import Base from '../layouts/Base.astro';
+import LegalPage from '../components/LegalPage.astro';
+import { langFromUrl } from '../i18n/ui';
+const lang = langFromUrl(Astro.url);
+---
+<Base><LegalPage lang={lang} kind="terms" /></Base>

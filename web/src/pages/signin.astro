@@ -1,0 +1,10 @@
+---
+import Base from '../layouts/Base.astro';
+import AuthForm from '../components/AuthForm.astro';
+import { langFromUrl, useTranslations } from '../i18n/ui';
+const lang = langFromUrl(Astro.url);
+const t = useTranslations(lang);
+---
+<Base title={t('auth.signin.title') + ' — AR Trail'}>
+  <AuthForm lang={lang} mode="signin" />
+</Base>

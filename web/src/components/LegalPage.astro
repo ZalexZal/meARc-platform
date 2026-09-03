@@ -1,0 +1,80 @@
+---
+import { type Lang } from '../i18n/ui';
+
+interface Props { lang: Lang; kind: 'terms' | 'privacy'; }
+const { lang, kind } = Astro.props;
+
+// Written as a plain statement of what the platform does with what it holds,
+// rather than as boilerplate. It is short because the honest version is short,
+// and it is marked as a draft because a lawyer has not read it - saying so is
+// better than implying otherwise by leaving it unlabelled.
+const content = {
+  terms: {
+    bg: {
+      title: 'Условия за ползване',
+      draft: 'Чернова. Прегледът от юрист предстои преди публичното пускане.',
+      body: [
+        ['Какво е това', 'AR Trail е платформа за градски маршрути с добавена реалност. Създателите правят маршрути; ходещите ги извървяват с приложението.'],
+        ['Профилът ти', 'Един профил работи и в сайта, и в приложението. Може да го използваш анонимно за водени и свободни маршрути. За състезателни е нужна регистрация, защото класация без самоличност не значи нищо.'],
+        ['Какво публикуваш', 'Ти отговаряш за съдържанието на маршрутите, които правиш — текст, снимки, въпроси и координати. Не поставяй маркери на частна собственост без разрешение и не изпращай хора на опасни места.'],
+        ['Ходенето е твоя отговорност', 'Маршрутите минават по истински улици. Гледай къде вървиш, спазвай правилата за движение и не използвай приложението докато шофираш.'],
+        ['Прекратяване', 'Можеш да изтриеш профила си по всяко време. Изтриването на профил, който притежава маршрути, изтрива и тях, заедно с маркерите в тях.'],
+      ],
+    },
+    en: {
+      title: 'Terms of use',
+      draft: 'Draft. A legal review is still to happen before public launch.',
+      body: [
+        ['What this is', 'AR Trail is a platform for augmented-reality city trails. Creators build trails; walkers walk them with the app.'],
+        ['Your account', 'One account works in both the site and the app. You may use it anonymously for guided and freefall trails. Competitive trails need a registered account, because a leaderboard without identity means nothing.'],
+        ['What you publish', 'You are responsible for the content of trails you build — text, images, questions and coordinates. Do not place markers on private property without permission, and do not send people somewhere dangerous.'],
+        ['Walking is your own responsibility', 'Trails run along real streets. Watch where you are going, obey traffic rules, and do not use the app while driving.'],
+        ['Ending it', 'You can delete your account at any time. Deleting an account that owns trails deletes those trails and every marker in them.'],
+      ],
+    },
+  },
+  privacy: {
+    bg: {
+      title: 'Поверителност',
+      draft: 'Чернова. Прегледът от юрист предстои преди публичното пускане.',
+      body: [
+        ['Какво пазим', 'Имейл и име за показване. Кои маршрути си отворил, кои спирки си решил и кога. Какво си написал като отговор, включително грешните опити — това е и записът, по който създател може да провери спорна оценка.'],
+        ['Какво не пазим', 'Не следим местоположението ти постоянно. Телефонът пита сървъра какво има наблизо; ние не пазим маршрута, по който си вървял между спирките.'],
+        ['Кой какво вижда', 'Създателят на маршрут вижда отговорите, изпратени към неговия маршрут. Отборът ти вижда своите. Никой друг не вижда нито едните, нито другите. Правилните отговори не се четат от никой клиент.'],
+        ['Училища и непълнолетни', 'Платформата се използва и от училищни групи. Ако си под 16, нужно е съгласие от родител или настойник според българското и европейското законодателство.'],
+        ['Твоите права', 'Можеш да свалиш всичко, което пазим за теб, и да изтриеш профила си. И двете са бутони в профила ти.'],
+      ],
+    },
+    en: {
+      title: 'Privacy',
+      draft: 'Draft. A legal review is still to happen before public launch.',
+      body: [
+        ['What we keep', 'Your email and display name. Which trails you opened, which stops you solved and when. What you typed as an answer, including wrong attempts — that is also the record a creator uses to settle a disputed score.'],
+        ['What we do not keep', 'We do not track your location continuously. The phone asks the server what is nearby; we do not store the path you walked between stops.'],
+        ['Who sees what', "A trail's creator sees answers submitted to their trail. Your team sees its own. Nobody else sees either. Correct answers are not readable by any client."],
+        ['Schools and minors', 'The platform is used by school groups. If you are under 16, a parent or guardian must consent, under Bulgarian and EU law.'],
+        ['Your rights', 'You can download everything we hold about you, and delete your account. Both are buttons in your profile.'],
+      ],
+    },
+  },
+} as const;
+
+const page = content[kind][lang];
+---
+
+<article class="mx-auto max-w-2xl px-4 py-20 sm:px-6">
+  <h1 class="text-3xl sm:text-4xl">{page.title}</h1>
+
+  <p class="mt-5 rounded-lg border border-[var(--lamp)] bg-[var(--lamp-wash)] px-4 py-3 text-sm text-[var(--lamp)]">
+    {page.draft}
+  </p>
+
+  <div class="mt-10 space-y-8">
+    {page.body.map(([heading, text]) => (
+      <section>
+        <h2 class="text-lg">{heading}</h2>
+        <p class="mt-2 leading-relaxed text-[var(--ink-dim)]">{text}</p>
+      </section>
+    ))}
+  </div>
+</article>
