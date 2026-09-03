@@ -16,5 +16,20 @@ export default defineConfig({
     defaultLocale: 'bg',
     routing: { prefixDefaultLocale: false, redirectToDefaultLocale: false },
   },
-  vite: { plugins: [tailwindcss()] },
+  vite: {
+    plugins: [tailwindcss()],
+
+    // MapLibre ships its tile parser as a web worker, resolved through
+    // `new URL(..., import.meta.url)`. Vite's dependency pre-bundling rewrites
+    // that URL and the worker never starts.
+    //
+    // Nothing reports it. The style JSON downloads, 111 layers parse, and then
+    // the map sits there with styleLoaded false and no source caches, having
+    // asked for exactly four files and not one tile. No console error, no
+    // failed request, a correctly sized canvas painting the style's background
+    // colour - which reads as "the map is empty" rather than "the map is
+    // broken".
+    optimizeDeps: { exclude: ['maplibre-gl'] },
+    worker: { format: 'es' },
+  },
 });

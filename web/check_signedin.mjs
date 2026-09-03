@@ -173,6 +173,12 @@ try {
 
         const page = await ctx.newPage();
         const errors = [];
+        // Counted from the network, because the map fails silently: no console
+        // error, no failed request, a correctly sized canvas painting the
+        // style's background colour. The only honest signal is whether it ever
+        // asked for a tile.
+        let tileRequests = 0;
+        page.on('request', (r) => { if (/tiles\.openfreemap\.org\/planet/.test(r.url())) tileRequests++; });
         page.on('console', (m) => { if (m.type() === 'error') errors.push(m.text()); });
         page.on('pageerror', (e) => errors.push(String(e)));
 
@@ -258,6 +264,12 @@ try {
           else if (fit.canW < fit.boxW - 2 || fit.canH < fit.boxH - 2)
             bad(`map canvas ${fit.canW}x${fit.canH} does not fill its ${fit.boxW}x${fit.boxH} box`);
           else ok(`map canvas fills its box (${fit.canW}x${fit.canH})`);
+
+          // A sized canvas told us nothing: it filled its box perfectly while
+          // the worker was dead and the map had drawn no map at all.
+          tileRequests > 0
+            ? ok(`map fetched ${tileRequests} tile(s)`)
+            : bad('map fetched no tiles - it is drawing an empty background');
         }
 
         if (p.name.startsWith('board')) {
