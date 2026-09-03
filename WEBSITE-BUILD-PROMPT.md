@@ -226,7 +226,7 @@ which makes them a moderation surface. Build the export and delete paths in
 stage B, while the data model is small.
 
 ### Stack
-- **Higgsfield**, **Superpowers**, **Playwright**, **Superdesign** and **UI-UX-pro-max**.
+- **Higgsfield**, **Superpowers**, **Playwright**, **Superdesign**, **UI-UX-pro-max**, **ponytail**, **21st** and **shadcn-ui**.
 - **Astro** with **Tailwind CSS** and **GSAP** (ScrollTrigger) for motion.
 - **Supabase JS** for auth and data. Anon key only — never the service_role key.
 - **MapLibre GL JS** for maps in the creator portal.
