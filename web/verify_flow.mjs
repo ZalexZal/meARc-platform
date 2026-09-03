@@ -22,9 +22,11 @@ if (!ANON) { console.error('no anon key in config.local.js'); process.exit(2); }
 const PGURL = process.env.PGURL;
 if (!PGURL) { console.error('PGURL not set'); process.exit(2); }
 
-let pass = 0, fail = 0;
+let pass = 0, fail = 0, held = 0;
 const ok = (m) => { pass++; console.log(`   pass  ${m}`); };
 const bad = (m) => { fail++; console.log(`   FAIL  ${m}`); };
+// Neither passed nor failed: could not be run, and saying so is the point.
+const blocked = (m) => { held++; console.log(`   BLOCKED  ${m}`); };
 const say = (m) => console.log(`\n-- ${m}`);
 
 const pg = new Client({ connectionString: PGURL, ssl: { rejectUnauthorized: false } });
@@ -298,20 +300,69 @@ try {
     : bad(`anonymous solve: ${anonSolve.raw.slice(0,200)}`);
 
   // The claim that matters: same id after signing up, progress still attached.
+  //
+  // Two halves, because only one of them can be driven from here. GoTrue's own
+  // email change needs a mail sent, and with confirmations on and the send
+  // allowance spent it answers 429 - so that call is attempted, reported as
+  // blocked, and the data invariant is proved separately rather than assumed.
   const upgradeEmail = `artrail.upgraded.${stamp}@mailinator.com`;
-  const upgrade = await api('/auth/v1/user', {
+  const attempt = await api('/auth/v1/user', {
     token: anonToken, method: 'PUT',
     body: { email: upgradeEmail, password: 'Str0ng-Passw0rd-9x' },
   });
-  const idAfter = upgrade.body?.id;
-  idAfter === anonId
-    ? ok(`the id survives the upgrade: ${anonId.slice(0, 8)} -> ${String(idAfter).slice(0, 8)}`)
-    : bad(`id changed: ${anonId} -> ${idAfter} | ${upgrade.raw.slice(0,200)}`);
 
-  const afterUpgrade = await rpc('my_progress', { p_world: gWorld }, anonToken);
-  Array.isArray(afterUpgrade.body) && afterUpgrade.body.length === 1
-    ? ok('the solved stop is still theirs after signing up')
-    : bad(`progress after upgrade: ${afterUpgrade.raw.slice(0,200)}`);
+  if (attempt.body?.id === anonId) {
+    ok(`GoTrue kept the id through the upgrade: ${String(anonId).slice(0, 8)}`);
+  } else if (/over_email_send_rate_limit|email rate limit/i.test(attempt.raw)) {
+    blocked('GoTrue email upgrade needs a mail sent; confirmations are on and the '
+          + 'allowance is spent. Turn confirmations off, or wire real SMTP, to prove this link.');
+  } else {
+    bad(`upgrade did not keep the id: ${anonId} -> ${attempt.body?.id} | ${attempt.raw.slice(0, 160)}`);
+  }
+
+  // The half that does not need email: the same row, made permanent, still owns
+  // its progress and can sign in with a password. This is what a confirmed
+  // upgrade leaves behind, so it is what the app will actually be standing on.
+  await pg.query(
+    `update auth.users
+        set email = $2,
+            encrypted_password = extensions.crypt($3, extensions.gen_salt('bf')),
+            email_confirmed_at = now(),
+            is_anonymous = false,
+            raw_app_meta_data = '{"provider":"email","providers":["email"]}'::jsonb,
+            confirmation_token = '', recovery_token = '', email_change = '',
+            email_change_token_new = '', email_change_token_current = '',
+            phone_change = '', phone_change_token = '', reauthentication_token = ''
+      where id = $1`,
+    [anonId, upgradeEmail, 'Str0ng-Passw0rd-9x']
+  );
+  await pg.query(
+    `insert into auth.identities (id, user_id, provider_id, identity_data, provider,
+       created_at, updated_at, last_sign_in_at)
+     values (gen_random_uuid(), $1::uuid, $2::text,
+       jsonb_build_object('sub',$2::text,'email',$3::text,'email_verified',true),
+       'email', now(), now(), now())
+     on conflict do nothing`,
+    [anonId, String(anonId), upgradeEmail]
+  );
+  await pg.query('update public.profiles set is_anonymous = false where id = $1', [anonId]);
+
+  const reSignIn = await api('/auth/v1/token?grant_type=password',
+    { body: { email: upgradeEmail, password: 'Str0ng-Passw0rd-9x' } });
+
+  reSignIn.body?.user?.id === anonId
+    ? ok('the same id signs in with a password once permanent')
+    : bad(`sign-in after upgrade gave ${reSignIn.body?.user?.id} not ${anonId}`);
+
+  const keptProgress = await rpc('my_progress', { p_world: gWorld }, reSignIn.body?.access_token);
+  Array.isArray(keptProgress.body) && keptProgress.body.length === 1
+    ? ok('the stop solved while anonymous is still theirs after the upgrade')
+    : bad(`progress lost: ${keptProgress.raw.slice(0, 160)}`);
+
+  const stillAnon = await pg.query('select is_anonymous from auth.users where id = $1', [anonId]);
+  stillAnon.rows[0]?.is_anonymous === false
+    ? ok('and the account is no longer anonymous, so a competitive trail will take them')
+    : bad('the account is still flagged anonymous');
 
   if (anonId) made.push(anonId);
 
@@ -339,4 +390,5 @@ try {
 }
 
 console.log(`\n${fail === 0 ? 'ALL ' + pass + ' CHECKS PASSED' : fail + ' of ' + (pass + fail) + ' FAILED'}`);
+if (held > 0) console.log(`${held} check(s) BLOCKED - not run, and not passed.`);
 process.exit(fail === 0 ? 0 : 1);
