@@ -114,13 +114,28 @@ for (const theme of ['light', 'dark']) {
           body: document.fonts.check('400 1rem Onest'),
           mono: document.fonts.check('400 1rem "JetBrains Mono"'),
           cyrillic: document.fonts.check('600 2rem Unbounded', 'Часовниковата кула'),
+          // .data is the only thing that asks for the mono face, and it has to
+          // be on screen to ask: sign-up's single .data element is the hidden
+          // error line, and a hidden element fetches no font.
+          usesMono: Array.from(document.querySelectorAll('.data'))
+            .some((el) => el.getClientRects().length > 0),
         };
       });
+      const usesMono = fonts.usesMono;
+      delete fonts.usesMono;
       for (const [k, v] of Object.entries(fonts)) {
         // Google Fonts serves one file per script. An English page contains no
         // Cyrillic, so that file is never fetched and check() is correctly
         // false - which is not the same as the face lacking the glyphs.
         if (k === 'cyrillic' && p.name.endsWith('-en')) continue;
+
+        // And the same for mono, for the same reason. A browser fetches a
+        // webfont when something on the page uses it, so check() is correctly
+        // false on a page with no .data element - the legal pages, sign-in and
+        // sign-up became those the moment the footer stopped printing a pair of
+        // coordinates under the logo. That string was the only mono text on
+        // them, so this had been asserting the presence of a decoration.
+        if (k === 'mono' && !usesMono) continue;
         v ? pass(`font ${k} loaded`) : fail(`font ${k} did NOT load - falling back`);
       }
 

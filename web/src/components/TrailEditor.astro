@@ -36,6 +36,7 @@ const strings = {
   bSolved: t('board.solved'), time: t('board.time'),
   overlap: t('ed.overlap'), remove: t('ed.remove'), hintCost: t('ed.hintCost'),
   uploading: t('ed.uploading'), tooBig: t('ed.tooBig'),
+  reorderFailed: t('ed.reorderFailed'),
   boardHref: href('/board'),
 };
 ---
@@ -138,10 +139,6 @@ const strings = {
             <label class="block text-sm">
               <span class="mb-1 block font-medium">{t('ed.radius')}</span>
               <input class="field data" name="radius" inputmode="numeric" />
-            </label>
-            <label class="block text-sm">
-              <span class="mb-1 block font-medium">{t('ed.step')}</span>
-              <input class="field data" name="step" inputmode="numeric" placeholder="—" />
             </label>
           </div>
           <p class="text-xs text-[var(--ink-faint)]">{t('ed.radiusHint')}</p>
@@ -452,7 +449,6 @@ const strings = {
     (field('lat') as HTMLInputElement).value = String(m.lat ?? '');
     (field('lng') as HTMLInputElement).value = String(m.lng ?? '');
     (field('radius') as HTMLInputElement).value = String(m.radius_m ?? 100);
-    (field('step') as HTMLInputElement).value = m.step ?? '';
     (field('kind') as HTMLSelectElement).value = m.answer_kind ?? 'none';
     (field('points') as HTMLInputElement).value = String(m.points ?? 10);
     (field('cooldown') as HTMLInputElement).value = String(m.cooldown_seconds ?? 60);
@@ -478,11 +474,14 @@ const strings = {
     text(q('[data-stop-count]'), markers.length ? `(${markers.length})` : '');
     q('[data-stops-empty]')!.toggleAttribute('hidden', markers.length > 0);
 
-    list.innerHTML = markers.map((m) => {
+    list.innerHTML = markers.map((m, i) => {
       const title = m.content?.[S.lang]?.title || m.content?.bg?.title || m.content?.en?.title || '—';
-      return `<li><button type="button" data-pick="${m.id}"
-        class="flex w-full items-center gap-2.5 rounded-lg border border-[var(--line)] px-3 py-2 text-left text-sm transition-colors hover:bg-[var(--surface-2)]">
-        <span class="data w-5 shrink-0 text-xs text-[var(--ink-faint)]">${m.step ?? '·'}</span>
+      // draggable on the li, not on the button: a draggable button swallows its
+      // own click on some browsers, and picking a stop is the commoner action.
+      return `<li draggable="true" data-row="${m.id}" class="rounded-lg transition-opacity">
+        <button type="button" data-pick="${m.id}"
+        class="flex w-full cursor-grab items-center gap-2.5 rounded-lg border border-[var(--line)] px-3 py-2 text-left text-sm transition-colors hover:bg-[var(--surface-2)]">
+        <span class="data w-5 shrink-0 text-xs text-[var(--ink-faint)]">${m.step ?? i + 1}</span>
         <span class="min-w-0 flex-1 truncate">${escapeHtml(title)}</span>
         ${Number(m.hint_count) ? `<span class="data shrink-0 text-2xs text-[var(--ink-faint)]">?${m.hint_count}</span>` : ''}
         ${Number(m.media_count) ? `<span class="data shrink-0 text-2xs text-[var(--ink-faint)]">#${m.media_count}</span>` : ''}
@@ -492,6 +491,8 @@ const strings = {
       </button></li>`;
     }).join('');
 
+    wireDragging(list);
+
     list.querySelectorAll('[data-pick]').forEach((b) =>
       b.addEventListener('click', async () => {
         const id = (b as HTMLElement).dataset.pick!;
@@ -499,6 +500,76 @@ const strings = {
         const m = markers.find((x) => x.id === id);
         if (m) map.easeTo({ center: [m.lng, m.lat], zoom: Math.max(map.getZoom(), 16) });
       }));
+  }
+
+  /// Dragging a stop to a new place in the sequence.
+  ///
+  /// HTML5 drag events rather than a library: the list is a dozen rows of plain
+  /// markup and pointer-based reordering is the kind of thing that works on the
+  /// desk and not on a phone.
+  ///
+  /// The whole order goes to the server, not the pair that swapped. A swap
+  /// needs the client to work out what moved and leaves the trail half-sorted if
+  /// the second write never lands; the sequence the creator is looking at cannot
+  /// disagree with itself.
+  function wireDragging(list: Element) {
+    let from: string | null = null;
+
+    list.querySelectorAll('[data-row]').forEach((row) => {
+      const el = row as HTMLElement;
+
+      el.addEventListener('dragstart', (event) => {
+        from = el.dataset.row!;
+        el.style.opacity = '0.4';
+        (event as DragEvent).dataTransfer?.setData('text/plain', from);
+      });
+
+      el.addEventListener('dragend', () => { from = null; el.style.opacity = ''; });
+
+      // Both of these have to preventDefault or the drop never fires. dragover
+      // fires continuously, so the only work here is the line showing where the
+      // row would land.
+      el.addEventListener('dragover', (event) => {
+        event.preventDefault();
+        if (!from || el.dataset.row === from) return;
+        const box = el.getBoundingClientRect();
+        const above = (event as DragEvent).clientY < box.top + box.height / 2;
+        el.style.boxShadow = above
+          ? 'inset 0 2px 0 0 var(--signal)'
+          : 'inset 0 -2px 0 0 var(--signal)';
+      });
+
+      el.addEventListener('dragleave', () => { el.style.boxShadow = ''; });
+
+      el.addEventListener('drop', async (event) => {
+        event.preventDefault();
+        el.style.boxShadow = '';
+
+        const moved = from;
+        const onto = el.dataset.row!;
+        if (!moved || moved === onto) return;
+
+        const box = el.getBoundingClientRect();
+        const above = (event as DragEvent).clientY < box.top + box.height / 2;
+
+        const order = markers.map((m) => m.id).filter((id) => id !== moved);
+        const at = order.indexOf(onto);
+        order.splice(above ? at : at + 1, 0, moved);
+
+        // Drawn from the new order before the write, so the row lands under the
+        // cursor immediately. load() below replaces this with the server's word.
+        markers = order.map((id) => markers.find((m) => m.id === id)!);
+        markers.forEach((m, i) => { m.step = i + 1; });
+        drawList();
+
+        const { error } = await client.rpc('reorder_markers', {
+          p_world: worldId, p_ids: order,
+        });
+
+        if (error) { alert(`${S.reorderFailed}\n${error.message}`); }
+        await load();
+      });
+    });
   }
 
   function drawPins() {
@@ -767,7 +838,7 @@ const strings = {
     }
 
     const { error: upErr } = await client.from('markers')
-      .update({ content, step: num('step'), radius_m: num('radius') ?? 100, status: 'published' })
+      .update({ content, radius_m: num('radius') ?? 100, status: 'published' })
       .eq('id', selected);
     if (upErr) { fail(upErr.message); return; }
 

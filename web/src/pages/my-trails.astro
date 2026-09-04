@@ -1,0 +1,10 @@
+---
+import Base from '../layouts/Base.astro';
+import MyTrails from '../components/MyTrails.astro';
+import { langFromUrl, useTranslations } from '../i18n/ui';
+const lang = langFromUrl(Astro.url);
+const t = useTranslations(lang);
+---
+<Base title={t('mine.title') + ' — AR Trail'}>
+  <MyTrails lang={lang} />
+</Base>

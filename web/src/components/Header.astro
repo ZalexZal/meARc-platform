@@ -49,6 +49,18 @@ const links: { label: UIKey; to: string }[] = [
           {t(l.label)}
         </a>
       ))}
+
+      <!-- Only for somebody who has trails. It is revealed by the same script
+           that picks the buttons on the right, so a signed-out visitor never
+           sees a link to a page that would only bounce them to the sign-in. -->
+      <a
+        href={href('/my-trails')}
+        data-auth-in
+        hidden
+        class="rounded-lg px-3 py-2 text-sm text-[var(--ink-dim)] transition-colors hover:bg-[var(--surface-2)] hover:text-[var(--ink)]"
+      >
+        {t('nav.mine')}
+      </a>
     </nav>
 
     <div class="ml-auto flex items-center gap-1.5">
@@ -93,6 +105,9 @@ const links: { label: UIKey; to: string }[] = [
   // Neither pair is visible until this decides, so nobody sees the wrong one.
   const { user, anonymous } = await who();
   const signedIn = Boolean(user) && !anonymous;
-  document.querySelector(signedIn ? '[data-auth-in]' : '[data-auth-out]')
-    ?.removeAttribute('hidden');
+  // querySelectorAll, not querySelector. The nav gained a second [data-auth-in]
+  // and the old single-element version revealed whichever came first in the
+  // document - so the buttons on the right stayed hidden behind the new link.
+  document.querySelectorAll(signedIn ? '[data-auth-in]' : '[data-auth-out]')
+    .forEach((el) => el.removeAttribute('hidden'));
 </script>

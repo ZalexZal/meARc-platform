@@ -9,9 +9,13 @@ const href = localise(lang);
 // The strip the app actually draws at the bottom of its map: where you are, and
 // what the next stop is. Shown here rather than described, because it is the
 // one screen that explains the product without a paragraph.
+// The next stop is the same landmark the route section names, taken from the
+// same key rather than written out again here - the two said different things
+// the moment one of them was edited.
 const strip = lang === 'bg'
-  ? { here: 'Ти си тук', hereMeta: '1 от 3 намерени', next: 'Ески джамия', nextMeta: 'Спирка 2 от 3' }
-  : { here: 'You are here', hereMeta: '1 of 3 found', next: 'Eski Mosque', nextMeta: 'Stop 2 of 3' };
+  ? { here: 'Ти си тук', hereMeta: '1 от 3 намерени', nextMeta: 'Спирка 2 от 3' }
+  : { here: 'You are here', hereMeta: '1 of 3 found', nextMeta: 'Stop 2 of 3' };
+const nextStop = t('stop.2.name');
 ---
 
 <section class="relative overflow-hidden border-b border-[var(--line-soft)]">
@@ -88,7 +92,7 @@ const strip = lang === 'bg'
             <div class="flex items-start gap-2.5">
               <span class="mt-1.5 h-2 w-2 shrink-0 rounded-full bg-[var(--lamp)]"></span>
               <div class="min-w-0 flex-1">
-                <p class="truncate text-[13px] font-semibold leading-tight">{strip.next}</p>
+                <p class="truncate text-[13px] font-semibold leading-tight">{nextStop}</p>
                 <p class="truncate text-[11px] text-[var(--ink-faint)]">{strip.nextMeta}</p>
               </div>
               <span class="data shrink-0 text-[12px] text-[var(--signal)]">~180 m</span>
