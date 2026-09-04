@@ -146,6 +146,17 @@ const strings = {
         </div>
 
         <div class="hidden space-y-4 pt-6" data-panel="answer">
+          <div data-when-asked>
+            <p class="text-sm font-medium">{t('ed.question')}</p>
+            <div class="mt-2 grid gap-3 sm:grid-cols-2">
+              <textarea class="field" name="questionBg" rows="2" maxlength="400"
+                        placeholder="BG"></textarea>
+              <textarea class="field" name="questionEn" rows="2" maxlength="400"
+                        placeholder="EN"></textarea>
+            </div>
+            <p class="mt-1 text-xs text-[var(--ink-faint)]">{t('ed.questionHint')}</p>
+          </div>
+
           <div class="grid gap-3 sm:grid-cols-2">
             <label class="block text-sm">
               <span class="mb-1 block font-medium">{t('ed.answerKind')}</span>
@@ -392,6 +403,7 @@ const strings = {
     q('[data-when-exact]')!.classList.toggle('hidden', kind !== 'exact');
     q('[data-when-choice]')!.classList.toggle('hidden', kind !== 'choice');
     (q('[data-when-scored]') as HTMLElement).style.visibility = kind === 'none' ? 'hidden' : '';
+    (q('[data-when-asked]') as HTMLElement).hidden = kind === 'none';
     q('[data-when-answered]')!.classList.toggle('hidden', kind === 'none');
     q('[data-cooldown-hint]')!.classList.toggle('hidden', kind === 'none');
   }
@@ -453,6 +465,8 @@ const strings = {
     (field('points') as HTMLInputElement).value = String(m.points ?? 10);
     (field('cooldown') as HTMLInputElement).value = String(m.cooldown_seconds ?? 60);
     (field('accepted') as HTMLTextAreaElement).value = (m.accepted ?? []).join('\n');
+    (field('questionBg') as HTMLTextAreaElement).value = m.content?.bg?.question ?? '';
+    (field('questionEn') as HTMLTextAreaElement).value = m.content?.en?.question ?? '';
     (field('afterBg') as HTMLTextAreaElement).value = m.after_text?.bg ?? '';
     (field('afterEn') as HTMLTextAreaElement).value = m.after_text?.en ?? '';
 
@@ -832,6 +846,13 @@ const strings = {
         ...(val('bodyEn') && { body: val('bodyEn') }),
       };
     }
+    if (kind !== 'none') {
+      if (val('questionBg')) content.bg.question = val('questionBg');
+      if (val('questionEn')) {
+        content.en = { ...(content.en ?? {}), question: val('questionEn') };
+      }
+    }
+
     if (kind === 'choice' && kept.length) {
       content.bg.choices = kept.map((c) => c.bg);
       content.en = { ...(content.en ?? {}), choices: kept.map((c) => c.en || c.bg) };
