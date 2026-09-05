@@ -181,6 +181,25 @@ const strings = {
 
           <p class="hidden text-xs text-[var(--ink-faint)]" data-cooldown-hint>{t('ed.cooldownHint')}</p>
 
+          <div data-when-asked-rule>
+            <div class="grid gap-3 sm:grid-cols-2">
+              <label class="block text-sm">
+                <span class="mb-1 block font-medium">{t('ed.onWrong')}</span>
+                <select class="field" name="onWrong">
+                  <option value="retry">{t('ed.wrongRetry')}</option>
+                  <option value="lock">{t('ed.wrongLock')}</option>
+                  <option value="deduct">{t('ed.wrongDeduct')}</option>
+                  <option value="skip">{t('ed.wrongSkip')}</option>
+                </select>
+              </label>
+              <label class="block text-sm" data-when-deduct>
+                <span class="mb-1 block font-medium">{t('ed.deductPoints')}</span>
+                <input class="field data" name="deduct" inputmode="numeric" value="5" />
+              </label>
+            </div>
+            <p class="mt-1 text-xs text-[var(--ink-faint)]">{t('ed.onWrongHint')}</p>
+          </div>
+
           <div class="hidden" data-when-exact>
             <label class="block text-sm">
               <span class="mb-1 block font-medium">{t('ed.accepted')}</span>
@@ -406,6 +425,11 @@ const strings = {
     (q('[data-when-asked]') as HTMLElement).hidden = kind === 'none';
     q('[data-when-answered]')!.classList.toggle('hidden', kind === 'none');
     q('[data-cooldown-hint]')!.classList.toggle('hidden', kind === 'none');
+    (q('[data-when-asked-rule]') as HTMLElement).hidden = kind === 'none';
+
+    // The amount only means anything under the rule that spends it.
+    const rule = (field('onWrong') as HTMLSelectElement)?.value;
+    (q('[data-when-deduct]') as HTMLElement).hidden = rule !== 'deduct';
   }
 
   function drawChoices() {
@@ -436,6 +460,8 @@ const strings = {
   }
 
   field('kind').addEventListener('change', showKindFields);
+  // The deduction box appears and disappears with the rule beside it.
+  field('onWrong').addEventListener('change', showKindFields);
   q('[data-add-choice]')?.addEventListener('click', () => {
     choices.push({ bg: '', en: '', correct: false });
     drawChoices();
@@ -464,6 +490,8 @@ const strings = {
     (field('kind') as HTMLSelectElement).value = m.answer_kind ?? 'none';
     (field('points') as HTMLInputElement).value = String(m.points ?? 10);
     (field('cooldown') as HTMLInputElement).value = String(m.cooldown_seconds ?? 60);
+    (field('onWrong') as HTMLSelectElement).value = m.on_wrong ?? 'retry';
+    (field('deduct') as HTMLInputElement).value = String(m.deduct_points ?? 5);
     (field('accepted') as HTMLTextAreaElement).value = (m.accepted ?? []).join('\n');
     (field('questionBg') as HTMLTextAreaElement).value = m.content?.bg?.question ?? '';
     (field('questionEn') as HTMLTextAreaElement).value = m.content?.en?.question ?? '';
@@ -626,7 +654,7 @@ const strings = {
 
     const { data: answers } = await client
       .from('marker_answers')
-      .select('marker_id,kind,accepted,correct_choices,points,cooldown_seconds,after_text');
+      .select('marker_id,kind,accepted,correct_choices,points,cooldown_seconds,after_text,on_wrong,deduct_points');
     const byId = new Map((answers ?? []).map((a: any) => [a.marker_id, a]));
     markers = (data ?? []).map((m: any) => ({ ...m, ...(byId.get(m.id) ?? {}) }));
 
@@ -896,6 +924,8 @@ const strings = {
         p_correct_choices: kind === 'choice' ? correct : null,
         p_points: num('points') ?? 10,
         p_cooldown_seconds: num('cooldown') ?? (kind === 'free' ? 0 : 60),
+        p_on_wrong: (field('onWrong') as HTMLSelectElement)?.value || 'retry',
+        p_deduct_points: num('deduct') ?? 0,
         p_after_text: after,
       });
       if (aErr) { fail(aErr.message, 'answer'); return; }
