@@ -227,6 +227,19 @@ img, svg, video { max-width: 100%; height: auto; display: block; }
 
 /* The coordinate grid the whole site sits on. Two hairline gradients, no image,
    so it costs nothing and stays sharp at any zoom. */
+/* ---------------------------------------------------------------- components
+
+   In a layer, on purpose.
+
+   These were unlayered, and unlayered CSS beats every @layer - including the
+   utilities layer that @import "tailwindcss" sets up. So `class="btn hidden"`
+   rendered a visible button: .btn's display:inline-flex won against .hidden,
+   and every `hidden sm:inline-flex` on a button in this project was quietly
+   doing nothing. Naming the layer puts these back underneath the utilities,
+   which is the order Tailwind is written to expect.                          */
+
+@layer components {
+
 .map-grid {
   background-image:
     linear-gradient(to right, var(--grid) 1px, transparent 1px),
@@ -331,3 +344,5 @@ img, svg, video { max-width: 100%; height: auto; display: block; }
 
 .reveal { opacity: 0; transform: translateY(18px); }
 .reveal-in { opacity: 1; transform: none; }
+
+}
