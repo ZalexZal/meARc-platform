@@ -45,18 +45,24 @@ const modeNames = lang === 'bg'
   <script
     type="application/json"
     data-trails-strings
-    set:html={JSON.stringify({ modeNames, stops: t('games.stops'), teams: t('games.teams') })}
+    set:html={JSON.stringify({ modeNames,
+      stop: t('n.stop'), stops: t('n.stops'),
+      team: t('n.team'), teams: t('n.teams') })}
   ></script>
 </section>
 
 <script>
   import { db, configured } from '../lib/supabase';
+  import { count } from '../lib/session';
 
   const strings = JSON.parse(
     document.querySelector('[data-trails-strings]')?.textContent || '{}'
   );
   const modeNames = strings.modeNames ?? {};
-  const labels = { stops: strings.stops ?? '', teams: strings.teams ?? '' };
+  const labels = {
+    stop: strings.stop ?? '', stops: strings.stops ?? '',
+    team: strings.team ?? '', teams: strings.teams ?? '',
+  };
 
   const loading = document.querySelector('[data-trails-loading]');
   const empty = document.querySelector('[data-trails-empty]');
@@ -91,7 +97,7 @@ const modeNames = lang === 'bg'
         <span class="eyebrow">${modeNames[trail.mode] ?? trail.mode}</span>
         <h2 class="mt-2 text-xl">${escapeHtml(trail.name)}</h2>
         <p class="data mt-4 text-xs text-[var(--ink-dim)]">
-          ${trail.stop_count} ${labels.stops} · ${trail.team_count} ${labels.teams}
+          ${count(trail.stop_count, labels.stop, labels.stops)} · ${count(trail.team_count, labels.team, labels.teams)}
         </p>
       </li>`).join('');
     only(list);

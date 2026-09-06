@@ -11,6 +11,9 @@ const strings = {
   solved: t('board.solved'), time: t('board.time'), you: t('board.you'),
   provisional: t('board.provisional'), empty: t('ed.boardEmpty'),
   failed: t('games.failed'), pending: t('acct.pending'),
+  code: t('board.code'), noTeams: t('board.noTeams'), alone: t('board.alone'),
+  point: t('n.point'), pointN: t('n.points'),
+  stop: t('n.stop'), stopN: t('n.stops'),
 };
 ---
 
@@ -30,13 +33,21 @@ const strings = {
   <p class="mt-8 hidden text-sm text-[var(--alert)]" data-board-failed>{t('games.failed')}</p>
 
   <div class="scroll-x mt-8"><table class="w-full text-sm" data-board></table></div>
+
+  <!-- Only the owner is served this, so the section is drawn after the call
+       comes back rather than hidden behind a second permission check. -->
+  <div class="mt-20 hidden" data-teams-section>
+    <h2 class="text-2xl">{t('board.teams')}</h2>
+    <p class="mt-2 text-sm text-[var(--ink-dim)]">{t('board.teamsLede')}</p>
+    <div class="mt-8 grid gap-4 sm:grid-cols-2" data-teams></div>
+  </div>
 </section>
 
 <script type="application/json" data-board-strings set:html={JSON.stringify(strings)}></script>
 
 <script>
   import { db, configured } from '../lib/supabase';
-  import { param, escapeHtml, text, duration } from '../lib/session';
+  import { param, escapeHtml, text, duration, count } from '../lib/session';
 
   const S = JSON.parse(document.querySelector('[data-board-strings]')!.textContent || '{}');
   const q = (s: string) => document.querySelector(s);
@@ -88,6 +99,36 @@ const strings = {
             <td class="data py-3 pr-3 text-right text-[var(--ink-dim)]">${r.stops_solved}</td>
             <td class="data py-3 text-right text-[var(--ink-dim)]">${duration(r.elapsed_seconds)}</td>
           </tr>`).join('')}</tbody>`;
+    }
+
+    // world_teams answers the owner and refuses everybody else, so the error
+    // IS the permission check - a walker reading a public board simply never
+    // sees the section.
+    const teams = await client.rpc('world_teams', { p_world: worldId });
+
+    if (!teams.error && teams.data) {
+      q('[data-teams-section]')!.classList.remove('hidden');
+
+      q('[data-teams]')!.innerHTML = teams.data.length === 0
+        ? `<p class="text-sm text-[var(--ink-dim)]">${escapeHtml(S.noTeams)}</p>`
+        : teams.data.map((t: any) => {
+            const names = (t.members ?? []).map((m: any) => escapeHtml(m.name));
+
+            return `<article class="card p-5">
+              <div class="flex items-baseline justify-between gap-3">
+                <h3 class="text-base">${escapeHtml(t.name)}</h3>
+                <!-- Big and monospaced: this gets read out across a schoolyard
+                     to somebody who has lost it. -->
+                <span class="data shrink-0 text-sm tracking-widest">${escapeHtml(t.invite_code)}</span>
+              </div>
+              <p class="mt-3 text-sm text-[var(--ink-dim)]">${
+                names.length > 1 ? names.join(' · ')
+                                 : `${names[0] ?? ''} <span class="eyebrow">${escapeHtml(S.alone)}</span>`}</p>
+              <p class="data mt-3 text-xs text-[var(--ink-faint)]">
+                ${escapeHtml(count(t.points, S.point, S.pointN))} · ${escapeHtml(count(t.solved, S.stop, S.stopN))}
+              </p>
+            </article>`;
+          }).join('');
     }
   }
 </script>

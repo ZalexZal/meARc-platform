@@ -7,7 +7,9 @@ const t = useTranslations(lang);
 const href = localise(lang);
 
 const strings = {
-  stops: t('acct.stops'), points: t('acct.points'), pending: t('acct.pending'),
+  stop: t('n.stop'), stops: t('n.stops'),
+  point: t('n.point'), points: t('n.points'),
+  teamOne: t('n.team'), teamN: t('n.teams'), pending: t('acct.pending'),
   team: t('acct.team'), open: t('games.open'),
   owner: t('acct.role.owner'), editor: t('acct.role.editor'), viewer: t('acct.role.viewer'),
   published: t('ed.published'), draft: t('ed.draft'), board: t('ed.board'),
@@ -86,7 +88,7 @@ const strings = {
 
 <script>
   import { db, signOut } from '../lib/supabase';
-  import { requireUser, reveal, escapeHtml, text } from '../lib/session';
+  import { requireUser, reveal, escapeHtml, text, count } from '../lib/session';
 
   const S = JSON.parse(document.querySelector('[data-acct-strings]')!.textContent || '{}');
   const q = (sel: string) => document.querySelector(sel);
@@ -117,7 +119,7 @@ const strings = {
             <span class="eyebrow shrink-0">${w.status === 'published' ? S.published : S.draft}</span>
           </div>
           <p class="data mt-3 text-xs text-[var(--ink-dim)]">
-            ${w.marker_count} ${S.stops} · ${w.team_count} ${S.team.toLowerCase()}
+            ${count(w.marker_count, S.stop, S.stops)} · ${count(w.team_count, S.teamOne, S.teamN)}
             ${Number(w.pending) > 0
               ? ` · <span style="color:var(--lamp)">${w.pending} ${S.pending}</span>`
               : ''}
@@ -150,7 +152,7 @@ const strings = {
             </p>
           </div>
           <p class="data shrink-0 text-xs text-[var(--ink-dim)]">
-            ${h.stops_solved} ${S.stops} · ${h.points} ${S.points}
+            ${count(h.stops_solved, S.stop, S.stops)} · ${count(h.points, S.point, S.points)}
             ${Number(h.pending) > 0
               ? ` · <span style="color:var(--lamp)">${h.pending} ${S.pending}</span>`
               : ''}
@@ -189,7 +191,7 @@ const strings = {
     if (trails.length) {
       text(cost, S.deleteCost);
       list.innerHTML = trails.map((tr: any) =>
-        `<li>${escapeHtml(tr.name)} — ${tr.markers} ${S.stops}, ${tr.teams} ${escapeHtml(S.team.toLowerCase())}</li>`
+        `<li>${escapeHtml(tr.name)} — ${count(tr.markers, S.stop, S.stops)}, ${count(tr.teams, S.teamOne, S.teamN)}</li>`
       ).join('');
     } else {
       text(cost, '');

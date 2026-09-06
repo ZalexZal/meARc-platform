@@ -73,6 +73,16 @@ export const escapeHtml = (value: unknown) =>
     ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]!);
 
 /** hh:mm:ss from a count of seconds, for elapsed times on a board. */
+/**
+ * A number and the noun it counts.
+ *
+ * Bulgarian and English both split at one, so two forms is the whole of it -
+ * "1 спирка" and "2 спирки". Every count on the site went through the plural
+ * form alone, which is how a trail with a single stop announced "1 спирки".
+ */
+export const count = (n: number, one: string, many: string) =>
+  `${n} ${Number(n) === 1 ? one : many}`;
+
 export function duration(seconds: number | null): string {
   if (seconds === null || seconds === undefined || Number.isNaN(seconds)) return '—';
   const s = Math.max(0, Math.round(seconds));

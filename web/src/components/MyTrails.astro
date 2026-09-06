@@ -10,7 +10,7 @@ const href = localise(lang);
 // script inline, and an inline script is never bundled - so the imports below
 // would silently become a syntax error and the whole page would render nothing.
 const strings = {
-  stops: t('mine.stops'),
+  stop: t('n.stop'), stops: t('n.stops'),
   code: t('mine.code'),
   edit: t('mine.edit'),
   board: t('mine.board'),
@@ -83,7 +83,7 @@ const strings = {
 
 <script>
   import { db } from '../lib/supabase';
-  import { requireUser, reveal, escapeHtml, text } from '../lib/session';
+  import { requireUser, reveal, escapeHtml, text, count } from '../lib/session';
 
   const S = JSON.parse(document.querySelector('[data-mine-strings]')!.textContent || '{}');
   const q = (sel: string) => document.querySelector(sel);
@@ -152,7 +152,7 @@ const strings = {
       </div>
 
       <p class="data mt-3 text-xs text-[var(--ink-dim)]">
-        ${w.marker_count} ${escapeHtml(S.stops)}
+        ${escapeHtml(count(w.marker_count, S.stop, S.stops))}
         ${w.join_code ? ` \u00b7 ${escapeHtml(S.code)} ${escapeHtml(w.join_code)}` : ''}
         ${Number(w.pending) > 0 ? ` \u00b7 <span style="color:var(--lamp)">${w.pending} ${escapeHtml(S.pending)}</span>` : ''}
         ${owner ? '' : ` \u00b7 ${escapeHtml(S.roleEditor)}`}
