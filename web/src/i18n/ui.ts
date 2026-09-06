@@ -21,6 +21,32 @@ export const ui = {
       'Маркери, закотвени по истинските улици. Създай маршрут, дай код и пусни хората да го извървят.',
 
     'nav.how': 'Как работи',
+    'nav.play': 'Как се играе',
+    'play.title': 'Как се играе',
+    'play.lede': 'Всичко, което ти трябва, за да тръгнеш. Отнема около минута преди първата спирка.',
+    'play.need': 'Трябват ти телефон с приложението и кодът на маршрута. Кодът се чете на глас или се раздава на листче.',
+
+    'play.1.title': 'Направи си профил',
+    'play.1.body': 'В приложението, в Профил. Име, поща и парола — около двайсет секунди. Профилът е това, което свързва решените спирки с теб и с отбора ти; без него точките нямат на кого да се запишат.',
+
+    'play.2.title': 'Влез в маршрута',
+    'play.2.body': 'Натисни Маршрути и напиши кода, който са ти дали. Шест знака, малки букви и цифри. Оттам маршрутът остава в списъка ти.',
+
+    'play.3.title': 'Направи или влез в отбор',
+    'play.3.body': 'В Отбор. Ако си пръв — дай име и прочети кода на отбора на останалите. Ако не си — напиши техния код. Колко души събира един отбор, решава този, който е направил маршрута; пише го на екрана.',
+    'play.3.warn': 'Кодът на отбора не е кодът на маршрута. Кодът на маршрута е с малки букви и вкарва всички в една игра. Кодът на отбора е с главни и вкарва трима-четирима в един отбор.',
+
+    'play.4.title': 'Върви до спирката',
+    'play.4.body': 'Картата показва къде са спирките и на колко си от тях. Като наближиш, включи камерата — маркерът стои на самото място. Натискането на маркера е това, което брои за посетена спирка. Отварянето ѝ от картата не брои.',
+
+    'play.5.title': 'Отговори',
+    'play.5.body': 'Ако спирката има въпрос, отговаряш на място. Подсказките помагат, но вадят от точките. Какво става при грешка решава авторът: пак опитваш, чакаш малко, губиш точки или спирката приключва — на екрана пише кое от четирите е.',
+
+    'play.6.title': 'Гледай класацията',
+    'play.6.body': 'Точките на отбора ти се появяват в класацията веднага. При равни точки печели по-бързото време. Отворените въпроси чакат човек да ги погледне и дотогава са отбелязани като чакащи.',
+
+    'play.report.title': 'Ако нещо не е наред',
+    'play.report.body': 'Спирка в частен двор, на опасно място или с обидно съдържание — натисни Сигнал в панела на спирката и избери причина. Отива при хората, които водят маршрута. Скрий маха спирката само за теб.',
     'nav.games': 'Маршрути',
     'nav.board': 'Класация',
     'nav.faq': 'Въпроси',
@@ -351,6 +377,32 @@ export const ui = {
       'Markers anchored to real streets. Build a trail, hand out a code, and let people walk it.',
 
     'nav.how': 'How it works',
+    'nav.play': 'How to play',
+    'play.title': 'How to play',
+    'play.lede': 'Everything you need to set off. About a minute before the first stop.',
+    'play.need': 'You need a phone with the app on it and the trail code. The code gets read out loud or handed round on a slip of paper.',
+
+    'play.1.title': 'Make an account',
+    'play.1.body': 'In the app, under Account. A name, an email and a password — about twenty seconds. The account is what ties the stops you solve to you and to your team; without one the points have nobody to belong to.',
+
+    'play.2.title': 'Join the trail',
+    'play.2.body': 'Press Trails and type the code you were given. Six characters, lower case and digits. After that the trail stays in your list.',
+
+    'play.3.title': 'Make a team, or join one',
+    'play.3.body': 'Under Team. If you are first, give it a name and read its team code out to the others. If you are not, type theirs. How many people a team holds is set by whoever made the trail, and the screen says the number.',
+    'play.3.warn': 'The team code is not the trail code. The trail code is lower case and puts everybody in the same game. The team code is upper case and puts three or four of you on the same team.',
+
+    'play.4.title': 'Walk to a stop',
+    'play.4.body': 'The map shows where the stops are and how far off you are. When you get close, switch to the camera — the marker is standing on the spot itself. Tapping that marker is what counts as visiting the stop. Opening it from the map does not.',
+
+    'play.5.title': 'Answer',
+    'play.5.body': 'If a stop has a question, you answer it there. Hints help and cost points. What happens when you get it wrong is the author’s choice: try again, wait a moment, lose points, or the stop ends — the screen tells you which of the four.',
+
+    'play.6.title': 'Watch the board',
+    'play.6.body': 'Your team’s points appear on the board straight away. Level scores are split by the faster time. Open questions wait for a person to read them and are marked as pending until then.',
+
+    'play.report.title': 'If something is wrong',
+    'play.report.body': 'A stop in somebody’s garden, somewhere unsafe, or with offensive content — press Report on the stop and pick a reason. It goes to the people running the trail. Hide only takes the stop off your own map.',
     'nav.games': 'Trails',
     'nav.board': 'Leaderboard',
     'nav.faq': 'Questions',
