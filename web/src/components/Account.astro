@@ -76,10 +76,8 @@ const strings = {
             </span>
           </label>
           <div class="mt-4 flex gap-2">
-            <button class="btn btn-quiet flex-1" type="button" data-delete-cancel
-                    style="min-height:38px">{t('acct.deleteCancel')}</button>
-            <button class="btn flex-1" type="button" data-delete-confirm
-                    style="min-height:38px;background:var(--alert);color:#fff">
+            <button class="btn btn-quiet btn-sm flex-1" type="button" data-delete-cancel>{t('acct.deleteCancel')}</button>
+            <button class="btn btn-danger btn-sm flex-1" type="button" data-delete-confirm>
               {t('acct.deleteConfirm')}
             </button>
           </div>
@@ -134,9 +132,9 @@ const strings = {
               : ''}
           </p>
           <div class="mt-4 flex gap-2">
-            <a class="btn btn-quiet" style="min-height:38px"
+            <a class="btn btn-quiet btn-sm"
                href="${S.editHref}?id=${encodeURIComponent(w.id)}">${S.open}</a>
-            <a class="btn btn-quiet" style="min-height:38px"
+            <a class="btn btn-quiet btn-sm"
                href="${S.boardHref}?id=${encodeURIComponent(w.id)}">${escapeHtml(S.board)}</a>
           </div>
         </li>`).join('');

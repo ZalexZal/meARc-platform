@@ -25,14 +25,13 @@ const strings = {
 
   <!-- A score that a human can still change has to say so. A board that quietly
        reorders an hour later reads as broken rather than as careful. -->
-  <p class="mt-5 hidden rounded-lg border border-[var(--lamp)] bg-[var(--lamp-wash)] px-4 py-3 text-sm text-[var(--lamp)]"
-     data-board-provisional></p>
+  <p class="note note-lamp mt-5 hidden" data-board-provisional></p>
 
   <p class="mt-8 text-[var(--ink-dim)]" data-board-loading>{t('games.loading')}</p>
   <p class="mt-8 hidden text-[var(--ink-dim)]" data-board-empty>{t('ed.boardEmpty')}</p>
   <p class="mt-8 hidden text-sm text-[var(--alert)]" data-board-failed>{t('games.failed')}</p>
 
-  <div class="scroll-x mt-8"><table class="w-full text-sm" data-board></table></div>
+  <div class="scroll-x mt-8"><table class="table" data-board></table></div>
 
   <!-- Only the owner is served this, so the section is drawn after the call
        comes back rather than hidden behind a second permission check. -->
@@ -82,22 +81,22 @@ const strings = {
       }
 
       (q('[data-board]') as HTMLTableElement).innerHTML = `
-        <thead><tr class="border-b border-[var(--line)] text-left text-xs text-[var(--ink-faint)]">
-          <th class="py-2.5 pr-3">${escapeHtml(S.rank)}</th>
-          <th class="py-2.5 pr-3">${escapeHtml(S.team)}</th>
-          <th class="py-2.5 pr-3 text-right">${escapeHtml(S.points)}</th>
-          <th class="py-2.5 pr-3 text-right">${escapeHtml(S.solved)}</th>
-          <th class="py-2.5 text-right">${escapeHtml(S.time)}</th>
+        <thead><tr>
+          <th>${escapeHtml(S.rank)}</th>
+          <th>${escapeHtml(S.team)}</th>
+          <th class="num">${escapeHtml(S.points)}</th>
+          <th class="num">${escapeHtml(S.solved)}</th>
+          <th class="num">${escapeHtml(S.time)}</th>
         </tr></thead>
         <tbody>${data.map((r: any) => `
-          <tr class="border-b border-[var(--line-soft)] ${r.is_mine ? 'bg-[var(--signal-wash)]' : ''}">
-            <td class="data py-3 pr-3 text-[var(--ink-dim)]">${r.rank}</td>
-            <td class="py-3 pr-3">${escapeHtml(r.team_name)}${
+          <tr class="${r.is_mine ? 'is-mine' : ''}">
+            <td class="data text-[var(--ink-dim)]">${r.rank}</td>
+            <td>${escapeHtml(r.team_name)}${
               r.is_mine ? ` <span class="eyebrow">${escapeHtml(S.you)}</span>` : ''}${
               Number(r.pending) > 0 ? ` <span class="data text-xs" style="color:var(--lamp)">+${r.pending}?</span>` : ''}</td>
-            <td class="data py-3 pr-3 text-right font-medium">${r.points}</td>
-            <td class="data py-3 pr-3 text-right text-[var(--ink-dim)]">${r.stops_solved}</td>
-            <td class="data py-3 text-right text-[var(--ink-dim)]">${duration(r.elapsed_seconds)}</td>
+            <td class="num font-medium">${r.points}</td>
+            <td class="num text-[var(--ink-dim)]">${r.stops_solved}</td>
+            <td class="num text-[var(--ink-dim)]">${duration(r.elapsed_seconds)}</td>
           </tr>`).join('')}</tbody>`;
     }
 

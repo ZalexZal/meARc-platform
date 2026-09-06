@@ -66,7 +66,7 @@ const strings = {
   </div>
 
   <div class="mt-12 hidden" data-rev-failed>
-    <div class="card max-w-lg border-[var(--alert)] p-8">
+    <div class="note note-alert max-w-lg p-8">
       <p class="text-sm text-[var(--alert)]">{t('mine.failed')}</p>
     </div>
   </div>
@@ -118,7 +118,7 @@ const strings = {
             · ${escapeHtml(S.by)} ${escapeHtml(w.owner_email ?? '—')}
           </p>
         </div>
-        <a class="btn btn-quiet shrink-0" style="min-height:38px"
+        <a class="btn btn-quiet btn-sm shrink-0"
            href="${S.editHref}?id=${encodeURIComponent(w.id)}">${escapeHtml(S.open)}</a>
       </div>
 
@@ -131,9 +131,9 @@ const strings = {
       </label>
 
       <div class="mt-4 flex flex-wrap gap-2">
-        <button class="btn btn-primary" style="min-height:38px"
+        <button class="btn btn-primary btn-sm"
                 data-decide="yes" data-id="${w.id}">${escapeHtml(S.approve)}</button>
-        <button class="btn btn-quiet" style="min-height:38px"
+        <button class="btn btn-quiet btn-sm"
                 data-decide="no" data-id="${w.id}">${escapeHtml(S.refuse)}</button>
         <span class="self-center text-xs text-[var(--ink-dim)]" data-status></span>
       </div>
@@ -148,9 +148,9 @@ const strings = {
     // the point; offering Remove for something already gone is not.
     const actions = r.gone
       ? `<span class="text-xs text-[var(--ink-dim)]">${escapeHtml(S.repGone)}</span>`
-      : `<button class="btn" style="min-height:38px;background:var(--alert);color:#fff"
+      : `<button class="btn btn-danger btn-sm"
                  data-report="remove" data-id="${r.id}">${escapeHtml(S.repRemove)}</button>
-         <button class="btn btn-quiet" style="min-height:38px"
+         <button class="btn btn-quiet btn-sm"
                  data-report="dismiss" data-id="${r.id}">${escapeHtml(S.repDismiss)}</button>`;
 
     const where = r.lat != null && r.lng != null

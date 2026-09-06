@@ -95,23 +95,24 @@ const strings = {
     </div>
 
     <div>
-      <p class="card p-6 text-sm text-[var(--ink-dim)]" data-no-selection>{t('ed.selectStop')}</p>
+      <p class="empty" data-no-selection>{t('ed.selectStop')}</p>
 
       <form class="hidden" data-marker-form novalidate>
-        <div class="scroll-x border-b border-[var(--line)]">
-          <div class="flex gap-1" role="tablist">
+        <!-- A segmented control rather than an underline. Five tabs on a laptop
+             read as a row of segments; the same five as underlined text read as
+             a sentence somebody has bolded a word in. -->
+        <div class="tabs" role="tablist">
             {tabs.map((tab, i) => (
               <button
                 type="button" role="tab" data-tab={tab.id}
                 aria-selected={i === 0 ? 'true' : 'false'}
-                class="shrink-0 border-b-2 border-transparent px-3 py-2.5 text-sm font-medium text-[var(--ink-dim)] transition-colors hover:text-[var(--ink)] aria-selected:border-[var(--signal)] aria-selected:text-[var(--ink)]"
+                class="tab"
               >
                 {tab.label}
                 {tab.id === 'hints' && <span class="data ml-1 text-2xs" data-count-hints></span>}
                 {tab.id === 'media' && <span class="data ml-1 text-2xs" data-count-media></span>}
               </button>
             ))}
-          </div>
         </div>
 
         <div class="space-y-4 pt-6" data-panel="basics">
@@ -225,8 +226,7 @@ const strings = {
           <div class="hidden" data-when-choice>
             <p class="mb-2 text-sm font-medium">{t('ed.choices')}</p>
             <div class="space-y-2" data-choices></div>
-            <button class="btn btn-quiet mt-2" type="button" data-add-choice
-                    style="min-height:38px">{t('ed.addChoice')}</button>
+            <button class="btn btn-quiet btn-sm mt-2" type="button" data-add-choice>{t('ed.addChoice')}</button>
             <p class="mt-2 text-xs text-[var(--ink-faint)]">{t('ed.choicesHint')}</p>
           </div>
 
@@ -268,21 +268,23 @@ const strings = {
           <p class="text-sm text-[var(--ink-dim)]" data-media-empty>{t('ed.noMedia')}</p>
           <ul class="space-y-2" data-media></ul>
 
-          <div class="grid gap-3 sm:grid-cols-3">
+          <!-- Two across until there is real room for three: the browser writes
+               "No file chosen" beside the button and owns that text, so the
+               only way to stop it truncating to "N...sen" is to give it width. -->
+          <div class="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
             <div class="card p-4">
               <p class="eyebrow">{t('ed.addPhoto')}</p>
-              <input class="mt-2 w-full text-xs" type="file" accept="image/*" data-file-image />
+              <input class="field mt-2" type="file" accept="image/*" data-file-image />
             </div>
             <div class="card p-4">
               <p class="eyebrow">{t('ed.addAudio')}</p>
-              <input class="mt-2 w-full text-xs" type="file" accept="audio/*" data-file-audio />
+              <input class="field mt-2" type="file" accept="audio/*" data-file-audio />
             </div>
             <div class="card p-4">
               <p class="eyebrow">{t('ed.addVideo')}</p>
               <div class="mt-2 flex gap-2">
                 <input class="field" data-video-url placeholder={t('ed.videoUrl')} />
-                <button class="btn btn-quiet shrink-0" type="button" data-add-video
-                        style="min-height:38px">+</button>
+                <button class="btn btn-quiet btn-sm shrink-0" type="button" data-add-video>+</button>
               </div>
             </div>
           </div>
@@ -292,10 +294,7 @@ const strings = {
                file, because "that did not fit" after a two-minute upload on a
                phone is the wrong moment to find out. -->
           <div class="mt-1" data-media-usage hidden>
-            <div class="h-1.5 w-full overflow-hidden rounded-full bg-[var(--line-soft)]">
-              <div class="h-full rounded-full bg-[var(--signal)] transition-[width]"
-                   style="width:0%" data-media-fill></div>
-            </div>
+            <div class="meter"><span style="width:0%" data-media-fill></span></div>
             <p class="data mt-1.5 text-xs text-[var(--ink-faint)]" data-media-used></p>
           </div>
 
@@ -831,11 +830,20 @@ const strings = {
         : client.storage.from(BUCKET).getPublicUrl(m.path).data.publicUrl;
       const preview = m.kind === 'image'
         ? `<img src="${escapeHtml(url)}" alt="" class="h-12 w-16 shrink-0 rounded object-cover" />`
-        : `<span class="eyebrow shrink-0">${escapeHtml(m.kind)}</span>`;
+        : `<span class="badge badge-quiet shrink-0">${escapeHtml(m.kind)}</span>`;
+
+      // The stored path is <trail>/<stop>/<timestamp>-<name>, which is three
+      // things a creator did not choose and one they did. Only the last is
+      // worth showing: a row reading two uuids tells nobody which photo it is.
+      const label = m.kind === 'link'
+        ? m.path
+        : decodeURIComponent((m.path.split('/').pop() ?? m.path).replace(/^\d+-/, ''));
+
       return `<li class="card flex items-center gap-3 p-3">
         ${preview}
         <a href="${escapeHtml(url)}" target="_blank" rel="noopener"
-           class="min-w-0 flex-1 truncate text-xs text-[var(--signal)] hover:underline">${escapeHtml(m.path)}</a>
+           class="min-w-0 flex-1 truncate text-xs text-[var(--signal)] hover:underline"
+           title="${escapeHtml(m.path)}">${escapeHtml(label)}</a>
         <button type="button" data-del-media="${m.id}" data-path="${m.kind === 'link' ? '' : escapeHtml(m.path)}"
                 class="shrink-0 text-xs text-[var(--alert)] hover:underline">${escapeHtml(S.remove)}</button>
       </li>`;
@@ -1068,8 +1076,8 @@ const strings = {
           <p class="mt-1.5 break-words text-sm">${escapeHtml(r.submitted)}</p>
         </div>
         <div class="flex shrink-0 gap-2">
-          <button class="btn btn-primary" style="min-height:36px" data-accept="${r.submission_id}">${S.accept}</button>
-          <button class="btn btn-quiet" style="min-height:36px;border-color:var(--alert);color:var(--alert)"
+          <button class="btn btn-primary btn-sm" data-accept="${r.submission_id}">${S.accept}</button>
+          <button class="btn btn-danger-quiet btn-sm"
                   data-reject="${r.submission_id}">${S.reject}</button>
         </div>
       </li>`;

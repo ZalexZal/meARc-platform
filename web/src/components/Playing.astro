@@ -24,7 +24,7 @@ const steps = [1, 2, 3, 4, 5, 6] as const;
     <p class="mt-4 text-lg text-[var(--ink-dim)]">{t('play.lede')}</p>
   </header>
 
-  <p class="mt-8 rounded-lg border border-[var(--line)] bg-[var(--surface)] px-4 py-3 text-sm">
+  <p class="note mt-8">
     {t('play.need')}
   </p>
 
@@ -43,7 +43,7 @@ const steps = [1, 2, 3, 4, 5, 6] as const;
           <p class="mt-2 text-[var(--ink-dim)]">{t(`play.${n}.body` as any)}</p>
 
           {n === 3 && (
-            <p class="mt-4 rounded-lg border border-[var(--lamp)] bg-[var(--lamp-wash)] px-4 py-3 text-sm text-[var(--lamp)]">
+            <p class="note note-lamp mt-4">
               {t('play.3.warn')}
             </p>
           )}
