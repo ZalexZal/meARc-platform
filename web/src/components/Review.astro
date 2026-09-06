@@ -16,6 +16,29 @@ const strings = {
   working: t('rev.working'),
   failed: t('mine.failed'),
   editHref: href('/trail'),
+
+  repTitle: t('rep.title'),
+  repLede: t('rep.lede'),
+  repEmpty: t('rep.empty'),
+  repEmptyBody: t('rep.emptyBody'),
+  repMarker: t('rep.marker'),
+  repTrail: t('rep.trail'),
+  repBy: t('rep.by'),
+  repAnon: t('rep.anonymous'),
+  repPlaced: t('rep.placed'),
+  repGone: t('rep.gone'),
+  repRemove: t('rep.remove'),
+  repDismiss: t('rep.dismiss'),
+  repNote: t('rep.note'),
+  repMap: t('rep.map'),
+  reasons: {
+    private_property: t('rep.reason.private_property'),
+    unsafe: t('rep.reason.unsafe'),
+    offensive: t('rep.reason.offensive'),
+    wrong_place: t('rep.reason.wrong_place'),
+    spam: t('rep.reason.spam'),
+    other: t('rep.reason.other'),
+  },
 };
 ---
 
@@ -49,6 +72,24 @@ const strings = {
   </div>
 
   <ul class="mt-12 space-y-5" data-rev-list></ul>
+
+  <!-- The second queue. One page, because a reviewer sits down to review and
+       the two things they review are listings and reports. -->
+  <div class="mt-20 hidden" data-rep-section>
+    <header class="max-w-2xl">
+      <h2 class="text-2xl sm:text-3xl">{t('rep.title')}</h2>
+      <p class="mt-3 text-[var(--ink-dim)]">{t('rep.lede')}</p>
+    </header>
+
+    <div class="mt-8 hidden" data-rep-empty>
+      <div class="card max-w-lg p-8">
+        <h3 class="text-lg">{t('rep.empty')}</h3>
+        <p class="mt-2 text-sm text-[var(--ink-dim)]">{t('rep.emptyBody')}</p>
+      </div>
+    </div>
+
+    <ul class="mt-8 space-y-5" data-rep-list></ul>
+  </div>
 </section>
 
 <p class="mx-auto max-w-4xl px-4 py-24 text-center text-[var(--ink-dim)]" data-rev-loading>
@@ -99,6 +140,54 @@ const strings = {
     </li>`;
   }
 
+  function report(r: any) {
+    const kind = r.target === 'marker' ? S.repMarker : S.repTrail;
+    const reason = S.reasons[r.reason] ?? r.reason;
+
+    // A removed target keeps its report and loses its buttons. The record is
+    // the point; offering Remove for something already gone is not.
+    const actions = r.gone
+      ? `<span class="text-xs text-[var(--ink-dim)]">${escapeHtml(S.repGone)}</span>`
+      : `<button class="btn" style="min-height:38px;background:var(--alert);color:#fff"
+                 data-report="remove" data-id="${r.id}">${escapeHtml(S.repRemove)}</button>
+         <button class="btn btn-quiet" style="min-height:38px"
+                 data-report="dismiss" data-id="${r.id}">${escapeHtml(S.repDismiss)}</button>`;
+
+    const where = r.lat != null && r.lng != null
+      ? `<a class="text-xs underline text-[var(--ink-dim)]" target="_blank" rel="noreferrer"
+            href="https://www.openstreetmap.org/?mlat=${r.lat}&mlon=${r.lng}#map=19/${r.lat}/${r.lng}"
+            >${escapeHtml(S.repMap)}</a>`
+      : '';
+
+    return `<li class="card p-6" data-report-id="${r.id}">
+      <div class="flex flex-wrap items-start justify-between gap-4">
+        <div class="min-w-0">
+          <p class="eyebrow">${escapeHtml(kind)} · ${escapeHtml(reason)}</p>
+          <h3 class="mt-1 text-lg">${escapeHtml(r.title ?? r.trail_name ?? '—')}</h3>
+          ${r.title && r.trail_name
+            ? `<p class="mt-1 text-sm text-[var(--ink-dim)]">${escapeHtml(r.trail_name)}</p>` : ''}
+          ${r.detail
+            ? `<p class="mt-3 break-words text-sm">${escapeHtml(r.detail)}</p>` : ''}
+          <p class="data mt-3 text-xs text-[var(--ink-dim)]">
+            ${escapeHtml(S.repBy)} ${escapeHtml(r.reporter ?? S.repAnon)}
+            ${r.placed_by ? ` · ${escapeHtml(S.repPlaced)} ${escapeHtml(r.placed_by)}` : ''}
+          </p>
+          ${where}
+        </div>
+      </div>
+
+      <label class="mt-5 block text-sm">
+        <span class="mb-1.5 block font-medium">${escapeHtml(S.repNote)}</span>
+        <textarea class="field" rows="2" maxlength="500" data-report-note></textarea>
+      </label>
+
+      <div class="mt-4 flex flex-wrap gap-2">
+        ${actions}
+        <span class="self-center text-xs text-[var(--ink-dim)]" data-report-status></span>
+      </div>
+    </li>`;
+  }
+
   async function load() {
     // is_admin first, so a stranger gets the honest answer rather than an empty
     // queue that looks like "nothing to do".
@@ -123,6 +212,14 @@ const strings = {
 
     q('[data-rev-empty]')!.classList.toggle('hidden', rows.length > 0);
     q('[data-rev-list]')!.innerHTML = rows.map(row).join('');
+
+    // --- the second queue
+    const { data: reports } = await client.rpc('reports_queue', { p_state: 'open' });
+    const open = reports ?? [];
+
+    q('[data-rep-section]')!.classList.remove('hidden');
+    q('[data-rep-empty]')!.classList.toggle('hidden', open.length > 0);
+    q('[data-rep-list]')!.innerHTML = open.map(report).join('');
   }
 
   await load();
@@ -145,6 +242,46 @@ const strings = {
 
     if (error) {
       text(card.querySelector('[data-status]'), error.message);
+      card.querySelectorAll('button').forEach((b) => ((b as HTMLButtonElement).disabled = false));
+      return;
+    }
+
+    await load();
+  });
+
+  document.addEventListener('click', async (event) => {
+    const button = (event.target as HTMLElement)?.closest('[data-report]') as HTMLButtonElement | null;
+    if (!button || button.disabled) return;
+
+    const id = button.dataset.id!;
+    const remove = button.dataset.report === 'remove';
+    const card = document.querySelector(`[data-report-id="${id}"]`)!;
+    const note = (card.querySelector('[data-report-note]') as HTMLTextAreaElement)?.value.trim();
+
+    card.querySelectorAll('button').forEach((b) => ((b as HTMLButtonElement).disabled = true));
+    text(card.querySelector('[data-report-status]'), S.working);
+
+    // Removing closes the report itself, inside remove_marker - so this only
+    // has to resolve when it is NOT removing. Doing both would be a second
+    // write racing the first over the same row.
+    const rows = (await client.rpc('reports_queue', { p_state: 'open' })).data ?? [];
+    const target = rows.find((r: any) => r.id === id);
+
+    let error = null;
+
+    if (remove && target) {
+      const call = target.target === 'marker'
+        ? client.rpc('remove_marker', { p_marker: target.marker_id, p_note: note || null })
+        : client.rpc('remove_world', { p_world: target.world_id, p_note: note || null });
+      error = (await call).error;
+    } else {
+      error = (await client.rpc('resolve_report', {
+        p_report: id, p_state: 'dismissed', p_note: note || null,
+      })).error;
+    }
+
+    if (error) {
+      text(card.querySelector('[data-report-status]'), error.message);
       card.querySelectorAll('button').forEach((b) => ((b as HTMLButtonElement).disabled = false));
       return;
     }
