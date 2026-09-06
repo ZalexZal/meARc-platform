@@ -10,6 +10,7 @@ const strings = {
   stop: t('n.stop'), stops: t('n.stops'),
   point: t('n.point'), points: t('n.points'),
   teamOne: t('n.team'), teamN: t('n.teams'), pending: t('acct.pending'),
+  clearing: t('acct.clearing'),
   team: t('acct.team'), open: t('games.open'),
   owner: t('acct.role.owner'), editor: t('acct.role.editor'), viewer: t('acct.role.viewer'),
   published: t('ed.published'), draft: t('ed.draft'), board: t('ed.board'),
@@ -66,6 +67,14 @@ const strings = {
         <div class="mt-4 hidden" data-delete-panel>
           <p class="text-xs text-[var(--alert)]" data-delete-cost></p>
           <ul class="data mt-2 space-y-1 text-xs text-[var(--ink-dim)]" data-delete-list></ul>
+
+          <label class="mt-4 hidden items-start gap-2 text-sm" data-keep-row>
+            <input type="checkbox" class="mt-0.5" data-keep-trails />
+            <span>
+              <span class="font-medium">{t('acct.keepTrails')}</span>
+              <span class="mt-0.5 block text-xs text-[var(--ink-dim)]">{t('acct.keepTrailsHint')}</span>
+            </span>
+          </label>
           <div class="mt-4 flex gap-2">
             <button class="btn btn-quiet flex-1" type="button" data-delete-cancel
                     style="min-height:38px">{t('acct.deleteCancel')}</button>
@@ -188,6 +197,9 @@ const strings = {
     const cost = q('[data-delete-cost]')!;
     const list = q('[data-delete-list]')!;
 
+    (q('[data-keep-row]') as HTMLElement).classList.toggle('flex', trails.length > 0);
+    (q('[data-keep-row]') as HTMLElement).classList.toggle('hidden', trails.length === 0);
+
     if (trails.length) {
       text(cost, S.deleteCost);
       list.innerHTML = trails.map((tr: any) =>
@@ -207,7 +219,22 @@ const strings = {
   q('[data-delete-confirm]')?.addEventListener('click', async (event) => {
     const button = event.currentTarget as HTMLButtonElement;
     button.disabled = true;
-    const { error } = await client.rpc('delete_my_account');
+
+    const keep = (q('[data-keep-trails]') as HTMLInputElement)?.checked ?? false;
+
+    // The files first, while there is still an account that may_edit can be
+    // asked about. Afterwards the trails are gone and nothing can reach them.
+    if (!keep) {
+      text(q('[data-delete-cost]'), S.clearing);
+      const mine = (await client.rpc('my_worlds')).data ?? [];
+
+      for (const w of mine) {
+        const { data: paths } = await client.rpc('media_paths', { p_world: w.id });
+        if (paths?.length) await client.storage.from('marker-media').remove(paths);
+      }
+    }
+
+    const { error } = await client.rpc('delete_my_account', { p_keep_trails: keep });
     if (error) { button.disabled = false; alert(error.message); return; }
     await signOut();
     location.href = '/';

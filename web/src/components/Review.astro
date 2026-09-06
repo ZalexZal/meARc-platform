@@ -270,6 +270,17 @@ const strings = {
     let error = null;
 
     if (remove && target) {
+      // The pictures before the rows. remove_world deletes the trail outright,
+      // and once it has, media_paths has nothing left to answer about - which
+      // is how a trail taken down for its photos leaves those photos sitting in
+      // a public bucket for anyone who noted the URL.
+      const { data: paths } = await client.rpc('media_paths', {
+        p_world: target.world_id,
+        p_marker: target.target === 'marker' ? target.marker_id : null,
+      });
+
+      if (paths?.length) await client.storage.from('marker-media').remove(paths);
+
       const call = target.target === 'marker'
         ? client.rpc('remove_marker', { p_marker: target.marker_id, p_note: note || null })
         : client.rpc('remove_world', { p_world: target.world_id, p_note: note || null });
