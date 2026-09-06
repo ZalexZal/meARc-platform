@@ -36,6 +36,8 @@ const strings = {
   bSolved: t('board.solved'), time: t('board.time'),
   overlap: t('ed.overlap'), remove: t('ed.remove'), hintCost: t('ed.hintCost'),
   uploading: t('ed.uploading'), tooBig: t('ed.tooBig'),
+  mediaUsed: t('ed.mediaUsed'), mediaFull: t('ed.mediaFull'),
+  mediaWontFit: t('ed.mediaWontFit'),
   reorderFailed: t('ed.reorderFailed'),
   boardHref: href('/board'),
 };
@@ -275,6 +277,18 @@ const strings = {
             </div>
           </div>
           <p class="text-xs text-[var(--ink-faint)]">{t('ed.mediaHint')}</p>
+
+          <!-- A trail's share of the storage. Drawn before anyone chooses a
+               file, because "that did not fit" after a two-minute upload on a
+               phone is the wrong moment to find out. -->
+          <div class="mt-1" data-media-usage hidden>
+            <div class="h-1.5 w-full overflow-hidden rounded-full bg-[var(--line-soft)]">
+              <div class="h-full rounded-full bg-[var(--signal)] transition-[width]"
+                   style="width:0%" data-media-fill></div>
+            </div>
+            <p class="data mt-1.5 text-xs text-[var(--ink-faint)]" data-media-used></p>
+          </div>
+
           <p class="hidden text-sm text-[var(--signal)]" data-upload-status></p>
         </div>
 
@@ -742,6 +756,35 @@ const strings = {
   const BUCKET = 'marker-media';
   const MAX_BYTES = 50 * 1024 * 1024;
 
+  /** Whole megabytes below ten, one decimal above: 0.4 MB, 7.2 MB, 143 MB. */
+  function megabytes(bytes: number) {
+    const mb = bytes / (1024 * 1024);
+    return `${mb >= 10 ? Math.round(mb) : Math.round(mb * 10) / 10} MB`;
+  }
+
+  const usage = { used: 0, cap: 0 };
+
+  async function loadUsage() {
+    if (!worldId) return;
+
+    const { data, error } = await client.rpc('world_media_usage', { p_world: worldId });
+    const row = Array.isArray(data) ? data[0] : data;
+    if (error || !row) return;
+
+    usage.used = Number(row.used_bytes);
+    usage.cap = Number(row.cap_bytes);
+
+    const box = q('[data-media-usage]') as HTMLElement;
+    box.hidden = false;
+
+    // Capped at 100 so a trail that slipped over the line by one file draws a
+    // full bar rather than one that runs out of its own track.
+    const share = usage.cap > 0 ? Math.min(100, (usage.used / usage.cap) * 100) : 0;
+    (q('[data-media-fill]') as HTMLElement).style.width = `${share}%`;
+    text(q('[data-media-used]'),
+         S.mediaUsed.replace('{0}', megabytes(usage.used)).replace('{1}', megabytes(usage.cap)));
+  }
+
   async function loadMedia() {
     if (!selected) return;
     const { data } = await client.from('marker_media')
@@ -771,7 +814,7 @@ const strings = {
         const el = b as HTMLElement;
         if (el.dataset.path) await client.storage.from(BUCKET).remove([el.dataset.path]);
         await client.from('marker_media').delete().eq('id', el.dataset.delMedia!);
-        await Promise.all([loadMedia(), load()]);
+        await Promise.all([loadMedia(), load(), loadUsage()]);
       }));
   }
 
@@ -781,6 +824,20 @@ const strings = {
     const show = (m: string) => { statusEl.textContent = m; statusEl.classList.remove('hidden'); };
 
     if (file.size > MAX_BYTES) { show(S.tooBig); return; }
+
+    // The insert policy refuses a trail that is already at the line; it cannot
+    // refuse one that is under it by a byte, because it does not know how big
+    // the incoming file is. This does, so it does the exact arithmetic and says
+    // so in words rather than letting the upload run and fail.
+    await loadUsage();
+    const free = usage.cap - usage.used;
+
+    if (usage.cap > 0 && free <= 0) { show(S.mediaFull); return; }
+    if (usage.cap > 0 && file.size > free) {
+      show(S.mediaWontFit.replace('{0}', megabytes(free)));
+      return;
+    }
+
     show(S.uploading);
 
     // <world>/<marker>/<file>: the first segment is what the storage policy
@@ -797,7 +854,7 @@ const strings = {
     });
 
     statusEl.classList.add('hidden');
-    await Promise.all([loadMedia(), load()]);
+    await Promise.all([loadMedia(), load(), loadUsage()]);
   }
 
   (q('[data-file-image]') as HTMLInputElement)?.addEventListener('change', (e) => {
@@ -821,7 +878,7 @@ const strings = {
       marker_id: selected, kind: 'link', path: url, ord: existing.length + 1,
     });
     input.value = '';
-    await Promise.all([loadMedia(), load()]);
+    await Promise.all([loadMedia(), load(), loadUsage()]);
   });
 
   // ------------------------------------------------------------------ saving
@@ -1034,4 +1091,8 @@ const strings = {
   }
 
   await Promise.all([loadReview(), loadBoard()]);
+
+  // Last, not beside load(): everything it reads is declared further down this
+  // file, and a const is not readable before its declaration has been reached.
+  await loadUsage();
 </script>
