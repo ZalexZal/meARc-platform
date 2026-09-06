@@ -40,6 +40,13 @@ const strings = {
   mediaWontFit: t('ed.mediaWontFit'),
   reorderFailed: t('ed.reorderFailed'),
   teamSizeHint: t('ed.teamSizeHint'),
+  impNoHeader: t('imp.noHeader'), impNoRows: t('imp.noRows'),
+  impNeedName: t('imp.needName'), impBadCoords: t('imp.badCoords'),
+  impBadKind: t('imp.badKind'), impNeedAccepted: t('imp.needAccepted'),
+  impBadOnWrong: t('imp.badOnWrong'), impDupe: t('imp.dupe'),
+  impRow: t('imp.row'), impReady: t('imp.ready'), impProblems: t('imp.problems'),
+  impImport: t('imp.import'), impImporting: t('imp.importing'),
+  impDone: t('imp.done'), impFailed: t('imp.failed'),
   boardHref: href('/board'),
 };
 ---
@@ -92,6 +99,37 @@ const strings = {
       </h2>
       <p class="mt-2 text-sm text-[var(--ink-dim)]" data-stops-empty hidden>{t('ed.noStops')}</p>
       <ul class="mt-2 space-y-1.5" data-stops></ul>
+
+      <!-- Eight stops with a question each is forty fields typed into five tabs.
+           A creator who already has them in a spreadsheet should not have to. -->
+      <details class="card mt-6 p-4" data-import>
+        <summary class="cursor-pointer text-sm font-semibold">{t('imp.title')}</summary>
+
+        <p class="mt-3 text-xs text-[var(--ink-dim)]">{t('imp.lede')}</p>
+
+        <button class="btn btn-quiet btn-sm mt-3" type="button" data-imp-template>
+          {t('imp.template')}
+        </button>
+
+        <label class="field-row mt-4">
+          <span class="field-name">{t('imp.paste')}</span>
+          <textarea class="field data" rows="5" data-imp-text
+                    placeholder="name_bg	name_en	text_bg	..."></textarea>
+        </label>
+
+        <label class="field-row mt-3">
+          <span class="field-name">{t('imp.file')}</span>
+          <input class="field" type="file" accept=".csv,text/csv" data-imp-file />
+        </label>
+
+        <div class="mt-3 flex flex-wrap gap-2">
+          <button class="btn btn-quiet btn-sm" type="button" data-imp-check>{t('imp.check')}</button>
+          <button class="btn btn-primary btn-sm hidden" type="button" data-imp-go></button>
+          <span class="self-center text-xs text-[var(--ink-dim)]" data-imp-status></span>
+        </div>
+
+        <ul class="mt-3 space-y-1 text-xs" data-imp-report></ul>
+      </details>
     </div>
 
     <div>
@@ -1135,4 +1173,266 @@ const strings = {
   // Last, not beside load(): everything it reads is declared further down this
   // file, and a const is not readable before its declaration has been reached.
   await loadUsage();
+
+  // ------------------------------------------------------------------ import
+  //
+  // A spreadsheet is the fastest way anybody has ever entered forty fields, and
+  // the builder was asking for them five tabs at a time. One row is one stop.
+  //
+  // Tab-separated as well as comma-separated, because pasting straight out of
+  // Excel gives tabs and telling somebody to "save as CSV first" is a step that
+  // exists only to make the parser's life easier.
+
+  const IMPORT_COLUMNS = [
+    'name_bg', 'name_en', 'text_bg', 'text_en', 'lat', 'lng', 'radius_m',
+    'question_bg', 'question_en', 'kind', 'accepted', 'points',
+    'on_wrong', 'deduct', 'wait_seconds', 'hint_bg', 'hint_en', 'hint_cost',
+  ];
+
+  const KINDS = ['none', 'exact', 'choice', 'free'];
+  const RULES = ['retry', 'lock', 'deduct', 'skip'];
+
+  /**
+   * Splits one delimited line, honouring quotes.
+   *
+   * Written out rather than pulled in: a CSV library is forty kilobytes to
+   * handle a quote and a doubled quote, and those are the only two rules a
+   * spreadsheet export actually uses.
+   */
+  function splitLine(line: string, sep: string): string[] {
+    const out: string[] = [];
+    let field = '';
+    let quoted = false;
+
+    for (let i = 0; i < line.length; i++) {
+      const ch = line[i];
+
+      if (quoted) {
+        if (ch === '"') {
+          if (line[i + 1] === '"') { field += '"'; i++; }
+          else quoted = false;
+        } else field += ch;
+      } else if (ch === '"') {
+        quoted = true;
+      } else if (ch === sep) {
+        out.push(field); field = '';
+      } else field += ch;
+    }
+
+    out.push(field);
+    return out.map((f) => f.trim());
+  }
+
+  function parseSheet(raw: string) {
+    const lines = raw.replace(/\r\n?/g, '\n').split('\n').filter((l) => l.trim().length);
+    if (lines.length === 0) return { error: S.impNoHeader, rows: [] as any[] };
+
+    // Whichever the header line has more of. A name with a comma in it is
+    // common; a name with a tab in it is not.
+    const sep = (lines[0].split('\t').length > lines[0].split(',').length) ? '\t' : ',';
+    const header = splitLine(lines[0], sep).map((h) => h.toLowerCase());
+
+    if (!header.includes('name_bg') || !header.includes('lat')) {
+      return { error: S.impNoHeader, rows: [] as any[] };
+    }
+    if (lines.length === 1) return { error: S.impNoRows, rows: [] as any[] };
+
+    const rows = lines.slice(1).map((line, i) => {
+      const cells = splitLine(line, sep);
+      const row: Record<string, string> = {};
+      header.forEach((h, c) => { row[h] = cells[c] ?? ''; });
+      return { line: i + 2, row };
+    });
+
+    return { error: null as string | null, rows };
+  }
+
+  /** Everything wrong with one row, in the creator's language. */
+  function checkRow(row: Record<string, string>, existing: Set<string>) {
+    const problems: string[] = [];
+    const name = (row.name_bg ?? '').trim();
+
+    if (!name) problems.push(S.impNeedName);
+    else if (existing.has(name.toLowerCase())) problems.push(S.impDupe);
+
+    const lat = Number(row.lat);
+    const lng = Number(row.lng);
+    if (!Number.isFinite(lat) || !Number.isFinite(lng)
+        || Math.abs(lat) > 90 || Math.abs(lng) > 180) {
+      problems.push(S.impBadCoords);
+    }
+
+    const kind = (row.kind ?? '').trim().toLowerCase() || 'none';
+    if (!KINDS.includes(kind)) problems.push(S.impBadKind);
+    if (kind === 'exact' && !(row.accepted ?? '').trim()) problems.push(S.impNeedAccepted);
+
+    const rule = (row.on_wrong ?? '').trim().toLowerCase() || 'retry';
+    if (!RULES.includes(rule)) problems.push(S.impBadOnWrong);
+
+    return problems;
+  }
+
+  let checked: { line: number; row: Record<string, string> }[] = [];
+
+  function impStatus(message: string) {
+    text(q('[data-imp-status]'), message);
+  }
+
+  q('[data-imp-template]')?.addEventListener('click', () => {
+    // One header row and one filled-in example, because an empty template
+    // leaves somebody guessing what "exact" or "lock" are supposed to look like.
+    const example = [
+      'Безистенът', 'The Bezisten', 'Покрит пазар от 15 век', 'A covered market',
+      '42.48412', '26.50598', '25',
+      'Кой век?', 'Which century?', 'exact', '15,XV,петнайсети', '40',
+      'lock', '0', '60', 'Погледни над вратата', 'Look above the door', '5',
+    ];
+    const csv = IMPORT_COLUMNS.join(',') + '\n'
+      + example.map((v) => (v.includes(',') ? `"${v}"` : v)).join(',') + '\n';
+
+    const url = URL.createObjectURL(new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8' }));
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'artrail-stops.csv';
+    a.click();
+    URL.revokeObjectURL(url);
+  });
+
+  (q('[data-imp-file]') as HTMLInputElement)?.addEventListener('change', async (event) => {
+    const file = (event.target as HTMLInputElement).files?.[0];
+    if (!file) return;
+    (q('[data-imp-text]') as HTMLTextAreaElement).value = await file.text();
+  });
+
+  q('[data-imp-check]')?.addEventListener('click', () => {
+    const raw = (q('[data-imp-text]') as HTMLTextAreaElement).value;
+    const report = q('[data-imp-report]')!;
+    const go = q('[data-imp-go]') as HTMLButtonElement;
+
+    checked = [];
+    report.innerHTML = '';
+    go.classList.add('hidden');
+
+    const parsed = parseSheet(raw);
+    if (parsed.error) { impStatus(parsed.error); return; }
+
+    // Names already on the trail, so a second paste of the same sheet is caught
+    // rather than doubling every stop.
+    const existing = new Set(
+      markers.map((m: any) => (m.content?.bg?.title ?? '').trim().toLowerCase()).filter(Boolean));
+
+    const bad: string[] = [];
+
+    for (const entry of parsed.rows) {
+      const problems = checkRow(entry.row, existing);
+
+      if (problems.length) {
+        bad.push(`${S.impRow.replace('{0}', String(entry.line))}: ${problems.join(' · ')}`);
+      } else {
+        checked.push(entry);
+        // A duplicate inside the sheet itself counts too.
+        existing.add((entry.row.name_bg ?? '').trim().toLowerCase());
+      }
+    }
+
+    report.innerHTML = bad
+      .map((b) => `<li class="text-[var(--alert)]">${escapeHtml(b)}</li>`).join('');
+
+    impStatus(`${S.impReady.replace('{0}', String(checked.length))}`
+      + (bad.length ? ` · ${S.impProblems.replace('{0}', String(bad.length))}` : ''));
+
+    if (checked.length) {
+      text(go, S.impImport.replace('{0}', String(checked.length)));
+      go.classList.remove('hidden');
+    }
+  });
+
+  q('[data-imp-go]')?.addEventListener('click', async (event) => {
+    const go = event.currentTarget as HTMLButtonElement;
+    go.disabled = true;
+    impStatus(S.impImporting);
+
+    let made = 0;
+    const failed: string[] = [];
+
+    for (const entry of checked) {
+      const r = entry.row;
+      const kind = (r.kind ?? '').trim().toLowerCase() || 'none';
+
+      const content: Record<string, any> = {
+        bg: { title: r.name_bg.trim(), ...(r.text_bg?.trim() && { body: r.text_bg.trim() }) },
+      };
+      if (r.name_en?.trim() || r.text_en?.trim()) {
+        content.en = {
+          ...(r.name_en?.trim() && { title: r.name_en.trim() }),
+          ...(r.text_en?.trim() && { body: r.text_en.trim() }),
+        };
+      }
+      if (kind !== 'none') {
+        if (r.question_bg?.trim()) content.bg.question = r.question_bg.trim();
+        if (r.question_en?.trim()) {
+          content.en = { ...(content.en ?? {}), question: r.question_en.trim() };
+        }
+      }
+
+      const placed = await client.rpc('place_marker', {
+        p_world: worldId, p_lat: Number(r.lat), p_lng: Number(r.lng),
+        p_content: content, p_status: 'published',
+      });
+
+      const id = Array.isArray(placed.data) ? placed.data[0]?.id : (placed.data as any)?.id;
+
+      if (placed.error || !id) {
+        failed.push(`${S.impRow.replace('{0}', String(entry.line))}: `
+          + (placed.error?.message ?? S.impFailed));
+        continue;
+      }
+
+      const radius = Number(r.radius_m);
+      if (Number.isFinite(radius) && radius > 0) {
+        await client.from('markers').update({ radius_m: radius }).eq('id', id);
+      }
+
+      if (kind !== 'none') {
+        const accepted = (r.accepted ?? '').split(',').map((x) => x.trim()).filter(Boolean);
+        const answer = await client.rpc('set_marker_answer', {
+          p_marker: id,
+          p_kind: kind,
+          p_accepted: kind === 'exact' ? accepted : null,
+          p_points: Number(r.points) || 10,
+          p_cooldown_seconds: Number(r.wait_seconds) || null,
+          p_on_wrong: (r.on_wrong ?? '').trim().toLowerCase() || 'retry',
+          p_deduct_points: Number(r.deduct) || 0,
+        });
+
+        if (answer.error) {
+          failed.push(`${S.impRow.replace('{0}', String(entry.line))}: ${answer.error.message}`);
+        }
+      }
+
+      const hintBg = (r.hint_bg ?? '').trim();
+      const hintEn = (r.hint_en ?? '').trim();
+
+      if (hintBg || hintEn) {
+        await client.from('marker_hints').insert({
+          marker_id: id, ord: 1, cost: Number(r.hint_cost) || 0,
+          body: { ...(hintBg && { bg: hintBg }), ...(hintEn && { en: hintEn }) },
+        });
+      }
+
+      made++;
+    }
+
+    q('[data-imp-report]')!.innerHTML = failed
+      .map((f) => `<li class="text-[var(--alert)]">${escapeHtml(f)}</li>`).join('');
+
+    impStatus(S.impDone.replace('{0}', String(made)).replace('{1}', String(failed.length)));
+
+    checked = [];
+    go.classList.add('hidden');
+    go.disabled = false;
+    (q('[data-imp-text]') as HTMLTextAreaElement).value = '';
+
+    await load();
+  });
 </script>
