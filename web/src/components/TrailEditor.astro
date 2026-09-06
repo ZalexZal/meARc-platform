@@ -47,6 +47,12 @@ const strings = {
   impRow: t('imp.row'), impReady: t('imp.ready'), impProblems: t('imp.problems'),
   impImport: t('imp.import'), impImporting: t('imp.importing'),
   impDone: t('imp.done'), impFailed: t('imp.failed'),
+  lvDraft: t('vis.private'), lvDraftHint: t('vis.privateHint'),
+  lvCode: t('vis.unlisted'), lvCodeHint: t('vis.unlistedHint'),
+  lvPublic: t('vis.public'), lvPublicHint: t('vis.publicHint'),
+  lvAsk: t('vis.publicAsk'), lvAskHint: t('vis.publicAskHint'),
+  lvWaiting: t('mine.pending'), lvWaitingBody: t('mine.pendingBody'),
+  lvNote: t('mine.reviewNote'), copy: t('pub.copy'), copied: t('pub.copied'),
   boardHref: href('/board'),
 };
 ---
@@ -65,7 +71,9 @@ const strings = {
     <div class="flex flex-wrap items-center gap-2">
       <div class="card flex items-center gap-2 px-3 py-2">
         <span class="eyebrow">{t('ed.code')}</span>
-        <code class="data text-base font-medium text-[var(--signal)]" data-trail-code></code>
+        <code class="data text-xl font-medium tracking-widest text-[var(--signal)]"
+              data-trail-code></code>
+        <button class="btn btn-ghost btn-sm" type="button" data-copy-code>{t('pub.copy')}</button>
         <button class="text-xs text-[var(--ink-faint)] underline-offset-2 hover:text-[var(--ink)] hover:underline"
                 type="button" data-rotate title={t('ed.rotateHint')}>{t('ed.rotate')}</button>
       </div>
@@ -78,7 +86,19 @@ const strings = {
                data-team-size inputmode="numeric" maxlength="2" />
       </label>
 
-      <button class="btn btn-quiet" type="button" data-publish></button>
+      <!-- The same three rungs My trails offers. There used to be a Publish
+           button here that wrote the same two columns with different words, so a
+           trail could be "published" on one screen and "only me" on the other,
+           and both were telling the truth about a different column. -->
+      <div>
+        <div class="tabs" data-levels>
+          <button class="tab" type="button" data-level="draft">{t('vis.private')}</button>
+          <button class="tab" type="button" data-level="code">{t('vis.unlisted')}</button>
+          <button class="tab" type="button" data-level="public"></button>
+        </div>
+        <p class="mt-1.5 max-w-xs text-xs text-[var(--ink-faint)]" data-level-hint></p>
+        <p class="mt-1.5 hidden max-w-xs text-xs text-[var(--lamp)]" data-level-note></p>
+      </div>
     </div>
   </header>
 
@@ -383,6 +403,7 @@ const strings = {
 <script>
   import { db } from '../lib/supabase';
   import { requireUser, reveal, param, escapeHtml, text, duration } from '../lib/session';
+  import { levelOf, isPending, isListed, setLevel } from '../lib/publishing';
 
   /**
    * MapLibre is loaded from a CDN rather than bundled, which is a decision and
@@ -458,11 +479,41 @@ const strings = {
     sizeBox.value = String(wanted);
   });
 
-  let status = owned.status;
-  const paintStatus = () => {
-    text(q('[data-trail-status]'), status === 'published' ? S.published : S.draft);
-    text(q('[data-publish]'), status === 'published' ? S.unpublish : S.publish);
-  };
+  // The row as the server last described it. Every level change reloads it
+  // rather than predicting it, because request_listing can refuse.
+  let world = { id: worldId, status: owned.status, visibility: owned.visibility,
+                review_note: owned.review_note };
+
+  function paintStatus() {
+    const here = levelOf(world);
+    const waiting = isPending(world);
+    const listed = isListed(world);
+
+    text(q('[data-trail-status]'),
+         here === 'draft' ? S.lvDraft : here === 'code' ? S.lvCode : S.lvPublic);
+
+    qa('[data-level]').forEach((b) => {
+      const level = (b as HTMLElement).dataset.level as 'draft' | 'code' | 'public';
+      b.setAttribute('aria-selected', String(here === level));
+
+      if (level === 'public') text(b, listed || waiting ? S.lvPublic : S.lvAsk);
+    });
+
+    text(q('[data-level-hint]'),
+         waiting ? S.lvWaitingBody
+         : here === 'draft' ? S.lvDraftHint
+         : here === 'code' ? S.lvCodeHint
+         : listed ? S.lvPublicHint : S.lvAskHint);
+
+    // A refusal comes with a sentence. Not showing it leaves somebody pressing
+    // the same button again wondering why nothing happened the first time.
+    const note = q('[data-level-note]');
+    if (note) {
+      text(note, world.review_note ? `${S.lvNote} ${world.review_note}` : '');
+      note.classList.toggle('hidden', !world.review_note);
+    }
+  }
+
   paintStatus();
 
   q('[data-editor-loading]')?.remove();
@@ -1086,14 +1137,28 @@ const strings = {
     text(q('[data-trail-code]'), data);
   });
 
-  q('[data-publish]')?.addEventListener('click', async () => {
-    const next = status === 'published' ? 'draft' : 'published';
-    const { error } = await client.from('worlds')
-      .update({ status: next, visibility: next === 'published' ? 'unlisted' : 'private' })
-      .eq('id', worldId);
-    if (error) { alert(error.message); return; }
-    status = next;
+  q('[data-levels]')?.addEventListener('click', async (event) => {
+    const button = (event.target as HTMLElement)?.closest('[data-level]') as HTMLButtonElement | null;
+    if (!button || button.disabled) return;
+
+    const wanted = button.dataset.level as 'draft' | 'code' | 'public';
+    const failed = await setLevel(client, world, wanted);
+    if (failed) { alert(failed); return; }
+
+    const { data: again } = await client
+      .from('worlds').select('status,visibility,review_note').eq('id', worldId).single();
+
+    if (again) world = { ...world, ...again };
     paintStatus();
+  });
+
+  q('[data-copy-code]')?.addEventListener('click', async (event) => {
+    const button = event.currentTarget as HTMLElement;
+    try {
+      await navigator.clipboard.writeText(q('[data-trail-code]')!.textContent!.trim());
+      text(button, S.copied);
+      setTimeout(() => text(button, S.copy), 1400);
+    } catch { /* the code is on screen; reading it out still works */ }
   });
 
   // --------------------------------------------------------- review and board
