@@ -14,6 +14,15 @@ const strings = {
   code: t('board.code'), noTeams: t('board.noTeams'), alone: t('board.alone'),
   point: t('n.point'), pointN: t('n.points'),
   stop: t('n.stop'), stopN: t('n.stops'),
+
+  modOpen: t('mod.open'), modClose: t('mod.close'), modLede: t('mod.lede'),
+  skip: t('mod.skip'), skipDo: t('mod.skipDo'), skipHelp: t('mod.skipHelp'),
+  skipPick: t('mod.skipPick'), skipAlready: t('mod.skipAlready'),
+  amount: t('mod.amount'), reason: t('mod.reason'), reasonNeeded: t('mod.reasonNeeded'),
+  pointsLabel: t('mod.points'), pointsDo: t('mod.pointsDo'), pointsHelp: t('mod.pointsHelp'),
+  adjustedBy: t('mod.adjustedBy'),
+  dqDo: t('mod.dqDo'), dqHelp: t('mod.dqHelp'), dqOn: t('mod.dqOn'),
+  undq: t('mod.undq'), modFailed: t('mod.failed'),
 };
 ---
 
@@ -38,7 +47,7 @@ const strings = {
   <div class="mt-20 hidden" data-teams-section>
     <h2 class="text-2xl">{t('board.teams')}</h2>
     <p class="mt-2 text-sm text-[var(--ink-dim)]">{t('board.teamsLede')}</p>
-    <div class="mt-8 grid gap-4 sm:grid-cols-2" data-teams></div>
+    <div class="mt-8 grid items-start gap-4 sm:grid-cols-2" data-teams></div>
   </div>
 </section>
 
@@ -66,19 +75,26 @@ const strings = {
     const trail = Array.isArray(summary.data) ? summary.data[0] : summary.data;
     if (trail?.name) text(q('[data-board-title]'), trail.name);
 
-    const { data, error } = await client.rpc('world_leaderboard', { p_world: worldId });
+    // Drawn as a function because the moderator controls below can change what
+    // it says. A board that keeps the old numbers after somebody has just moved
+    // them is worse than no board: the moderator reads it, sees nothing changed,
+    // and does it again.
+    const drawBoard = async () => {
+      const { data, error } = await client.rpc('world_leaderboard', { p_world: worldId });
 
-    if (error) { only('[data-board-failed]'); }
-    else if (!data || data.length === 0) { only('[data-board-empty]'); }
-    else {
+      if (error) { only('[data-board-failed]'); return; }
+      if (!data || data.length === 0) {
+        only('[data-board-empty]');
+        (q('[data-board]') as HTMLTableElement).innerHTML = '';
+        return;
+      }
+
       only(null);
 
       const waiting = data.reduce((n: number, r: any) => n + Number(r.pending || 0), 0);
-      if (waiting > 0) {
-        const banner = q('[data-board-provisional]')!;
-        text(banner, `${S.provisional} (${waiting} ${S.pending})`);
-        banner.classList.remove('hidden');
-      }
+      const banner = q('[data-board-provisional]')!;
+      banner.classList.toggle('hidden', waiting === 0);
+      if (waiting > 0) text(banner, `${S.provisional} (${waiting} ${S.pending})`);
 
       (q('[data-board]') as HTMLTableElement).innerHTML = `
         <thead><tr>
@@ -98,7 +114,9 @@ const strings = {
             <td class="num text-[var(--ink-dim)]">${r.stops_solved}</td>
             <td class="num text-[var(--ink-dim)]">${duration(r.elapsed_seconds)}</td>
           </tr>`).join('')}</tbody>`;
-    }
+    };
+
+    await drawBoard();
 
     // world_teams answers the owner and refuses everybody else, so the error
     // IS the permission check - a walker reading a public board simply never
@@ -108,26 +126,179 @@ const strings = {
     if (!teams.error && teams.data) {
       q('[data-teams-section]')!.classList.remove('hidden');
 
-      q('[data-teams]')!.innerHTML = teams.data.length === 0
-        ? `<p class="text-sm text-[var(--ink-dim)]">${escapeHtml(S.noTeams)}</p>`
-        : teams.data.map((t: any) => {
-            const names = (t.members ?? []).map((m: any) => escapeHtml(m.name));
+      // The stop list, for the skip control. Fetched once, and only here: a
+      // walker reading a public board never gets past the error above, so the
+      // route is not handed out for the sake of a dropdown.
+      const stops = await client.rpc('trail_markers', { p_world: worldId });
+      const stopList = (stops.data ?? [])
+        .slice()
+        .sort((a: any, b: any) => (a.step ?? 0) - (b.step ?? 0))
+        .map((m: any) => ({
+          id: m.id,
+          label: `${m.step ? m.step + '. ' : ''}${
+            m.content?.[S.lang]?.title || m.content?.bg?.title || m.content?.en?.title || '—'}`,
+        }));
 
-            return `<article class="card p-5">
-              <div class="flex items-baseline justify-between gap-3">
-                <h3 class="text-base">${escapeHtml(t.name)}</h3>
-                <!-- Big and monospaced: this gets read out across a schoolyard
-                     to somebody who has lost it. -->
-                <span class="data shrink-0 text-sm tracking-widest">${escapeHtml(t.invite_code)}</span>
-              </div>
-              <p class="mt-3 text-sm text-[var(--ink-dim)]">${
-                names.length > 1 ? names.join(' · ')
-                                 : `${names[0] ?? ''} <span class="eyebrow">${escapeHtml(S.alone)}</span>`}</p>
-              <p class="data mt-3 text-xs text-[var(--ink-faint)]">
-                ${escapeHtml(count(t.points, S.point, S.pointN))} · ${escapeHtml(count(t.solved, S.stop, S.stopN))}
-              </p>
-            </article>`;
-          }).join('');
+      const drawTeams = (rows: any[]) => {
+        q('[data-teams]')!.innerHTML = rows.length === 0
+          ? `<p class="text-sm text-[var(--ink-dim)]">${escapeHtml(S.noTeams)}</p>`
+          : rows.map((t: any) => {
+              const names = (t.members ?? []).map((m: any) => escapeHtml(m.name));
+              const moved = Number(t.adjusted ?? 0);
+              const out = !!t.disqualified_at;
+
+              return `<article class="card p-5" data-team="${escapeHtml(t.id)}">
+                <div class="flex items-baseline justify-between gap-3">
+                  <h3 class="text-base">${escapeHtml(t.name)}</h3>
+                  <!-- Big and monospaced: this gets read out across a schoolyard
+                       to somebody who has lost it. -->
+                  <span class="data shrink-0 text-sm tracking-widest">${escapeHtml(t.invite_code)}</span>
+                </div>
+                <p class="mt-3 text-sm text-[var(--ink-dim)]">${
+                  names.length > 1 ? names.join(' · ')
+                                   : `${names[0] ?? ''} <span class="eyebrow">${escapeHtml(S.alone)}</span>`}</p>
+                <p class="data mt-3 text-xs text-[var(--ink-faint)]">
+                  ${escapeHtml(count(t.points, S.point, S.pointN))} · ${escapeHtml(count(t.solved, S.stop, S.stopN))}${
+                  // Shown beside the earned total rather than folded into it, so
+                  // a moderator can see their own thumb on the scale.
+                  moved !== 0
+                    ? ` · <span style="color:var(--lamp)">${moved > 0 ? '+' : ''}${moved} ${escapeHtml(S.adjustedBy)}</span>`
+                    : ''}
+                </p>
+                ${out ? `<p class="note note-alert mt-4 text-sm"><strong>${escapeHtml(S.dqOn)}</strong>${
+                  t.disqualified_reason ? ` — ${escapeHtml(t.disqualified_reason)}` : ''}</p>` : ''}
+
+                <button type="button" class="btn btn-quiet btn-sm mt-4" data-mod-toggle>${escapeHtml(S.modOpen)}</button>
+
+                <div class="mt-4 hidden border-t border-[var(--rule)] pt-4" data-mod-panel>
+                  <p class="text-xs text-[var(--ink-faint)]">${escapeHtml(S.modLede)}</p>
+
+                  <div class="mt-4">
+                    <label class="block text-sm">
+                      <span class="mb-1 block font-medium">${escapeHtml(S.skip)}</span>
+                      <select class="field" data-mod-stop>
+                        <option value="">${escapeHtml(S.skipPick)}</option>
+                        ${stopList.map((m: any) =>
+                          `<option value="${escapeHtml(m.id)}">${escapeHtml(m.label)}</option>`).join('')}
+                      </select>
+                    </label>
+                    <p class="mt-1 text-xs text-[var(--ink-faint)]">${escapeHtml(S.skipHelp)}</p>
+                    <button type="button" class="btn btn-quiet btn-sm mt-2" data-mod-skip>${escapeHtml(S.skipDo)}</button>
+                  </div>
+
+                  <div class="mt-6">
+                    <label class="block text-sm">
+                      <span class="mb-1 block font-medium">${escapeHtml(S.pointsLabel)}</span>
+                      <input class="field" type="number" step="1" placeholder="${escapeHtml(S.amount)}" data-mod-amount />
+                    </label>
+                    <input class="field mt-2" type="text" maxlength="200" placeholder="${escapeHtml(S.reason)}" data-mod-reason />
+                    <p class="mt-1 text-xs text-[var(--ink-faint)]">${escapeHtml(S.pointsHelp)}</p>
+                    <button type="button" class="btn btn-quiet btn-sm mt-2" data-mod-adjust>${escapeHtml(S.pointsDo)}</button>
+                  </div>
+
+                  <div class="mt-6">
+                    ${out
+                      ? `<p class="text-xs text-[var(--ink-faint)]">${escapeHtml(S.dqHelp)}</p>
+                         <button type="button" class="btn btn-quiet btn-sm mt-2" data-mod-undq>${escapeHtml(S.undq)}</button>`
+                      : `<label class="block text-sm">
+                           <span class="mb-1 block font-medium">${escapeHtml(S.dqDo)}</span>
+                           <input class="field" type="text" maxlength="200" placeholder="${escapeHtml(S.reason)}" data-mod-dq-reason />
+                         </label>
+                         <p class="mt-1 text-xs text-[var(--ink-faint)]">${escapeHtml(S.dqHelp)}</p>
+                         <button type="button" class="btn btn-danger btn-sm mt-2" data-mod-dq>${escapeHtml(S.dqDo)}</button>`}
+                  </div>
+
+                  <p class="mt-4 hidden text-sm" data-mod-said></p>
+                </div>
+              </article>`;
+            }).join('');
+      };
+
+      drawTeams(teams.data);
+
+      // Bound once on the container, not on the buttons: every action redraws
+      // the cards, and handlers hung on the buttons would be redrawn away.
+      q('[data-teams]')!.addEventListener('click', async (event) => {
+        const target = event.target as HTMLElement;
+        const card = target.closest('[data-team]') as HTMLElement | null;
+        if (!card) return;
+
+        const teamId = card.dataset.team!;
+        const panel = card.querySelector('[data-mod-panel]') as HTMLElement;
+        const said = card.querySelector('[data-mod-said]') as HTMLElement;
+
+        const say = (message: string) => {
+          text(said, message);
+          said.style.color = 'var(--alert)';
+          said.classList.remove('hidden');
+        };
+
+        if (target.closest('[data-mod-toggle]')) {
+          const shut = panel.classList.toggle('hidden');
+          text(target, shut ? S.modOpen : S.modClose);
+          return;
+        }
+
+        // The panel is redrawn from the server after every action rather than
+        // from what the page assumes happened, so a refused write shows as a
+        // card that did not change instead of one that lies.
+        const refresh = async () => {
+          const again = await client.rpc('world_teams', { p_world: worldId });
+          if (!again.error && again.data) drawTeams(again.data);
+          await drawBoard();
+        };
+
+        if (target.closest('[data-mod-skip]')) {
+          const pick = card.querySelector('[data-mod-stop]') as HTMLSelectElement;
+          if (!pick.value) { say(S.skipPick); return; }
+
+          const { data, error } = await client.rpc('moderator_skip',
+            { p_team: teamId, p_marker: pick.value });
+
+          if (error) { say(error.message || S.modFailed); return; }
+          if (data && data.skipped === false) { say(S.skipAlready); return; }
+          await refresh();
+          return;
+        }
+
+        if (target.closest('[data-mod-adjust]')) {
+          const amount = Number((card.querySelector('[data-mod-amount]') as HTMLInputElement).value);
+          const reason = (card.querySelector('[data-mod-reason]') as HTMLInputElement).value.trim();
+
+          if (!amount) { say(S.amount); (card.querySelector('[data-mod-amount]') as HTMLInputElement).focus(); return; }
+          if (!reason) { say(S.reasonNeeded); (card.querySelector('[data-mod-reason]') as HTMLInputElement).focus(); return; }
+
+          const { error } = await client.rpc('moderator_adjust',
+            { p_team: teamId, p_points: Math.trunc(amount), p_reason: reason });
+
+          if (error) { say(error.message || S.modFailed); return; }
+          await refresh();
+          return;
+        }
+
+        if (target.closest('[data-mod-dq]')) {
+          const box = card.querySelector('[data-mod-dq-reason]') as HTMLInputElement;
+          const reason = box.value.trim();
+          // Focused, not just refused. The message is at the bottom of a long
+          // panel and the field it is about is halfway up it.
+          if (!reason) { say(S.reasonNeeded); box.focus(); return; }
+
+          const { error } = await client.rpc('moderator_disqualify',
+            { p_team: teamId, p_reason: reason, p_on: true });
+
+          if (error) { say(error.message || S.modFailed); return; }
+          await refresh();
+          return;
+        }
+
+        if (target.closest('[data-mod-undq]')) {
+          const { error } = await client.rpc('moderator_disqualify',
+            { p_team: teamId, p_reason: null, p_on: false });
+
+          if (error) { say(error.message || S.modFailed); return; }
+          await refresh();
+        }
+      });
     }
   }
 </script>
