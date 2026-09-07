@@ -593,6 +593,57 @@ input[type="file"].field::file-selector-button:hover { border-color: var(--ink-f
   box-shadow: var(--shadow-soft);
 }
 
+/* --------------------------------------------------------------- hue picker
+
+   Every hue, one weight. The strip is the hues at the saturation and lightness
+   the marker will actually be drawn at, so what a creator points at is what
+   they get - a rainbow at full saturation would promise colours this does not
+   hand out.                                                                   */
+
+.hue {
+  position: relative;
+  height: 34px;
+  width: 100%;
+  border-radius: 999px;
+  border: 1px solid var(--line);
+  cursor: pointer;
+  background: linear-gradient(to right,
+    hsl(0 62% 52%), hsl(45 62% 52%), hsl(90 62% 52%), hsl(135 62% 52%),
+    hsl(180 62% 52%), hsl(225 62% 52%), hsl(270 62% 52%), hsl(315 62% 52%),
+    hsl(360 62% 52%));
+}
+
+/* The handle reads on any hue underneath it because it is two rings, one of
+   each, rather than one ring in a colour that some hue will match. */
+.hue-handle {
+  position: absolute;
+  top: 50%;
+  width: 26px;
+  height: 26px;
+  margin: -13px 0 0 -13px;
+  border-radius: 999px;
+  border: 3px solid #fff;
+  box-shadow: 0 0 0 1.5px rgba(0, 0, 0, .55);
+  pointer-events: none;
+}
+
+/* What it will look like on each map. Two swatches rather than one, because a
+   colour that works on a pale street can vanish on a dark one. */
+.hue-proof {
+  display: inline-grid;
+  place-items: center;
+  width: 54px;
+  height: 54px;
+  border-radius: 12px;
+  border: 1px solid var(--line);
+}
+
+.hue-proof > span {
+  width: 26px;
+  height: 26px;
+  border-radius: 999px;
+}
+
 /* ------------------------------------------------------------------ meters */
 
 .meter {

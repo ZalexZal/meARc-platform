@@ -53,6 +53,7 @@ const strings = {
   lvAsk: t('vis.publicAsk'), lvAskHint: t('vis.publicAskHint'),
   lvWaiting: t('mine.pending'), lvWaitingBody: t('mine.pendingBody'),
   lvNote: t('mine.reviewNote'), copy: t('pub.copy'), copied: t('pub.copied'),
+  colourNone: t('ed.colourNone'),
   boardHref: href('/board'),
 };
 ---
@@ -195,6 +196,31 @@ const strings = {
             </label>
           </div>
           <p class="text-xs text-[var(--ink-faint)]">{t('ed.required')}</p>
+
+          <div>
+            <span class="mb-1 block text-sm font-medium">{t('ed.colour')}</span>
+
+            <div class="flex items-center gap-4">
+              <div class="min-w-0 flex-1">
+                <div class="hue" data-hue role="slider" tabindex="0"
+                     aria-label={t('ed.colour')} aria-valuemin="0" aria-valuemax="359">
+                  <span class="hue-handle" data-hue-handle hidden></span>
+                </div>
+                <p class="data mt-1.5 text-xs text-[var(--ink-faint)]" data-hue-value></p>
+              </div>
+
+              <!-- The same dot on a pale street and a dark one, since that is
+                   the only question a creator is really asking. -->
+              <span class="hue-proof" style="background:#e9edee">
+                <span data-hue-proof-light></span>
+              </span>
+              <span class="hue-proof" style="background:#1b2226">
+                <span data-hue-proof-dark></span>
+              </span>
+            </div>
+
+            <p class="mt-2 text-xs text-[var(--ink-faint)]">{t('ed.colourHint')}</p>
+          </div>
         </div>
 
         <div class="hidden space-y-4 pt-6" data-panel="place">
@@ -621,6 +647,10 @@ const strings = {
     (field('lat') as HTMLInputElement).value = String(m.lat ?? '');
     (field('lng') as HTMLInputElement).value = String(m.lng ?? '');
     (field('radius') as HTMLInputElement).value = String(m.radius_m ?? 100);
+
+    // trail_markers already returns colour_hex; nothing has ever written one.
+    hue = hexToHue(m.colour_hex ?? null);
+    paintHue();
     (field('kind') as HTMLSelectElement).value = m.answer_kind ?? 'none';
     (field('points') as HTMLInputElement).value = String(m.points ?? 10);
     (field('cooldown') as HTMLInputElement).value = String(m.cooldown_seconds ?? 60);
@@ -1073,7 +1103,12 @@ const strings = {
     }
 
     const { error: upErr } = await client.from('markers')
-      .update({ content, radius_m: num('radius') ?? 100, status: 'published' })
+      .update({
+        content,
+        radius_m: num('radius') ?? 100,
+        colour_hex: hue === null ? null : hueToHex(hue),
+        status: 'published',
+      })
       .eq('id', selected);
     if (upErr) { fail(upErr.message); return; }
 
@@ -1238,6 +1273,109 @@ const strings = {
   // Last, not beside load(): everything it reads is declared further down this
   // file, and a const is not readable before its declaration has been reached.
   await loadUsage();
+
+  // ------------------------------------------------------------------ colour
+  //
+  // Hue is the creator's; saturation and lightness are not. The app rings every
+  // marker in whichever of black or white shows against it, so the colour never
+  // has to carry its own separation from the map - and holding the weight fixed
+  // is what stops one marker on a trail shouting over the rest.
+
+  const HUE_SAT = 62;
+  const HUE_LIGHT = 52;
+
+  let hue: number | null = null;
+
+  /** HSL to the #rrggbb the markers table stores. */
+  function hueToHex(h: number) {
+    const s = HUE_SAT / 100;
+    const l = HUE_LIGHT / 100;
+    const c = (1 - Math.abs(2 * l - 1)) * s;
+    const x = c * (1 - Math.abs(((h / 60) % 2) - 1));
+    const m = l - c / 2;
+
+    const [r, g, b] =
+      h < 60 ? [c, x, 0] : h < 120 ? [x, c, 0] : h < 180 ? [0, c, x]
+      : h < 240 ? [0, x, c] : h < 300 ? [x, 0, c] : [c, 0, x];
+
+    const two = (v: number) =>
+      Math.round((v + m) * 255).toString(16).padStart(2, '0');
+
+    return `#${two(r)}${two(g)}${two(b)}`;
+  }
+
+  /** The hue of a stored colour, so reopening a stop finds its own handle. */
+  function hexToHue(hex: string | null): number | null {
+    if (!hex || !/^#[0-9a-f]{6}$/i.test(hex)) return null;
+
+    const r = parseInt(hex.slice(1, 3), 16) / 255;
+    const g = parseInt(hex.slice(3, 5), 16) / 255;
+    const b = parseInt(hex.slice(5, 7), 16) / 255;
+
+    const max = Math.max(r, g, b);
+    const min = Math.min(r, g, b);
+    if (max === min) return null;   // a grey has no hue to point at
+
+    const d = max - min;
+    const h = max === r ? ((g - b) / d + (g < b ? 6 : 0))
+            : max === g ? (b - r) / d + 2
+            : (r - g) / d + 4;
+
+    return Math.round(h * 60) % 360;
+  }
+
+  function paintHue() {
+    const handle = q('[data-hue-handle]') as HTMLElement;
+    const strip = q('[data-hue]') as HTMLElement;
+    const light = q('[data-hue-proof-light]') as HTMLElement;
+    const dark = q('[data-hue-proof-dark]') as HTMLElement;
+
+    if (!handle || !strip) return;
+
+    const chosen = hue !== null;
+    handle.hidden = !chosen;
+    strip.setAttribute('aria-valuenow', String(hue ?? 0));
+
+    const hex = chosen ? hueToHex(hue!) : 'transparent';
+
+    if (chosen) handle.style.left = `${(hue! / 359) * 100}%`;
+    if (light) light.style.background = hex;
+    if (dark) dark.style.background = hex;
+
+    text(q('[data-hue-value]'), chosen ? hueToHex(hue!) : S.colourNone);
+  }
+
+  function hueFromEvent(event: PointerEvent | MouseEvent) {
+    const strip = q('[data-hue]') as HTMLElement;
+    const box = strip.getBoundingClientRect();
+    const across = Math.min(Math.max(event.clientX - box.left, 0), box.width);
+
+    hue = Math.round((across / Math.max(box.width, 1)) * 359);
+    paintHue();
+  }
+
+  q('[data-hue]')?.addEventListener('pointerdown', (event) => {
+    const strip = event.currentTarget as HTMLElement;
+    strip.setPointerCapture((event as PointerEvent).pointerId);
+    hueFromEvent(event as PointerEvent);
+  });
+
+  q('[data-hue]')?.addEventListener('pointermove', (event) => {
+    // Only while dragging. buttons is a bitmask and zero means the pointer is
+    // over the strip rather than pressed on it.
+    if ((event as PointerEvent).buttons !== 0) hueFromEvent(event as PointerEvent);
+  });
+
+  // Arrow keys, because a slider that only takes a pointer is not a slider.
+  q('[data-hue]')?.addEventListener('keydown', (event) => {
+    const key = (event as KeyboardEvent).key;
+    const step = key === 'ArrowLeft' ? -5 : key === 'ArrowRight' ? 5 : 0;
+    if (!step) return;
+
+    event.preventDefault();
+    hue = ((hue ?? 0) + step + 360) % 360;
+    paintHue();
+  });
 
   // ------------------------------------------------------------------ import
   //

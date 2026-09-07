@@ -353,6 +353,9 @@ export const ui = {
     'tab.media': 'Медия',
 
     'ed.required': 'Задължително, за да се запази маркерът.',
+    'ed.colour': 'Цвят',
+    'ed.colourHint': 'Приложението рисува пръстен около всеки маркер в черно или бяло — според това кое се вижда по-добре — така че цветът не се губи върху картата. Ти избираш нюанса; наситеността е еднаква за всички, за да не крещи един над друг.',
+    'ed.colourNone': 'Без избран цвят',
     'ed.radius': 'Радиус, м',
     'ed.radiusHint': 'Разстоянието, под което маркерът се отваря. Кръговете на два съседни маркера не бива да се застъпват.',
     'ed.overlap': 'Тези маркери се застъпват:',
@@ -733,6 +736,9 @@ export const ui = {
     'tab.media': 'Media',
 
     'ed.required': 'Required to save the marker.',
+    'ed.colour': 'Colour',
+    'ed.colourHint': 'The app rings every marker in black or white, whichever shows against it, so the colour never gets lost on the map. You pick the hue; the weight is the same for all of them so no one marker shouts over its neighbours.',
+    'ed.colourNone': 'No colour chosen',
     'ed.radius': 'Radius, m',
     'ed.radiusHint': 'The distance below which the marker opens. The circles of two neighbouring markers must not overlap.',
     'ed.overlap': 'These markers overlap:',
