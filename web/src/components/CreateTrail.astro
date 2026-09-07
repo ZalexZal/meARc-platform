@@ -6,11 +6,13 @@ const { lang } = Astro.props;
 const t = useTranslations(lang);
 const href = localise(lang);
 
+// Grouped by what they are, not listed flat. A game keeps score and a walk
+// does not, and that is the first thing a creator is actually choosing between.
 const modes = [
-  { value: 'guide', label: t('new.mode.guide') },
-  { value: 'freefall', label: t('new.mode.freefall') },
-  { value: 'ctf', label: t('new.mode.ctf') },
-  { value: 'educational', label: t('new.mode.educational') },
+  { value: 'ctf', kind: 'games', label: t('new.mode.ctf'), body: t('new.mode.ctf.body') },
+  { value: 'freefall', kind: 'games', label: t('new.mode.freefall'), body: t('new.mode.freefall.body') },
+  { value: 'guide', kind: 'guides', label: t('new.mode.guide'), body: t('new.mode.guide.body') },
+  { value: 'educational', kind: 'guides', label: t('new.mode.educational'), body: t('new.mode.educational.body') },
 ];
 ---
 
@@ -26,14 +28,25 @@ const modes = [
 
     <fieldset>
       <legend class="mb-2 block text-sm font-medium">{t('new.mode')}</legend>
-      <div class="space-y-2">
-        {modes.map((m, i) => (
-          <label class="flex cursor-pointer items-start gap-3 rounded-lg border border-[var(--line)] p-3 transition-colors hover:bg-[var(--surface-2)]">
-            <input class="mt-0.5" type="radio" name="mode" value={m.value} checked={i === 0} />
-            <span class="text-sm">{m.label}</span>
-          </label>
-        ))}
-      </div>
+
+      {['games', 'guides'].map((kind) => (
+        <div class="mb-4">
+          <p class="eyebrow mb-2">{kind === 'games' ? t('new.kind.games') : t('new.kind.guides')}</p>
+
+          <div class="space-y-2">
+            {modes.filter((m) => m.kind === kind).map((m) => (
+              <label class="flex cursor-pointer items-start gap-3 rounded-lg border border-[var(--line)] p-3 transition-colors hover:bg-[var(--surface-2)]">
+                <input class="mt-1" type="radio" name="mode" value={m.value}
+                       checked={m.value === 'ctf'} />
+                <span class="min-w-0">
+                  <span class="block text-sm font-medium">{m.label}</span>
+                  <span class="mt-0.5 block text-xs text-[var(--ink-dim)]">{m.body}</span>
+                </span>
+              </label>
+            ))}
+          </div>
+        </div>
+      ))}
     </fieldset>
 
     <p class="hidden rounded-lg border border-[var(--alert)] bg-[var(--alert-wash)] px-3 py-2.5 text-sm text-[var(--alert)]"

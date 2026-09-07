@@ -54,6 +54,7 @@ const strings = {
   lvWaiting: t('mine.pending'), lvWaitingBody: t('mine.pendingBody'),
   lvNote: t('mine.reviewNote'), copy: t('pub.copy'), copied: t('pub.copied'),
   colourNone: t('ed.colourNone'),
+  revealOff: t('ed.revealOff'),
   boardHref: href('/board'),
 };
 ---
@@ -78,6 +79,13 @@ const strings = {
         <button class="text-xs text-[var(--ink-faint)] underline-offset-2 hover:text-[var(--ink)] hover:underline"
                 type="button" data-rotate title={t('ed.rotateHint')}>{t('ed.rotate')}</button>
       </div>
+      <!-- Only ordered trails have a next marker to withhold, so this is
+           switched off and explained on the two that do not. -->
+      <label class="card flex items-center gap-2 px-3 py-2 text-xs" data-reveal-row>
+        <input type="checkbox" data-reveal />
+        <span>{t('ed.reveal')}</span>
+      </label>
+
       <!-- Beside the code, because both are things you set once for the whole
            trail and then read out to a room. -->
       <label class="card flex items-center gap-2 px-3 py-2 text-xs"
@@ -483,11 +491,32 @@ const strings = {
   text(q('[data-trail-code]'), owned.join_code);
   q('[data-board-link]')!.setAttribute('href', `${S.boardHref}?id=${encodeURIComponent(worldId)}`);
 
-  // Read from the row rather than from my_worlds: adding a column there means
-  // dropping and recreating the function, and nothing else wanted it.
+  // Read from the row rather than from my_worlds: adding columns there means
+  // dropping and recreating the function, and nothing else wanted them.
   const sizeBox = q('[data-team-size]') as HTMLInputElement;
-  const teamSize = await client.from('worlds').select('team_size').eq('id', worldId).single();
-  sizeBox.value = String(teamSize.data?.team_size ?? 4);
+  const settings = await client.from('worlds')
+    .select('team_size,reveal_one_at_a_time,mode').eq('id', worldId).single();
+  sizeBox.value = String(settings.data?.team_size ?? 4);
+
+  // ctf and guide are the ordered pair; the other two have no next marker, so
+  // there is nothing for this switch to withhold.
+  const ordered = ['ctf', 'guide'].includes(settings.data?.mode ?? 'guide');
+  const revealBox = q('[data-reveal]') as HTMLInputElement;
+  const revealRow = q('[data-reveal-row]') as HTMLElement;
+
+  revealBox.checked = Boolean(settings.data?.reveal_one_at_a_time);
+  revealBox.disabled = !ordered;
+  revealRow.classList.toggle('opacity-50', !ordered);
+  if (!ordered) revealRow.title = S.revealOff;
+
+  revealBox.addEventListener('change', async () => {
+    const { error } = await client.from('worlds')
+      .update({ reveal_one_at_a_time: revealBox.checked }).eq('id', worldId);
+
+    // Put the tick back if the server refused, rather than showing a state the
+    // trail is not in.
+    if (error) { revealBox.checked = !revealBox.checked; alert(error.message); }
+  });
 
   sizeBox.addEventListener('change', async () => {
     const wanted = Math.round(Number(sizeBox.value));
