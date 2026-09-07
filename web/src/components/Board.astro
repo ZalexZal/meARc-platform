@@ -168,7 +168,7 @@ const strings = {
                 ${out ? `<p class="note note-alert mt-4 text-sm"><strong>${escapeHtml(S.dqOn)}</strong>${
                   t.disqualified_reason ? ` — ${escapeHtml(t.disqualified_reason)}` : ''}</p>` : ''}
 
-                <button type="button" class="btn btn-quiet btn-sm mt-4" data-mod-toggle>${escapeHtml(S.modOpen)}</button>
+                <button type="button" class="btn btn-quiet mt-4" data-mod-toggle>${escapeHtml(S.modOpen)}</button>
 
                 <div class="mt-4 hidden border-t border-[var(--rule)] pt-4" data-mod-panel>
                   <p class="text-xs text-[var(--ink-faint)]">${escapeHtml(S.modLede)}</p>
@@ -183,7 +183,7 @@ const strings = {
                       </select>
                     </label>
                     <p class="mt-1 text-xs text-[var(--ink-faint)]">${escapeHtml(S.skipHelp)}</p>
-                    <button type="button" class="btn btn-quiet btn-sm mt-2" data-mod-skip>${escapeHtml(S.skipDo)}</button>
+                    <button type="button" class="btn btn-quiet mt-2" data-mod-skip>${escapeHtml(S.skipDo)}</button>
                   </div>
 
                   <div class="mt-6">
@@ -193,19 +193,19 @@ const strings = {
                     </label>
                     <input class="field mt-2" type="text" maxlength="200" placeholder="${escapeHtml(S.reason)}" data-mod-reason />
                     <p class="mt-1 text-xs text-[var(--ink-faint)]">${escapeHtml(S.pointsHelp)}</p>
-                    <button type="button" class="btn btn-quiet btn-sm mt-2" data-mod-adjust>${escapeHtml(S.pointsDo)}</button>
+                    <button type="button" class="btn btn-quiet mt-2" data-mod-adjust>${escapeHtml(S.pointsDo)}</button>
                   </div>
 
                   <div class="mt-6">
                     ${out
                       ? `<p class="text-xs text-[var(--ink-faint)]">${escapeHtml(S.dqHelp)}</p>
-                         <button type="button" class="btn btn-quiet btn-sm mt-2" data-mod-undq>${escapeHtml(S.undq)}</button>`
+                         <button type="button" class="btn btn-quiet mt-2" data-mod-undq>${escapeHtml(S.undq)}</button>`
                       : `<label class="block text-sm">
                            <span class="mb-1 block font-medium">${escapeHtml(S.dqDo)}</span>
                            <input class="field" type="text" maxlength="200" placeholder="${escapeHtml(S.reason)}" data-mod-dq-reason />
                          </label>
                          <p class="mt-1 text-xs text-[var(--ink-faint)]">${escapeHtml(S.dqHelp)}</p>
-                         <button type="button" class="btn btn-danger btn-sm mt-2" data-mod-dq>${escapeHtml(S.dqDo)}</button>`}
+                         <button type="button" class="btn btn-danger mt-2" data-mod-dq>${escapeHtml(S.dqDo)}</button>`}
                   </div>
 
                   <p class="mt-4 hidden text-sm" data-mod-said></p>
