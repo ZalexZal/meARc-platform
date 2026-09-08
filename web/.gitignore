@@ -26,5 +26,6 @@ pnpm-debug.log*
 # Screenshots the check harness writes.
 shots/
 
-# The stale build, kept aside while the node_modules folder is unusable.
-dist_old_sep4/
+
+# One previous build, kept by rebuild.ps1 in case a new one is wrong.
+dist_previous/
