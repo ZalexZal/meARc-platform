@@ -153,11 +153,19 @@ export const ui = {
     'auth.checkInboxBody':
       'Изпратихме връзка за потвърждение. Профилът се активира след като я отвориш.',
 
+    'auth.agreeRead': 'Прочетох и приемам',
+    'auth.agreeTerms': 'Общите условия',
+    'auth.agreeAnd': 'и',
+    'auth.agreePrivacy': 'Политиката за поверителност',
+    'auth.agreeAge':
+      'Ако си под 14 години, профил може да се направи само със съгласието на родител или настойник. Водените маршрути работят и като гост, без профил.',
+
     'err.generic': 'Нещо се обърка. Опитай пак.',
     'err.network': 'Няма връзка със сървъра. Провери интернета и опитай пак.',
     'err.badCredentials': 'Грешен имейл или парола.',
     'err.emailTaken': 'Вече има профил с този имейл. Опитай да влезеш.',
     'err.weakPassword': 'Паролата трябва да е поне 8 знака.',
+    'err.mustAgree': 'Трябва да приемеш условията, за да създадеш профил.',
     'acct.title': 'Профил',
     'acct.signedInAs': 'Влязъл като',
     'acct.signout': 'Излез',
@@ -572,10 +580,18 @@ export const ui = {
     'auth.checkInboxBody':
       'We sent a confirmation link. The account becomes active once you open it.',
 
+    'auth.agreeRead': 'I have read and agree to the',
+    'auth.agreeTerms': 'Terms of Use',
+    'auth.agreeAnd': 'and the',
+    'auth.agreePrivacy': 'Privacy Policy',
+    'auth.agreeAge':
+      'If you are under 14, an account can only be made with the consent of a parent or guardian. Guided trails work as a guest, with no account.',
+
     'err.generic': 'Something went wrong. Try again.',
     'err.network': 'No connection to the server. Check your internet and try again.',
     'err.badCredentials': 'Wrong email or password.',
     'err.emailTaken': 'There is already an account with that email. Try signing in.',
+    'err.mustAgree': 'You need to accept the terms to create an account.',
     'err.weakPassword': 'The password needs to be at least 8 characters.',
     'acct.title': 'Account',
     'acct.signedInAs': 'Signed in as',

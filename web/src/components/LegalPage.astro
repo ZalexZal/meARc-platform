@@ -1,5 +1,6 @@
 ---
 import { type Lang } from '../i18n/ui';
+import { TERMS_VERSION } from '../lib/terms';
 
 interface Props { lang: Lang; kind: 'terms' | 'privacy'; }
 const { lang, kind } = Astro.props;
@@ -7,7 +8,7 @@ const { lang, kind } = Astro.props;
 // The version shown here is the one the app asks people to accept. Changing the
 // text means changing this date and SupabaseConfig.termsVersion together, so the
 // app shows the new terms again rather than holding an old acceptance.
-const VERSION = '2026-09-12';
+const VERSION = TERMS_VERSION;
 
 // Who runs the service and how to reach them. A privacy policy has to name both,
 // and neither is something to guess - see OPERATOR/CONTACT below.

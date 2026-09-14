@@ -106,6 +106,26 @@ export async function signUp(email: string, password: string, displayName?: stri
   };
 }
 
+/**
+ * Records that this account accepted a given version of the terms.
+ *
+ * The app has done this since 0002. The site never did - it did not even link
+ * the terms - so every account made on the website carried terms_version null.
+ * They had agreed to nothing because nothing had asked them. The first real
+ * tester is one of those rows.
+ *
+ * Best effort on purpose. The account exists by the time this runs, and
+ * refusing somebody entry because a bookkeeping call failed is worse than a
+ * missing record the app fills in on its next session.
+ */
+export async function acceptTerms(version: string) {
+  const c = db();
+  if (!c) return { error: 'not-configured' as const };
+
+  const { error } = await c.rpc('accept_terms', { p_version: version });
+  return { error: error?.message ?? null };
+}
+
 export async function signIn(email: string, password: string) {
   const c = db();
   if (!c) return { error: 'not-configured' as const };

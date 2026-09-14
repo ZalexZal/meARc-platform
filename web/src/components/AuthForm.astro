@@ -11,7 +11,8 @@ const up = mode === 'signup';
 <section class="mx-auto flex max-w-md flex-col px-4 py-20 sm:px-6">
   <h1 class="text-3xl">{up ? t('auth.signup.title') : t('auth.signin.title')}</h1>
 
-  <form class="card mt-8 space-y-5 p-6" data-auth-form data-mode={mode} novalidate>
+  <form class="card mt-8 space-y-5 p-6" data-auth-form data-mode={mode}
+        data-agree-error={t("err.mustAgree")} novalidate>
     {up && (
       <div>
         <label class="mb-1.5 block text-sm font-medium" for="name">{t('auth.name')}</label>
@@ -40,6 +41,23 @@ const up = mode === 'signup';
       data-auth-error role="alert"
     ></p>
 
+    {up && (
+      <div class="space-y-2">
+        <label class="flex items-start gap-2.5 text-sm">
+          <input class="mt-1 shrink-0" id="agree" name="agree" type="checkbox" data-auth-agree />
+          <span>
+            {t('auth.agreeRead')}{' '}
+            <a class="font-medium text-[var(--signal)] underline-offset-2 hover:underline"
+               href={href('/terms')} target="_blank" rel="noopener">{t('auth.agreeTerms')}</a>{' '}
+            {t('auth.agreeAnd')}{' '}
+            <a class="font-medium text-[var(--signal)] underline-offset-2 hover:underline"
+               href={href('/privacy')} target="_blank" rel="noopener">{t('auth.agreePrivacy')}</a>.
+          </span>
+        </label>
+        <p class="text-xs text-[var(--ink-faint)]">{t('auth.agreeAge')}</p>
+      </div>
+    )}
+
     <button class="btn btn-primary w-full" type="submit" data-auth-submit>
       {up ? t('auth.submitUp') : t('auth.submitIn')}
     </button>
@@ -61,7 +79,8 @@ const up = mode === 'signup';
 </section>
 
 <script>
-  import { signUp, signIn, configured } from '../lib/supabase';
+  import { signUp, signIn, acceptTerms, configured } from '../lib/supabase';
+  import { TERMS_VERSION } from '../lib/terms';
 
   const form = document.querySelector('[data-auth-form]') as HTMLFormElement | null;
   if (form) {
@@ -91,6 +110,13 @@ const up = mode === 'signup';
       const name = String(data.get('name') ?? '').trim();
 
       if (!email || !password) { show('Fill in both fields.'); return; }
+
+      // Agreeing is an act, not a link somebody walked past.
+      const agree = form.querySelector('[data-auth-agree]') as HTMLInputElement | null;
+      if (mode === 'signup' && agree && !agree.checked) {
+        show(form.dataset.agreeError ?? 'You need to accept the terms.');
+        return;
+      }
       if (mode === 'signup' && password.length < 8) {
         show('The password needs to be at least 8 characters.');
         return;
@@ -108,6 +134,9 @@ const up = mode === 'signup';
       submit.textContent = label;
 
       if (result.error) { show(result.error); return; }
+
+      // Recorded against the account, so the acceptance survives the tick box.
+      if (mode === 'signup') await acceptTerms(TERMS_VERSION);
 
       // Only promise an email when one is actually coming. signUp reports that,
       // and this form ignored it: with confirmations off the account is live at
