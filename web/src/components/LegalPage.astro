@@ -4,60 +4,88 @@ import { type Lang } from '../i18n/ui';
 interface Props { lang: Lang; kind: 'terms' | 'privacy'; }
 const { lang, kind } = Astro.props;
 
-// Written as a plain statement of what the platform does with what it holds,
-// rather than as boilerplate. It is short because the honest version is short,
-// and it is marked as a draft because a lawyer has not read it - saying so is
-// better than implying otherwise by leaving it unlabelled.
-const content = {
+// The version shown here is the one the app asks people to accept. Changing the
+// text means changing this date and SupabaseConfig.termsVersion together, so the
+// app shows the new terms again rather than holding an old acceptance.
+const VERSION = '2026-09-12';
+
+// Who runs the service and how to reach them. A privacy policy has to name both,
+// and neither is something to guess - see OPERATOR/CONTACT below.
+const OPERATOR = { bg: '[име на отговорника]', en: '[name of the operator]' };
+const CONTACT = '[имейл за контакт]';
+
+type Section = readonly [string, string];
+
+const content: Record<'terms' | 'privacy', Record<Lang, { title: string; draft: string; body: readonly Section[] }>> = {
   terms: {
     bg: {
       title: 'Условия за ползване',
-      draft: 'Чернова. Прегледът от юрист предстои преди публичното пускане.',
+      draft: 'Чернова за тестово ползване. Текстът не е прегледан от юрист.',
       body: [
-        ['Какво е това', 'AR Trail е платформа за градски маршрути с добавена реалност. Създателите правят маршрути; ходещите ги извървяват с приложението.'],
-        ['Профилът ти', 'Един профил работи и в сайта, и в приложението. Може да го използваш анонимно за водени и свободни маршрути. За състезателни е нужна регистрация, защото класация без самоличност не значи нищо.'],
-        ['Какво публикуваш', 'Ти отговаряш за съдържанието на маршрутите, които правиш — текст, снимки, въпроси и координати. Не поставяй маркери на частна собственост без разрешение и не изпращай хора на опасни места.'],
-        ['Ходенето е твоя отговорност', 'Маршрутите минават по истински улици. Гледай къде вървиш, спазвай правилата за движение и не използвай приложението докато шофираш.'],
-        ['Прекратяване', 'Можеш да изтриеш профила си по всяко време. Изтриването на профил, който притежава маршрути, изтрива и тях, заедно с маркерите в тях.'],
+        ['Какво е това', `AR Trail е платформа за градски маршрути с добавена реалност. Създателите правят маршрути в сайта; участниците ги извървяват с приложението. Услугата се предоставя от ${OPERATOR.bg} във вида, в който е, в тестов период.`],
+        ['Профил и възраст', 'Един профил работи и в сайта, и в приложението. Можеш да ползваш водени маршрути като гост, без профил. За маршрути с точки и класиране е нужен профил. Ако си под 14 години, профил може да се направи само със съгласието на родител или настойник.'],
+        ['Отбори, точки и значки', 'В игрите се играе в отбори. Точките принадлежат на отбора. Значките и статистиката в профила ти се изчисляват от сървъра според това, което си извървял, и се виждат само от теб. Организаторът на игра може да прекрати играта, да коригира точки и да дисквалифицира отбор при нарушение на правилата.'],
+        ['Какво публикуваш', 'Ти отговаряш за съдържанието на маршрутите, които правиш: текст, снимки, звук, въпроси и координати. Не поставяй маркери на частна собственост без разрешение, не изпращай хора на опасни места и не публикувай чужди лични данни. Можем да скрием или премахнем съдържание, за което има сигнал.'],
+        ['Ходенето е твоя отговорност', 'Маршрутите минават по истински улици. Гледай къде вървиш, спазвай правилата за движение, не влизай в частни имоти и не използвай приложението, докато шофираш или караш колело. Приложението чертае права линия до маркера, а не безопасен път.'],
+        ['Изтриване на профила', 'Можеш да изтриеш профила си по всяко време, с два натиска: от раздела „Ти“ в приложението или от страницата на профила в сайта. Изтриването е окончателно. Маршрутите, които притежаваш, се изтриват заедно с профила, освен ако не избереш да ги оставиш за другите.'],
+        ['Промени', 'Когато променим тези условия, приложението ще ти ги покаже отново и ще те помоли да ги приемеш. Версия на условията: ' + VERSION + '.'],
       ],
     },
     en: {
       title: 'Terms of use',
-      draft: 'Draft. A legal review is still to happen before public launch.',
+      draft: 'Draft for a test run. This text has not been reviewed by a lawyer.',
       body: [
-        ['What this is', 'AR Trail is a platform for augmented-reality city trails. Creators build trails; walkers walk them with the app.'],
-        ['Your account', 'One account works in both the site and the app. You may use it anonymously for guided and freefall trails. Competitive trails need a registered account, because a leaderboard without identity means nothing.'],
-        ['What you publish', 'You are responsible for the content of trails you build — text, images, questions and coordinates. Do not place markers on private property without permission, and do not send people somewhere dangerous.'],
-        ['Walking is your own responsibility', 'Trails run along real streets. Watch where you are going, obey traffic rules, and do not use the app while driving.'],
-        ['Ending it', 'You can delete your account at any time. Deleting an account that owns trails deletes those trails and every marker in them.'],
+        ['What this is', `AR Trail is a platform for augmented-reality city trails. Creators build trails on the website; walkers walk them with the app. The service is provided by ${OPERATOR.en}, as it is, during a test period.`],
+        ['Your account and age', 'One account works on both the website and the app. You can walk guided trails as a guest, without an account. Trails with points and a leaderboard need an account. If you are under 14, an account can only be made with the consent of a parent or guardian.'],
+        ['Teams, points and badges', 'Games are played in teams. Points belong to the team. The badges and numbers on your profile are worked out by the server from what you have walked, and only you can see them. The organiser of a game can end it, adjust points and disqualify a team that breaks the rules.'],
+        ['What you publish', 'You are responsible for the trails you build: text, images, audio, questions and coordinates. Do not place markers on private property without permission, do not send people somewhere dangerous, and do not publish other people\'s personal data. We may hide or remove content that is reported.'],
+        ['Walking is your responsibility', 'Trails run along real streets. Watch where you are going, obey traffic rules, stay out of private property, and do not use the app while driving or cycling. The app draws a straight line to a marker, not a safe route.'],
+        ['Deleting your account', 'You can delete your account at any time, in two taps: from the You tab in the app, or from your account page on the website. Deleting is permanent. Trails you own are deleted with the account unless you choose to leave them for other people.'],
+        ['Changes', 'When these terms change, the app will show them again and ask you to accept them. Terms version: ' + VERSION + '.'],
       ],
     },
   },
   privacy: {
     bg: {
       title: 'Поверителност',
-      draft: 'Чернова. Прегледът от юрист предстои преди публичното пускане.',
+      draft: 'Чернова за тестово ползване. Текстът не е прегледан от юрист.',
       body: [
-        ['Какво пазим', 'Имейл и име за показване. Кои маршрути си отворил, кои спирки си решил и кога. Какво си написал като отговор, включително грешните опити — това е и записът, по който създател може да провери спорна оценка.'],
-        ['Какво не пазим', 'Не следим местоположението ти постоянно. Телефонът пита сървъра какво има наблизо; ние не пазим маршрута, по който си вървял между спирките.'],
-        ['Кой какво вижда', 'Създателят на маршрут вижда отговорите, изпратени към неговия маршрут. Отборът ти вижда своите. Никой друг не вижда нито едните, нито другите. Правилните отговори не се четат от никой клиент.'],
-        ['Училища и непълнолетни', 'Платформата се използва и от училищни групи. Ако си под 16, нужно е съгласие от родител или настойник според българското и европейското законодателство.'],
-        ['Твоите права', 'Можеш да свалиш всичко, което пазим за теб, и да изтриеш профила си. И двете са бутони в профила ти.'],
+        ['Кой отговаря за данните', `Администратор на личните данни е ${OPERATOR.bg}. За всеки въпрос или искане относно данните ти пиши на ${CONTACT}. Отговаряме до един месец.`],
+        ['Какво пазим', 'Имейл, име за показване и дата на създаване на профила. Паролата се пази само като криптографски отпечатък от доставчика ни и ние не можем да я видим. Кои маршрути и отбори си избрал; кои спирки си достигнал и дали през камерата или по GPS; отговорите, които си изпратил, включително грешните; подсказките, които отборът ти е отключил; точките на отбора; сигналите, които си подал; кога и коя версия на условията си приел. Ако правиш маршрути: съдържанието им.'],
+        ['Какво не пазим', 'Не следим местоположението ти постоянно и не пазим пътя, по който си вървял. Телефонът изпраща на сървъра само въпроса „какво има близо до тази точка“ и отговорът не се записва. Не използваме реклами, проследяващи бисквитки или аналитични услуги и не продаваме данни.'],
+        ['Камера и карта', 'Изображението от камерата се обработва на телефона. За да постави маркерите точно, приложението използва Google ARCore Geospatial, който изпраща визуални характеристики и приблизително местоположение към Google според условията на Google. Картите се зареждат от Stadia Maps, които виждат IP адреса ти и показваната област.'],
+        ['Защо и на какво основание', 'За да работи услугата, която ползваш — профил, маршрути, отбори, класиране, значки (чл. 6, пар. 1, б. „б“ от ОРЗД). За безопасност, модериране и предотвратяване на злоупотреби (законен интерес, б. „е“). Когато законът ни задължава (б. „в“). Не взимаме автоматизирани решения с правни последици за теб.'],
+        ['Кой какво вижда', 'Значките и статистиката ти се виждат само от теб. Отборът ти вижда имената на членовете и своите отговори. Създателят на маршрута вижда отговорите към своя маршрут и имената на отборите. Класирането показва имената на отборите. Правилните отговори не се изпращат към телефоните.'],
+        ['Доставчици', 'Supabase (база данни и вход, сървъри в ЕС — Франкфурт), Netlify (сайтът), Stadia Maps (картите) и Google (ARCore). Когато данни се предават извън ЕС, това става по стандартните договорни клаузи на ЕС или Рамката за защита на данните ЕС–САЩ.'],
+        ['Колко дълго', 'Докато имаш профил. При изтриване профилът, членствата, посещенията и значките се изтриват веднага. Отговорите към чужди маршрути остават без име, за да не се разпадне историята на отбора. Технически записи при доставчиците (например IP адреси в логовете) се пазят до 90 дни.'],
+        ['Деца', 'Платформата се ползва и от училищни групи. Под 14 години профил може да се направи само със съгласието на родител или настойник (чл. 25в от Закона за защита на личните данни). Водените маршрути могат да се ползват и като гост, без профил и без имейл.'],
+        ['Твоите права', 'Имаш право на достъп, корекция, изтриване, преносимост, ограничаване и възражение. Името и имейла си сменяш в профила. Всичко, което пазим за теб, сваляш с бутон в сайта. Профила си изтриваш с два натиска в приложението или в сайта. Имаш право и да подадеш жалба до Комисията за защита на личните данни (cpdp.bg).'],
+        ['Сигурност', 'Цялата връзка е криптирана. Всеки ред в базата е достъпен само за онзи, чийто е, чрез правила на самата база данни, а не само в приложението.'],
+        ['Съхранение в браузъра', 'Сайтът пази сесията ти за вход в хранилището на браузъра. Това е задължително, за да останеш влязъл, и не служи за проследяване.'],
+        ['Промени', 'Когато променим тази политика, приложението ще ти я покаже отново. Версия: ' + VERSION + '.'],
       ],
     },
     en: {
       title: 'Privacy',
-      draft: 'Draft. A legal review is still to happen before public launch.',
+      draft: 'Draft for a test run. This text has not been reviewed by a lawyer.',
       body: [
-        ['What we keep', 'Your email and display name. Which trails you opened, which markers you solved and when. What you typed as an answer, including wrong attempts — that is also the record a creator uses to settle a disputed score.'],
-        ['What we do not keep', 'We do not track your location continuously. The phone asks the server what is nearby; we do not store the path you walked between markers.'],
-        ['Who sees what', "A trail's creator sees answers submitted to their trail. Your team sees its own. Nobody else sees either. Correct answers are not readable by any client."],
-        ['Schools and minors', 'The platform is used by school groups. If you are under 16, a parent or guardian must consent, under Bulgarian and EU law.'],
-        ['Your rights', 'You can download everything we hold about you, and delete your account. Both are buttons in your profile.'],
+        ['Who is responsible', `The controller of your personal data is ${OPERATOR.en}. For any question or request about your data, write to ${CONTACT}. We reply within one month.`],
+        ['What we keep', 'Your email, display name and the date your account was made. Your password is held only as a cryptographic hash by our provider, and we cannot see it. Which trails and teams you joined; which stops you reached, and whether through the camera or by GPS; the answers you sent, including wrong ones; the hints your team unlocked; your team\'s points; reports you made; when you accepted which version of the terms. If you build trails: their content.'],
+        ['What we do not keep', 'We do not track your location continuously and we do not store the path you walked. The phone only asks the server "what is near this point", and the answer is not recorded. We use no advertising, no tracking cookies and no analytics, and we do not sell data.'],
+        ['Camera and map', 'The camera image is processed on the phone. To place markers accurately the app uses Google ARCore Geospatial, which sends visual features and your approximate location to Google under Google\'s terms. Maps load from Stadia Maps, which sees your IP address and the area being shown.'],
+        ['Why, and on what basis', 'To run the service you use: account, trails, teams, leaderboards, badges (GDPR Art. 6(1)(b)). For safety, moderation and preventing abuse (legitimate interest, Art. 6(1)(f)). Where the law requires it (Art. 6(1)(c)). We make no automated decisions with legal effects on you.'],
+        ['Who sees what', 'Your badges and numbers are visible only to you. Your team sees its members\' names and its own answers. A trail\'s creator sees answers sent to their trail and the team names. Leaderboards show team names. Correct answers are never sent to phones.'],
+        ['Providers', 'Supabase (database and sign-in, servers in the EU, Frankfurt), Netlify (the website), Stadia Maps (the maps) and Google (ARCore). Where data leaves the EU, it does so under the EU Standard Contractual Clauses or the EU–US Data Privacy Framework.'],
+        ['How long', 'For as long as you have an account. When you delete it, your profile, memberships, visits and badges are deleted at once. Answers sent to other people\'s trails stay without your name, so a team\'s history does not fall apart. Technical records at our providers (such as IP addresses in logs) are kept for up to 90 days.'],
+        ['Children', 'The platform is used by school groups. Under 14, an account can only be made with the consent of a parent or guardian (Art. 25c of the Bulgarian Personal Data Protection Act). Guided trails can be walked as a guest, with no account and no email.'],
+        ['Your rights', 'You have the right to access, correct, delete and move your data, and to restrict or object to its use. You change your name and email on your profile. You download everything we hold about you with a button on the website. You delete your account in two taps, in the app or on the website. You can also complain to the Bulgarian Commission for Personal Data Protection (cpdp.bg).'],
+        ['Security', 'Every connection is encrypted. Each row in the database can be read only by the person it belongs to, enforced by rules in the database itself, not only in the app.'],
+        ['Storage in your browser', 'The website keeps your sign-in session in the browser\'s storage. It is needed to keep you signed in and is not used for tracking.'],
+        ['Changes', 'When this policy changes, the app will show it to you again. Version: ' + VERSION + '.'],
       ],
     },
   },
-} as const;
+};
 
 const page = content[kind][lang];
 ---

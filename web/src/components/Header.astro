@@ -93,7 +93,12 @@ const links: { label: UIKey; to: string }[] = [
         <a href={href('/signup')} class="btn btn-primary">{t('nav.signup')}</a>
       </span>
       <span class="contents" data-auth-in hidden>
-        <a href={href('/account')} class="btn btn-quiet">{t('nav.account')}</a>
+        <!-- You, not a button called Profile: initials and a name, the same
+             mark the app puts on its You tab. -->
+        <a href={href('/account')} class="me-chip" aria-label={t('nav.account')}>
+          <span class="me-face" data-me-initials aria-hidden="true">·</span>
+          <span class="me-name" data-me-name>{t('nav.account')}</span>
+        </a>
         <a href={href('/create')} class="btn btn-primary hidden sm:inline-flex">{t('nav.create')}</a>
       </span>
     </div>
@@ -111,4 +116,32 @@ const links: { label: UIKey; to: string }[] = [
   // document - so the buttons on the right stayed hidden behind the new link.
   document.querySelectorAll(signedIn ? '[data-auth-in]' : '[data-auth-out]')
     .forEach((el) => el.removeAttribute('hidden'));
+
+  if (signedIn && user) {
+    const name: string = user.user_metadata?.display_name || '';
+    const parts = name.trim().split(/\s+/).filter(Boolean);
+    const initials = parts.length
+      ? (parts[0][0] + (parts[1]?.[0] ?? '')).toUpperCase()
+      : (user.email ?? '?').slice(0, 1).toUpperCase();
+
+    document.querySelectorAll('[data-me-initials]').forEach((el) => (el.textContent = initials));
+    if (name) document.querySelectorAll('[data-me-name]').forEach((el) => (el.textContent = name));
+  }
 </script>
+
+<style>
+  .me-chip {
+    display: inline-flex; align-items: center; gap: 8px; min-height: 44px;
+    border: 1px solid var(--line); border-radius: 999px; padding: 4px 14px 4px 4px;
+    font-weight: 500; font-size: 0.9rem; color: var(--ink); max-width: 14rem;
+  }
+  .me-chip:hover { background: var(--surface-2); }
+  .me-chip:focus-visible { outline: 2px solid var(--signal); outline-offset: 2px; }
+  .me-face {
+    width: 34px; height: 34px; border-radius: 50%; flex: none; display: grid; place-items: center;
+    background: var(--signal); color: var(--signal-ink);
+    font-family: var(--font-display); font-weight: 800; font-size: 0.72rem;
+  }
+  .me-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  @media (max-width: 640px) { .me-name { display: none; } .me-chip { padding-right: 4px; } }
+</style>

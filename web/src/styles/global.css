@@ -67,6 +67,11 @@
 
   --alert: #b8301d;
   --alert-wash: #fbe6e2;
+  /* Trailblazer's three steps: green, the lamp's amber, purple. */
+  --tier-1: #2f8f4e;
+  --tier-1-wash: #e2f3e7;
+  --tier-3: #7a4bc2;
+  --tier-3-wash: #eee6fa;
 
   --grid: rgba(10, 20, 24, 0.055);
   --shadow-soft: 0 1px 2px rgba(10, 20, 24, .05), 0 8px 24px -12px rgba(10, 20, 24, .18);
@@ -99,6 +104,10 @@
 
     --alert: #ff7a6b;
     --alert-wash: rgba(255, 122, 107, 0.12);
+    --tier-1: #62c983;
+    --tier-1-wash: rgba(98, 201, 131, 0.13);
+    --tier-3: #b294f0;
+    --tier-3-wash: rgba(178, 148, 240, 0.14);
 
     --grid: rgba(140, 200, 215, 0.05);
     --shadow-soft: 0 1px 2px rgba(0, 0, 0, .5), 0 8px 24px -12px rgba(0, 0, 0, .7);
@@ -131,6 +140,10 @@
 
   --alert: #ff7a6b;
   --alert-wash: rgba(255, 122, 107, 0.12);
+  --tier-1: #62c983;
+  --tier-1-wash: rgba(98, 201, 131, 0.13);
+  --tier-3: #b294f0;
+  --tier-3-wash: rgba(178, 148, 240, 0.14);
 
   --grid: rgba(140, 200, 215, 0.05);
   --shadow-soft: 0 1px 2px rgba(0, 0, 0, .5), 0 8px 24px -12px rgba(0, 0, 0, .7);

@@ -23,6 +23,21 @@ const strings = {
   adjustedBy: t('mod.adjustedBy'),
   dqDo: t('mod.dqDo'), dqHelp: t('mod.dqHelp'), dqOn: t('mod.dqOn'),
   undq: t('mod.undq'), modFailed: t('mod.failed'),
+
+  // Ending a game is new enough to keep its words here rather than in ui.ts.
+  ...(lang === 'bg' ? {
+    live: 'Играта тече. Точките се менят, докато отборите отговарят.',
+    endDo: 'Приключи играта',
+    endConfirm: 'Да приключим ли играта? Отговорите, подсказките и промените в отборите спират, а класирането става окончателно. Може да я отвориш отново.',
+    ended: 'Играта приключи в',
+    reopen: 'Отвори отново',
+  } : {
+    live: 'The game is on. Points move while teams are answering.',
+    endDo: 'End the game',
+    endConfirm: 'End the game? Answers, hints and team changes stop, and the board becomes final. You can reopen it.',
+    ended: 'The game ended at',
+    reopen: 'Reopen',
+  }),
 };
 ---
 
@@ -47,6 +62,13 @@ const strings = {
   <div class="mt-20 hidden" data-teams-section>
     <h2 class="text-2xl">{t('board.teams')}</h2>
     <p class="mt-2 text-sm text-[var(--ink-dim)]">{t('board.teamsLede')}</p>
+
+    <!-- The whistle. It freezes the board, which is what makes first place a
+         result rather than a moment. -->
+    <div class="card mt-6 hidden flex-wrap items-center justify-between gap-4 p-4" data-endgame>
+      <p class="text-sm text-[var(--ink-dim)]" data-endgame-text></p>
+      <button type="button" class="btn btn-quiet btn-sm" data-endgame-do></button>
+    </div>
     <div class="mt-8 grid items-start gap-4 sm:grid-cols-2" data-teams></div>
   </div>
 </section>
@@ -125,6 +147,48 @@ const strings = {
 
     if (!teams.error && teams.data) {
       q('[data-teams-section]')!.classList.remove('hidden');
+
+      // ended_at arrives with migration 0038. Until then the select fails and
+      // the control simply is not offered.
+      const endBox = q('[data-endgame]') as HTMLElement;
+      const drawEnd = (endedAt: string | null) => {
+        endBox.classList.remove('hidden');
+        endBox.classList.add('flex');
+        if (endedAt) {
+          const at = new Date(endedAt).toLocaleString(S.lang === 'bg' ? 'bg-BG' : 'en-GB',
+            { hour: '2-digit', minute: '2-digit', day: 'numeric', month: 'short' });
+          text(q('[data-endgame-text]'), `${S.ended} ${at}.`);
+          text(q('[data-endgame-do]'), S.reopen);
+        } else {
+          text(q('[data-endgame-text]'), S.live);
+          text(q('[data-endgame-do]'), S.endDo);
+        }
+        endBox.dataset.ended = endedAt ? '1' : '';
+      };
+
+      // select('*') rather than naming the column: before 0038 there is no
+      // ended_at, and naming it would be a failed request on every board an
+      // organiser opens. Whether the key is there says whether the server can
+      // end games at all.
+      const state = await client.from('worlds').select('*').eq('id', worldId).maybeSingle();
+      if (!state.error && state.data && 'ended_at' in state.data) {
+        drawEnd(state.data.ended_at);
+
+        q('[data-endgame-do]')!.addEventListener('click', async (event) => {
+          const button = event.currentTarget as HTMLButtonElement;
+          const ending = !endBox.dataset.ended;
+          if (ending && !confirm(S.endConfirm)) return;
+
+          button.disabled = true;
+          const { data, error } = await client.rpc('moderator_end_game',
+            { p_world: worldId, p_ended: ending });
+          button.disabled = false;
+
+          if (error) { alert(error.message || S.modFailed); return; }
+          drawEnd(ending ? (data as string) : null);
+          await drawBoard();
+        });
+      }
 
       // The stop list, for the skip control. Fetched once, and only here: a
       // walker reading a public board never gets past the error above, so the

@@ -6,85 +6,280 @@ const { lang } = Astro.props;
 const t = useTranslations(lang);
 const href = localise(lang);
 
-const strings = {
-  stop: t('n.stop'), stops: t('n.stops'),
-  point: t('n.point'), points: t('n.points'),
-  teamOne: t('n.team'), teamN: t('n.teams'), pending: t('acct.pending'),
-  clearing: t('acct.clearing'),
-  team: t('acct.team'), open: t('games.open'),
-  owner: t('acct.role.owner'), editor: t('acct.role.editor'), viewer: t('acct.role.viewer'),
-  published: t('ed.published'), draft: t('ed.draft'), board: t('ed.board'),
-  deleteCost: t('acct.deleteCost'), confirm: t('acct.deleteConfirm'), cancel: t('acct.deleteCancel'),
-  failed: t('err.generic'),
-  editHref: href('/trail'), boardHref: href('/board'),
+// This page's own words, kept beside it the way LegalPage keeps its text. The
+// strings it shares with the rest of the site still come from t().
+const copy = {
+  bg: {
+    overview: 'Преглед', badges: 'Значки', walked: 'Извървени маршрути',
+    settings: 'Настройки на профила', privacy: 'Поверителност и данни',
+    since: 'Ходи от', guest: 'Гост',
+    kTrails: 'извървени маршрута', kStops: 'намерени спирки',
+    kPoints: 'точки за отборите ти', kBadges: 'значки',
+    latest: 'Последни значки', noneYet: 'Още няма. Първата идва с първия завършен маршрут.',
+    allBadges: 'Всички значки',
+    colTrail: 'Маршрут', colTeam: 'Отбор', colStops: 'Спирки', colPoints: 'Точки',
+    finished: 'завършен', ended: 'играта приключи', noTrails: 'Още не си ходил по маршрут.',
+    statsLater: 'Статистиката и значките ще се появят, щом сървърът бъде обновен.',
+    you: 'Ти', nameLabel: 'Име в класациите', save: 'Запази', saved: 'Запазено.',
+    emailLabel: 'Имейл', emailNew: 'Нов имейл', change: 'Смени',
+    emailSent: 'Изпратихме писмо за потвърждение. Смяната става, щом го потвърдиш.',
+    emailDone: 'Имейлът е сменен.',
+    pwLabel: 'Парола', pwCurrent: 'Сегашна парола', pwNew: 'Нова парола', pwAgain: 'Новата още веднъж',
+    pwShort: 'Паролата трябва да е поне 8 знака.', pwMismatch: 'Двете нови пароли не съвпадат.',
+    pwWrong: 'Сегашната парола не е вярна.', pwDone: 'Паролата е сменена.',
+    sessions: 'Вход', signOut: 'Излез', signOutAll: 'Излез от всички устройства',
+    signOutAllHint: 'За когато си влизал на чужд телефон или компютър.',
+    legal: 'Условия и поверителност', terms: 'Условия за ползване', policy: 'Политика за поверителност',
+    level: 'Ниво',
+  },
+  en: {
+    overview: 'Overview', badges: 'Badges', walked: 'Trails walked',
+    settings: 'Account settings', privacy: 'Privacy and data',
+    since: 'Walking since', guest: 'Guest',
+    kTrails: 'trails walked', kStops: 'stops found',
+    kPoints: 'points for your teams', kBadges: 'badges',
+    latest: 'Latest badges', noneYet: 'None yet. The first comes with your first finished trail.',
+    allBadges: 'All badges',
+    colTrail: 'Trail', colTeam: 'Team', colStops: 'Stops', colPoints: 'Points',
+    finished: 'finished', ended: 'game over', noTrails: 'You have not walked a trail yet.',
+    statsLater: 'Your numbers and badges will appear once the server is updated.',
+    you: 'You', nameLabel: 'Name on leaderboards', save: 'Save', saved: 'Saved.',
+    emailLabel: 'Email', emailNew: 'New email', change: 'Change',
+    emailSent: 'We sent a confirmation email. The change happens once you confirm it.',
+    emailDone: 'Your email has been changed.',
+    pwLabel: 'Password', pwCurrent: 'Current password', pwNew: 'New password', pwAgain: 'New password again',
+    pwShort: 'The password needs at least 8 characters.', pwMismatch: 'The two new passwords are not the same.',
+    pwWrong: 'The current password is not right.', pwDone: 'Your password has been changed.',
+    sessions: 'Signed in', signOut: 'Sign out', signOutAll: 'Sign out on every device',
+    signOutAllHint: 'For when you signed in on somebody else\'s phone or computer.',
+    legal: 'Terms and privacy', terms: 'Terms of use', policy: 'Privacy policy',
+    level: 'Level',
+  },
+}[lang];
+
+// The eleven, in the order the screens show them. The rule is written for the
+// person reading it; the check behind it lives in my_profile() on the server.
+const badges = {
+  bg: {
+    first_trail: ['Първи маршрут', 'Завърши всички спирки на който и да е маршрут.'],
+    guided: ['Воден път', 'Завърши воден маршрут.'],
+    flag_runner: ['Флагоносец', 'Завърши маршрут „Капитулирай флага“ с отбора си.'],
+    free_roamer: ['Свободен скитник', 'Завърши маршрут „Свободно падане“, където спирките са в произволен ред.'],
+    scholar: ['Отличник', 'Завърши образователен маршрут.'],
+    flawless: ['Безупречен', 'Отборът ти отговаря правилно на всеки въпрос от първия път, без подсказки и без пропуски.'],
+    trailblazer: ['Пионер', 'Завърши 3, после 5, после 10 маршрута.'],
+    team_player: ['Отборен играч', 'Влез в отбор, направен от друг, и завърши маршрут с него.'],
+    captain: ['Капитан', 'Направи отбор, в който влязат поне още двама.'],
+    summit: ['Връх', 'Отборът ти е първи, когато организаторът приключи играта.'],
+    sharp_eye: ['Остро око', 'Намери 10 спирки, като докоснеш маркера им през камерата.'],
+  },
+  en: {
+    first_trail: ['First trail', 'Finish every stop on any trail.'],
+    guided: ['Guided walker', 'Finish a guided trail.'],
+    flag_runner: ['Flag runner', 'Finish a Capture-the-flag trail with your team.'],
+    free_roamer: ['Free roamer', 'Finish a Freefall trail, where the stops can be taken in any order.'],
+    scholar: ['Scholar', 'Finish an Educational trail.'],
+    flawless: ['Flawless', 'Your team answers every question right the first time, with no hints and no skips.'],
+    trailblazer: ['Trailblazer', 'Finish 3, then 5, then 10 trails.'],
+    team_player: ['Team player', 'Join a team somebody else made, and finish a trail with it.'],
+    captain: ['Captain', 'Make a team that at least two other people join.'],
+    summit: ['Summit', 'Your team is first on the board when the organiser ends the game.'],
+    sharp_eye: ['Sharp eye', 'Find 10 stops by tapping their marker in the camera.'],
+  },
+}[lang];
+
+const icons: Record<string, string> = {
+  first_trail: '<path d="M12 21s-6-5.6-6-10.2A6 6 0 0 1 18 10.8C18 15.4 12 21 12 21z"/><circle cx="12" cy="10.5" r="2.2"/>',
+  guided: '<path d="M4 18c3-6 5-9 8-9s5 3 8 9"/><circle cx="12" cy="5.5" r="1.8"/>',
+  flag_runner: '<path d="M6 21V4"/><path d="M6 4h11l-2.5 4L17 12H6"/>',
+  free_roamer: '<circle cx="12" cy="12" r="8"/><path d="M12 7v5l3 2"/>',
+  scholar: '<path d="M4 6.5C6.5 5 9.5 5 12 6.5 14.5 5 17.5 5 20 6.5V19c-2.5-1.5-5.5-1.5-8 0-2.5-1.5-5.5-1.5-8 0z"/><path d="M12 6.5V19"/>',
+  flawless: '<path d="M12 3l2.6 5.6 6 .6-4.5 4 1.3 6-5.4-3.1-5.4 3.1 1.3-6-4.5-4 6-.6z"/>',
+  trailblazer: '<path d="M5 19l4-9 4 5 3-4 3 8"/>',
+  team_player: '<circle cx="9" cy="8" r="3"/><circle cx="17" cy="9" r="2.4"/><path d="M3.5 19c.8-3.4 3-5 5.5-5s4.7 1.6 5.5 5"/><path d="M15 14.4c2.2-.3 4.2.9 5 3.6"/>',
+  captain: '<path d="M5 20V9l7-5 7 5v11"/><path d="M9 20v-6h6v6"/>',
+  summit: '<path d="M4 20h16"/><path d="M6 20l6-14 6 14"/><path d="M10 11l2-1.5 2 1.5"/>',
+  sharp_eye: '<rect x="4" y="5" width="16" height="12" rx="2"/><circle cx="12" cy="11" r="3"/><path d="M9 20h6"/>',
 };
+
+// The ones that are about winning wear the lamp's amber, the rest the signal.
+const gold = ['flag_runner', 'flawless', 'summit'];
+
+const strings = {
+  ...copy, lang,
+  badgeText: badges, icons, gold,
+  stop: t('n.stop'), stops: t('n.stops'), point: t('n.point'), points: t('n.points'),
+  teamOne: t('n.team'), teamN: t('n.teams'),
+  clearing: t('acct.clearing'), deleteCost: t('acct.deleteCost'), failed: t('err.generic'),
+};
+
+const rail = [
+  ['overview', copy.overview, '<circle cx="12" cy="8" r="3.5"/><path d="M5 20c1-4 3.8-6 7-6s6 2 7 6"/>'],
+  ['badges', copy.badges, '<circle cx="12" cy="10" r="6"/><path d="M9 15l-1.5 6L12 19l4.5 2L15 15"/>'],
+  ['trails', copy.walked, '<path d="M5 19l4-9 4 5 3-4 3 8"/>'],
+  ['settings', copy.settings, '<circle cx="12" cy="12" r="3"/><path d="M12 3v2M12 19v2M3 12h2M19 12h2M5.6 5.6l1.4 1.4M17 17l1.4 1.4M5.6 18.4 7 17M17 7l1.4-1.4"/>'],
+  ['privacy', copy.privacy, '<rect x="5" y="10" width="14" height="10" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/>'],
+] as const;
 ---
 
-<section class="mx-auto max-w-4xl px-4 py-16 sm:px-6" hidden data-guarded>
-  <header class="flex flex-wrap items-end justify-between gap-4">
-    <div>
-      <h1 class="text-3xl sm:text-4xl">{t('acct.title')}</h1>
-      <p class="mt-2 text-sm text-[var(--ink-dim)]">
-        {t('acct.signedInAs')} <span class="data" data-acct-email></span>
-      </p>
-    </div>
-    <button class="btn btn-quiet" type="button" data-signout>{t('acct.signout')}</button>
-  </header>
+<section class="acct mx-auto max-w-6xl px-4 py-12 sm:px-6" hidden data-guarded>
+  <div class="acct-grid">
+    <nav class="rail" aria-label={t('acct.title')}>
+      {rail.map(([id, label, path], i) => (
+        <>
+          {i === 3 && <hr />}
+          <a href={`#${id}`} data-tab={id}>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true" set:html={path} />
+            {label}
+          </a>
+        </>
+      ))}
+    </nav>
 
-  <!-- My trails -->
-  <section class="mt-14">
-    <div class="flex flex-wrap items-center justify-between gap-3">
-      <h2 class="text-xl">{t('acct.myTrails')}</h2>
-      <a class="btn btn-primary" href={href('/create')}>{t('acct.newTrail')}</a>
-    </div>
-    <p class="mt-4 text-sm text-[var(--ink-dim)]" data-trails-empty hidden>{t('acct.myTrailsEmpty')}</p>
-    <ul class="mt-5 grid gap-4 sm:grid-cols-2" data-trails></ul>
-  </section>
+    <div class="acct-main">
+      <!-- ================================================= overview -->
+      <div data-panel="overview" class="panel-stack">
+        <div class="hero-me">
+          <div class="face" data-initials>·</div>
+          <div class="min-w-0">
+            <h1 class="text-2xl sm:text-3xl" data-name>—</h1>
+            <p class="data mt-1 text-sm text-[var(--ink-dim)]"><span data-email></span><span data-since></span></p>
+          </div>
+        </div>
 
-  <!-- Where I have walked -->
-  <section class="mt-14">
-    <h2 class="text-xl">{t('acct.history')}</h2>
-    <p class="mt-4 text-sm text-[var(--ink-dim)]" data-history-empty hidden>{t('acct.historyEmpty')}</p>
-    <ul class="mt-5 space-y-3" data-history></ul>
-  </section>
+        <p class="notice" data-stats-later hidden>{copy.statsLater}</p>
 
-  <!-- My data -->
-  <section class="mt-14">
-    <h2 class="text-xl">{t('acct.data')}</h2>
-    <div class="mt-5 grid gap-4 sm:grid-cols-2">
-      <div class="card p-5">
-        <button class="btn btn-quiet w-full" type="button" data-export>{t('acct.export')}</button>
-        <p class="mt-3 text-xs text-[var(--ink-faint)]">{t('acct.exportHint')}</p>
+        <div class="kpis" data-kpis>
+          <div class="kpi"><b data-k-trails>—</b><small>{copy.kTrails}</small></div>
+          <div class="kpi"><b data-k-stops>—</b><small>{copy.kStops}</small></div>
+          <div class="kpi"><b data-k-points>—</b><small>{copy.kPoints}</small></div>
+          <div class="kpi"><b data-k-badges>—</b><small>{copy.kBadges}</small></div>
+        </div>
+
+        <div class="two">
+          <div class="card panel-card">
+            <h2 class="text-base">{copy.walked}</h2>
+            <div class="table-wrap" data-trails-short></div>
+          </div>
+          <div class="card panel-card">
+            <div class="flex items-baseline justify-between gap-3">
+              <h2 class="text-base">{copy.latest}</h2>
+              <a class="acct-link text-sm" href="#badges">{copy.allBadges}</a>
+            </div>
+            <div class="medals" data-latest></div>
+          </div>
+        </div>
       </div>
-      <div class="card p-5" style="border-color: var(--alert)">
-        <button class="btn btn-quiet w-full" type="button" data-delete
-                style="border-color: var(--alert); color: var(--alert)">
-          {t('acct.delete')}
-        </button>
-        <p class="mt-3 text-xs text-[var(--ink-faint)]">{t('acct.deleteHint')}</p>
 
-        <!-- What it costs, before the button. Filled from what_delete_removes. -->
-        <div class="mt-4 hidden" data-delete-panel>
-          <p class="text-xs text-[var(--alert)]" data-delete-cost></p>
-          <ul class="data mt-2 space-y-1 text-xs text-[var(--ink-dim)]" data-delete-list></ul>
+      <!-- =================================================== badges -->
+      <div data-panel="badges" class="panel-stack" hidden>
+        <h1 class="text-2xl sm:text-3xl">{copy.badges}</h1>
+        <div class="badge-grid" data-badge-grid></div>
+      </div>
 
-          <label class="mt-4 hidden items-start gap-2 text-sm" data-keep-row>
-            <input type="checkbox" class="mt-0.5" data-keep-trails />
-            <span>
-              <span class="font-medium">{t('acct.keepTrails')}</span>
-              <span class="mt-0.5 block text-xs text-[var(--ink-dim)]">{t('acct.keepTrailsHint')}</span>
-            </span>
-          </label>
-          <div class="mt-4 flex gap-2">
-            <button class="btn btn-quiet btn-sm flex-1" type="button" data-delete-cancel>{t('acct.deleteCancel')}</button>
-            <button class="btn btn-danger btn-sm flex-1" type="button" data-delete-confirm>
-              {t('acct.deleteConfirm')}
+      <!-- =================================================== trails -->
+      <div data-panel="trails" class="panel-stack" hidden>
+        <h1 class="text-2xl sm:text-3xl">{copy.walked}</h1>
+        <div class="card panel-card"><div class="table-wrap" data-trails-full></div></div>
+      </div>
+
+      <!-- ================================================= settings -->
+      <div data-panel="settings" class="panel-stack" hidden>
+        <h1 class="text-2xl sm:text-3xl">{copy.settings}</h1>
+
+        <div class="two">
+          <div class="card panel-card">
+            <h2 class="text-base">{copy.you}</h2>
+
+            <form class="acct-field" data-name-form>
+              <label for="acct-name">{copy.nameLabel}</label>
+              <div class="row-input">
+                <input id="acct-name" class="field-input" type="text" maxlength="40" autocomplete="nickname" data-name-input />
+                <button class="btn btn-quiet btn-sm" type="submit">{copy.save}</button>
+              </div>
+              <p class="msg" data-name-msg aria-live="polite"></p>
+            </form>
+
+            <form class="acct-field" data-email-form>
+              <label for="acct-email">{copy.emailLabel}</label>
+              <div class="row-input">
+                <input id="acct-email" class="field-input" type="email" autocomplete="email" data-email-input />
+                <button class="btn btn-quiet btn-sm" type="submit">{copy.change}</button>
+              </div>
+              <p class="msg" data-email-msg aria-live="polite"></p>
+            </form>
+
+            <form class="acct-field" data-pw-form>
+              <span class="field-label">{copy.pwLabel}</span>
+              <label class="sr-only" for="acct-pw-now">{copy.pwCurrent}</label>
+              <input id="acct-pw-now" class="field-input" type="password" autocomplete="current-password" placeholder={copy.pwCurrent} data-pw-now />
+              <label class="sr-only" for="acct-pw-new">{copy.pwNew}</label>
+              <input id="acct-pw-new" class="field-input" type="password" autocomplete="new-password" placeholder={copy.pwNew} minlength="8" data-pw-new />
+              <label class="sr-only" for="acct-pw-again">{copy.pwAgain}</label>
+              <input id="acct-pw-again" class="field-input" type="password" autocomplete="new-password" placeholder={copy.pwAgain} minlength="8" data-pw-again />
+              <button class="btn btn-quiet btn-sm self-start" type="submit">{copy.change}</button>
+              <p class="msg" data-pw-msg aria-live="polite"></p>
+            </form>
+          </div>
+
+          <div class="card panel-card">
+            <h2 class="text-base">{copy.sessions}</h2>
+            <p class="text-sm text-[var(--ink-dim)]"><span data-email-2></span></p>
+            <button class="btn btn-quiet" type="button" data-signout>{copy.signOut}</button>
+            <button class="btn btn-quiet" type="button" data-signout-all>{copy.signOutAll}</button>
+            <p class="text-xs text-[var(--ink-faint)]">{copy.signOutAllHint}</p>
+          </div>
+        </div>
+
+        <div class="danger">
+          <p><b>{t('acct.delete')}.</b> {t('acct.deleteHint')}</p>
+          <a class="btn btn-danger btn-sm" href="#privacy" data-go-delete>{t('acct.delete')}</a>
+        </div>
+      </div>
+
+      <!-- ================================================== privacy -->
+      <div data-panel="privacy" class="panel-stack" hidden>
+        <h1 class="text-2xl sm:text-3xl">{copy.privacy}</h1>
+
+        <div class="two">
+          <div class="card panel-card">
+            <h2 class="text-base">{t('acct.data')}</h2>
+            <button class="btn btn-quiet w-full" type="button" data-export>{t('acct.export')}</button>
+            <p class="text-xs text-[var(--ink-faint)]">{t('acct.exportHint')}</p>
+            <h2 class="mt-2 text-base">{copy.legal}</h2>
+            <p class="text-sm"><a class="acct-link" href={href('/terms')}>{copy.terms}</a> · <a class="acct-link" href={href('/privacy')}>{copy.policy}</a></p>
+          </div>
+
+          <div class="card panel-card" style="border-color: var(--alert)" id="delete">
+            <button class="btn btn-quiet w-full" type="button" data-delete
+                    style="border-color: var(--alert); color: var(--alert)">
+              {t('acct.delete')}
             </button>
+            <p class="text-xs text-[var(--ink-faint)]">{t('acct.deleteHint')}</p>
+
+            <div class="hidden" data-delete-panel>
+              <p class="text-xs text-[var(--alert)]" data-delete-cost></p>
+              <ul class="data mt-2 space-y-1 text-xs text-[var(--ink-dim)]" data-delete-list></ul>
+
+              <label class="mt-4 hidden items-start gap-2 text-sm" data-keep-row>
+                <input type="checkbox" class="mt-0.5" id="acct-keep" data-keep-trails />
+                <span>
+                  <span class="font-medium">{t('acct.keepTrails')}</span>
+                  <span class="mt-0.5 block text-xs text-[var(--ink-dim)]">{t('acct.keepTrailsHint')}</span>
+                </span>
+              </label>
+              <div class="mt-4 flex gap-2">
+                <button class="btn btn-quiet btn-sm flex-1" type="button" data-delete-cancel>{t('acct.deleteCancel')}</button>
+                <button class="btn btn-danger btn-sm flex-1" type="button" data-delete-confirm>
+                  {t('acct.deleteConfirm')}
+                </button>
+              </div>
+            </div>
           </div>
         </div>
       </div>
     </div>
-  </section>
+  </div>
 </section>
 
 <p class="mx-auto max-w-4xl px-4 py-24 text-center text-[var(--ink-dim)]" data-acct-loading>
@@ -93,80 +288,336 @@ const strings = {
 
 <script type="application/json" data-acct-strings set:html={JSON.stringify(strings)}></script>
 
+<style>
+  .acct-grid { display: grid; grid-template-columns: 210px minmax(0, 1fr); gap: 36px; }
+  .rail { display: grid; gap: 2px; align-content: start; position: sticky; top: 88px; }
+  .rail a {
+    display: flex; align-items: center; gap: 10px; padding: 9px 12px; border-radius: 10px;
+    color: var(--ink-dim); font-size: 0.9rem; text-decoration: none;
+  }
+  .rail a:hover { background: var(--surface-2); color: var(--ink); }
+  .rail a[aria-current="page"] { background: var(--signal-wash); color: var(--signal); font-weight: 600; }
+  .rail a:focus-visible { outline: 2px solid var(--signal); outline-offset: 2px; }
+  .rail svg { width: 16px; height: 16px; flex: none; }
+  .rail hr { border: 0; border-top: 1px solid var(--line-soft); margin: 8px 0; }
+
+  .acct-main { min-width: 0; }
+  .panel-stack { display: grid; gap: 22px; }
+  .panel-card { display: grid; gap: 14px; align-content: start; padding: 20px; min-width: 0; }
+
+  .hero-me { display: flex; gap: 18px; align-items: center; }
+  .face {
+    width: 72px; height: 72px; border-radius: 50%; flex: none; display: grid; place-items: center;
+    font-family: var(--font-display); font-weight: 800; font-size: 1.4rem;
+    background: var(--signal); color: var(--signal-ink);
+  }
+
+  .kpis { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; }
+  .kpi {
+    background: var(--surface); border: 1px solid var(--line-soft); border-radius: 14px;
+    padding: 14px 16px; display: grid; gap: 2px;
+  }
+  .kpi b { font-family: var(--font-display); font-weight: 600; font-size: 1.55rem; font-variant-numeric: tabular-nums; }
+  .kpi small { color: var(--ink-dim); font-size: 0.8rem; }
+
+  .two { display: grid; grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr); gap: 18px; }
+
+  .notice, .acct :global(.notice) {
+    border: 1px solid var(--lamp); background: var(--lamp-wash); color: var(--lamp);
+    border-radius: 12px; padding: 10px 14px; font-size: 0.86rem;
+  }
+  .badge-grid :global(.notice) { grid-column: 1 / -1; }
+
+  /* Everything below that is drawn by the script, not the template, is reached
+     through :global - Astro scopes a component's styles to the elements in its
+     own markup, and innerHTML does not carry the scope. */
+  .table-wrap { overflow-x: auto; }
+  .table-wrap :global(table) { width: 100%; border-collapse: collapse; font-size: 0.86rem; }
+  .table-wrap :global(th) {
+    text-align: left; font-family: var(--font-mono); font-weight: 400; font-size: 0.68rem;
+    letter-spacing: 0.1em; text-transform: uppercase; color: var(--ink-faint); padding: 0 8px 8px 0;
+  }
+  .table-wrap :global(td) { padding: 10px 8px 10px 0; border-top: 1px solid var(--line-soft); vertical-align: top; }
+  .table-wrap :global(.num) { text-align: right; font-family: var(--font-mono); font-variant-numeric: tabular-nums; white-space: nowrap; }
+  .table-wrap :global(.tag) {
+    display: inline-block; margin-left: 6px; font-family: var(--font-mono); font-size: 0.64rem;
+    padding: 1px 6px; border-radius: 6px; background: var(--signal-wash); color: var(--signal);
+  }
+  .table-wrap :global(.tag.over) { background: var(--surface-2); color: var(--ink-dim); }
+
+  .medals { display: flex; flex-wrap: wrap; gap: 16px; }
+  .medals :global(.medal) { display: grid; justify-items: center; gap: 5px; width: 72px; text-align: center; }
+  .medals :global(.medal span) { font-size: 0.72rem; line-height: 1.2; color: var(--ink-dim); }
+
+  :global(.disc) {
+    --c: var(--signal); --w: var(--signal-wash);
+    width: 52px; height: 52px; border-radius: 50%; display: grid; place-items: center;
+    border: 2px solid var(--c); background: var(--w); color: var(--c); flex: none;
+  }
+  :global(.disc svg) { width: 24px; height: 24px; }
+  :global(.disc.gold), :global(.disc.tier-2) { --c: var(--lamp); --w: var(--lamp-wash); }
+  :global(.disc.tier-1) { --c: var(--tier-1); --w: var(--tier-1-wash); }
+  :global(.disc.tier-3) { --c: var(--tier-3); --w: var(--tier-3-wash); }
+  :global(.disc.locked) { --c: var(--ink-faint); border-style: dashed; background: transparent; border-color: var(--line); }
+
+  .badge-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 14px; }
+  :global(.bcard) {
+    display: grid; grid-template-columns: 52px minmax(0, 1fr); gap: 14px; align-items: start;
+    background: var(--surface); border: 1px solid var(--line-soft); border-radius: 16px; padding: 16px;
+  }
+  :global(.bcard h3) { font-size: 0.95rem; }
+  :global(.bcard p) { margin-top: 4px; font-size: 0.84rem; color: var(--ink-dim); }
+  :global(.bcard .meter) { margin-top: 10px; height: 5px; border-radius: 99px; background: var(--line-soft); overflow: hidden; }
+  :global(.bcard .meter i) { display: block; height: 100%; background: var(--signal); }
+  :global(.bcard .prog) { margin-top: 6px; font-family: var(--font-mono); font-size: 0.72rem; color: var(--ink-faint); }
+  :global(.bcard.locked h3) { color: var(--ink-dim); }
+
+  .acct-field { display: grid; gap: 6px; }
+  .acct-field label, .field-label { font-size: 0.82rem; color: var(--ink-dim); }
+  .row-input { display: flex; gap: 8px; }
+  .row-input .field-input { flex: 1; min-width: 0; }
+  .field-input {
+    border: 1px solid var(--line); border-radius: 10px; padding: 9px 12px; font: inherit;
+    font-size: 0.9rem; background: var(--ground); color: var(--ink);
+  }
+  .field-input:focus-visible { outline: 2px solid var(--signal); outline-offset: 1px; }
+  .acct-link { color: var(--signal); font-weight: 500; }
+  .acct-link:hover { text-decoration: underline; }
+  .msg { min-height: 1.1em; font-size: 0.8rem; color: var(--ink-dim); }
+  .msg.bad { color: var(--alert); }
+  .msg.good { color: var(--signal); }
+
+  .danger {
+    border: 1px solid var(--alert); background: var(--alert-wash); border-radius: 14px; padding: 14px 16px;
+    display: flex; flex-wrap: wrap; gap: 14px; align-items: center; justify-content: space-between;
+  }
+  .danger p { font-size: 0.86rem; color: var(--ink-dim); max-width: 52ch; }
+  .danger b { color: var(--alert); }
+
+  @media (max-width: 860px) {
+    .acct-grid { grid-template-columns: minmax(0, 1fr); gap: 20px; }
+    .rail { position: static; grid-auto-flow: column; grid-auto-columns: max-content; overflow-x: auto; }
+    .rail hr { display: none; }
+    .kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .two { grid-template-columns: minmax(0, 1fr); }
+  }
+</style>
+
 <script>
   import { db, signOut } from '../lib/supabase';
   import { requireUser, reveal, escapeHtml, text, count } from '../lib/session';
 
   const S = JSON.parse(document.querySelector('[data-acct-strings]')!.textContent || '{}');
   const q = (sel: string) => document.querySelector(sel);
+  const qa = (sel: string) => Array.from(document.querySelectorAll(sel));
 
   const user = await requireUser({ needsReal: false });
   const client = db()!;
 
-  text(q('[data-acct-email]'), user.email ?? '—');
+  // --------------------------------------------------------------- tabs
+  const tabs = ['overview', 'badges', 'trails', 'settings', 'privacy'];
+
+  function show(tab: string) {
+    const wanted = tabs.includes(tab) ? tab : 'overview';
+    qa('[data-panel]').forEach((p) => ((p as HTMLElement).hidden = p.getAttribute('data-panel') !== wanted));
+    qa('[data-tab]').forEach((a) => {
+      if (a.getAttribute('data-tab') === wanted) a.setAttribute('aria-current', 'page');
+      else a.removeAttribute('aria-current');
+    });
+  }
+
+  window.addEventListener('hashchange', () => show(location.hash.slice(1)));
+  show(location.hash.slice(1));
+
+  // ---------------------------------------------------------------- you
+  const { data: profileRow } = await client.from('profiles')
+    .select('display_name, created_at').eq('id', user.id).maybeSingle();
+
+  let name: string = profileRow?.display_name || user.user_metadata?.display_name || '';
+
+  function initials(n: string) {
+    const parts = n.trim().split(/\s+/).filter(Boolean);
+    if (!parts.length) return (user.email ?? '?').slice(0, 1).toUpperCase();
+    return (parts[0][0] + (parts[1]?.[0] ?? '')).toUpperCase();
+  }
+
+  function drawName() {
+    text(q('[data-name]'), name || (user.email ?? S.guest));
+    text(q('[data-initials]'), initials(name));
+    (q('[data-name-input]') as HTMLInputElement).value = name;
+  }
+
+  drawName();
+  text(q('[data-email]'), user.email ?? '');
+  text(q('[data-email-2]'), user.email ?? '');
+  (q('[data-email-input]') as HTMLInputElement).value = user.email ?? '';
+
+  if (profileRow?.created_at) {
+    const when = new Intl.DateTimeFormat(S.lang === 'bg' ? 'bg-BG' : 'en-GB',
+      { month: 'long', year: 'numeric' }).format(new Date(profileRow.created_at));
+    text(q('[data-since]'), (user.email ? ' · ' : '') + S.since + ' ' + when);
+  }
+
   q('[data-acct-loading]')?.remove();
   reveal();
+
+  // ---------------------------------------------------------- the numbers
+  const medal = (key: string, earned: boolean, tier = 0) => {
+    const cls = !earned ? 'locked'
+      : key === 'trailblazer' ? `tier-${tier}`
+      : S.gold.includes(key) ? 'gold' : '';
+    return `<div class="disc ${cls}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true">${S.icons[key] ?? ''}</svg></div>`;
+  };
+
+  function trailsTable(rows: any[], limit?: number) {
+    if (!rows.length) return `<p class="text-sm text-[var(--ink-dim)]">${escapeHtml(S.noTrails)}</p>`;
+    const shown = limit ? rows.slice(0, limit) : rows;
+    return `<table>
+      <thead><tr><th>${escapeHtml(S.colTrail)}</th><th>${escapeHtml(S.colTeam)}</th>
+        <th class="num">${escapeHtml(S.colStops)}</th><th class="num">${escapeHtml(S.colPoints)}</th></tr></thead>
+      <tbody>${shown.map((r) => `<tr>
+        <td>${escapeHtml(r.name)}${r.finished ? `<span class="tag">${escapeHtml(S.finished)}</span>` : ''}${r.ended ? `<span class="tag over">${escapeHtml(S.ended)}</span>` : ''}</td>
+        <td>${r.team ? escapeHtml(r.team) : '—'}</td>
+        <td class="num">${r.total == null ? Number(r.done) : `${Number(r.done)} / ${Number(r.total)}`}</td>
+        <td class="num">${r.team ? Number(r.points) : '—'}</td></tr>`).join('')}</tbody></table>`;
+  }
+
+  const { data: profile, error: profileError } = await client.rpc('my_profile');
+
+  if (profileError || !profile) {
+    // The migration that adds my_profile may not have been run yet. The page
+    // still works - settings and data - and says why the numbers are missing.
+    q('[data-stats-later]')?.removeAttribute('hidden');
+    const { data: history } = await client.rpc('my_history');
+    const rows = (history ?? []).map((h: any) => ({
+      name: h.world_name, team: h.team_name, done: h.stops_solved, total: null,
+      points: h.points, finished: false, ended: false,
+    }));
+    q('[data-trails-short]')!.innerHTML = trailsTable(rows, 5);
+    q('[data-trails-full]')!.innerHTML = trailsTable(rows);
+    text(q('[data-k-trails]'), '—');
+    text(q('[data-k-stops]'), rows.reduce((n: number, r: any) => n + Number(r.done || 0), 0));
+    text(q('[data-k-points]'), rows.reduce((n: number, r: any) => n + Number(r.points || 0), 0));
+    text(q('[data-k-badges]'), '—');
+    q('[data-latest]')!.innerHTML = `<p class="text-sm text-[var(--ink-dim)]">${escapeHtml(S.statsLater)}</p>`;
+    q('[data-badge-grid]')!.innerHTML = `<p class="notice">${escapeHtml(S.statsLater)}</p>`;
+  } else {
+    const list: any[] = profile.badges ?? [];
+    const earned = list.filter((b) => b.earned);
+
+    text(q('[data-k-trails]'), profile.trails_walked ?? 0);
+    text(q('[data-k-stops]'), profile.stops_found ?? 0);
+    text(q('[data-k-points]'), profile.points ?? 0);
+    q('[data-k-badges]')!.innerHTML = `${earned.length}<span style="color:var(--ink-faint);font-size:.6em"> / ${list.length}</span>`;
+
+    q('[data-trails-short]')!.innerHTML = trailsTable(profile.trails ?? [], 5);
+    q('[data-trails-full]')!.innerHTML = trailsTable(profile.trails ?? []);
+
+    q('[data-latest]')!.innerHTML = earned.length
+      ? earned.slice(-4).reverse().map((b) => `<div class="medal">${medal(b.key, true, b.tier ?? 0)}
+          <span>${escapeHtml(S.badgeText[b.key]?.[0] ?? b.key)}</span></div>`).join('')
+      : `<p class="text-sm text-[var(--ink-dim)]">${escapeHtml(S.noneYet)}</p>`;
+
+    // Earned first, then the rest in their own order, so the page opens on
+    // what somebody has rather than on what they lack.
+    const ordered = [...earned, ...list.filter((b) => !b.earned)];
+
+    q('[data-badge-grid]')!.innerHTML = ordered.map((b) => {
+      const [title, rule] = S.badgeText[b.key] ?? [b.key, ''];
+      const tier = b.tier ?? 0;
+      const level = b.key === 'trailblazer' && tier > 0 ? ` · ${escapeHtml(S.level)} ${tier}` : '';
+      const target = Number(b.target ?? 0);
+      const progress = Number(b.progress ?? 0);
+      const showMeter = target > 1 && !(b.key === 'trailblazer' && tier === 3) && !(b.earned && b.key !== 'trailblazer');
+      const pct = target ? Math.min(100, Math.round((progress / target) * 100)) : 0;
+      return `<div class="bcard ${b.earned ? '' : 'locked'}">
+        ${medal(b.key, b.earned, tier)}
+        <div><h3>${escapeHtml(title)}${level}</h3><p>${escapeHtml(rule)}</p>
+        ${showMeter ? `<div class="meter"><i style="width:${pct}%"></i></div><div class="prog">${progress} / ${target}</div>` : ''}
+        </div></div>`;
+    }).join('');
+  }
+
+  // ------------------------------------------------------------ settings
+  const say = (sel: string, msg: string, kind: 'good' | 'bad' | '' = '') => {
+    const el = q(sel) as HTMLElement;
+    el.textContent = msg;
+    el.className = 'msg ' + kind;
+  };
+
+  q('[data-name-form]')?.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const value = (q('[data-name-input]') as HTMLInputElement).value.trim().slice(0, 40);
+    if (!value) return;
+
+    // Both places: the profile row is what leaderboards read, the account's own
+    // metadata is what the top bar reads before the page has loaded anything.
+    const [{ error: a }, { error: b }] = await Promise.all([
+      client.from('profiles').update({ display_name: value }).eq('id', user.id),
+      client.auth.updateUser({ data: { display_name: value } }),
+    ]);
+
+    if (a || b) { say('[data-name-msg]', (a || b)!.message, 'bad'); return; }
+    name = value;
+    drawName();
+    say('[data-name-msg]', S.saved, 'good');
+  });
+
+  q('[data-email-form]')?.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const value = (q('[data-email-input]') as HTMLInputElement).value.trim();
+    if (!value || value === user.email) return;
+
+    const { data, error } = await client.auth.updateUser({ email: value });
+    if (error) { say('[data-email-msg]', error.message, 'bad'); return; }
+
+    // With confirmation switched on, the address only changes once the email
+    // is confirmed, and the account says so by carrying it as new_email.
+    const pending = (data.user as any)?.new_email;
+    if (pending) {
+      say('[data-email-msg]', S.emailSent, 'good');
+    } else {
+      text(q('[data-email]'), value);
+      text(q('[data-email-2]'), value);
+      say('[data-email-msg]', S.emailDone, 'good');
+    }
+  });
+
+  q('[data-pw-form]')?.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const now = (q('[data-pw-now]') as HTMLInputElement).value;
+    const next = (q('[data-pw-new]') as HTMLInputElement).value;
+    const again = (q('[data-pw-again]') as HTMLInputElement).value;
+
+    if (next.length < 8) { say('[data-pw-msg]', S.pwShort, 'bad'); return; }
+    if (next !== again) { say('[data-pw-msg]', S.pwMismatch, 'bad'); return; }
+
+    // The current password first. A signed-in tab left open on a shared
+    // computer should not be enough to take the account over.
+    const { error: wrong } = await client.auth.signInWithPassword({ email: user.email ?? '', password: now });
+    if (wrong) { say('[data-pw-msg]', S.pwWrong, 'bad'); return; }
+
+    const { error } = await client.auth.updateUser({ password: next });
+    if (error) { say('[data-pw-msg]', error.message, 'bad'); return; }
+
+    (q('[data-pw-form]') as HTMLFormElement).reset();
+    say('[data-pw-msg]', S.pwDone, 'good');
+  });
 
   q('[data-signout]')?.addEventListener('click', async () => {
     await signOut();
     location.href = '/';
   });
 
-  // ------------------------------------------------------------- my trails
-  {
-    const { data, error } = await client.rpc('my_worlds');
-    const list = q('[data-trails]')!;
-    if (error || !data || data.length === 0) {
-      q('[data-trails-empty]')?.removeAttribute('hidden');
-    } else {
-      list.innerHTML = data.map((w: any) => `
-        <li class="card p-5">
-          <div class="flex items-start justify-between gap-3">
-            <h3 class="text-lg">${escapeHtml(w.name)}</h3>
-            <span class="eyebrow shrink-0">${w.status === 'published' ? S.published : S.draft}</span>
-          </div>
-          <p class="data mt-3 text-xs text-[var(--ink-dim)]">
-            ${count(w.marker_count, S.stop, S.stops)} · ${count(w.team_count, S.teamOne, S.teamN)}
-            ${Number(w.pending) > 0
-              ? ` · <span style="color:var(--lamp)">${w.pending} ${S.pending}</span>`
-              : ''}
-          </p>
-          <div class="mt-4 flex gap-2">
-            <a class="btn btn-quiet btn-sm"
-               href="${S.editHref}?id=${encodeURIComponent(w.id)}">${S.open}</a>
-            <a class="btn btn-quiet btn-sm"
-               href="${S.boardHref}?id=${encodeURIComponent(w.id)}">${escapeHtml(S.board)}</a>
-          </div>
-        </li>`).join('');
-    }
-  }
+  q('[data-signout-all]')?.addEventListener('click', async () => {
+    await client.auth.signOut({ scope: 'global' });
+    location.href = '/';
+  });
 
-  // --------------------------------------------------------- where I walked
-  {
-    const { data, error } = await client.rpc('my_history');
-    const list = q('[data-history]')!;
-    const rows = (data ?? []).filter((h: any) => h.role === 'viewer' || h.team_id);
-
-    if (error || rows.length === 0) {
-      q('[data-history-empty]')?.removeAttribute('hidden');
-    } else {
-      list.innerHTML = rows.map((h: any) => `
-        <li class="card flex flex-wrap items-center justify-between gap-3 p-4">
-          <div class="min-w-0">
-            <h3 class="truncate text-base">${escapeHtml(h.world_name)}</h3>
-            <p class="mt-0.5 text-xs text-[var(--ink-faint)]">
-              ${h.team_name ? escapeHtml(S.team) + ': ' + escapeHtml(h.team_name) : '—'}
-            </p>
-          </div>
-          <p class="data shrink-0 text-xs text-[var(--ink-dim)]">
-            ${count(h.stops_solved, S.stop, S.stops)} · ${count(h.points, S.point, S.points)}
-            ${Number(h.pending) > 0
-              ? ` · <span style="color:var(--lamp)">${h.pending} ${S.pending}</span>`
-              : ''}
-          </p>
-        </li>`).join('');
-    }
-  }
+  q('[data-go-delete]')?.addEventListener('click', () => {
+    // Straight to the step that asks, not to a page that makes you look for it.
+    setTimeout(() => (q('[data-delete]') as HTMLButtonElement)?.click(), 0);
+  });
 
   // ------------------------------------------------------------- my data
   q('[data-export]')?.addEventListener('click', async (event) => {
@@ -176,7 +627,6 @@ const strings = {
     button.disabled = false;
     if (error) { alert(S.failed); return; }
 
-    // Straight to a file. A screenful of JSON is not "download everything".
     const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
