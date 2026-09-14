@@ -109,7 +109,11 @@ const up = mode === 'signup';
 
       if (result.error) { show(result.error); return; }
 
-      if (mode === 'signup') {
+      // Only promise an email when one is actually coming. signUp reports that,
+      // and this form ignored it: with confirmations off the account is live at
+      // once, but everybody was still told to open a link that was never sent.
+      // The first real tester sat waiting for it.
+      if (mode === 'signup' && 'needsConfirmation' in result && result.needsConfirmation) {
         form.classList.add('hidden');
         done.classList.remove('hidden');
 
