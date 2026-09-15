@@ -21,7 +21,11 @@
   publish = "dist"
 
 [build.environment]
-  NODE_VERSION = "20"
+  # The floor is not a preference: web/package.json declares
+  # engines.node ">=22.12.0" because Astro 7 requires it. This was pinned at 20
+  # out of caution and the first deploy died on "Node.js v20.20.2 is not
+  # supported by Astro". Raise it here and there together, or leave it alone.
+  NODE_VERSION = "22"
 
 # Astro writes a directory per page, so /play/ already resolves to
 # /play/index.html. Nothing here needs a rewrite rule.
