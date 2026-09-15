@@ -1,0 +1,27 @@
+# Building the site on push, instead of dragging a folder.
+#
+# Every deploy so far has been a manual upload of web/dist, which is why the
+# live site spent two days serving [име на отговорника] and telling new accounts
+# to open a confirmation link that was never sent: the fixes existed, built, and
+# sat on one laptop.
+#
+# Point Netlify at this repository once - Site configuration, Build & deploy,
+# link to ZalexZal/noit-platform - and this file does the rest. The two
+# PUBLIC_ variables go in the Netlify UI under Environment variables; they are
+# baked into the JavaScript at build time and are both public by design. The
+# service_role key is not one of them and never goes here.
+#
+# node_modules in web/ is unreadable on the laptop this was written on, which is
+# why rebuild.ps1 exists. Netlify installs into a clean container, so npm ci
+# works there normally and rebuild.ps1 stays a local workaround.
+
+[build]
+  base = "web"
+  command = "npm run build"
+  publish = "dist"
+
+[build.environment]
+  NODE_VERSION = "20"
+
+# Astro writes a directory per page, so /play/ already resolves to
+# /play/index.html. Nothing here needs a rewrite rule.
