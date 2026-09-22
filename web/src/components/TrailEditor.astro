@@ -279,7 +279,7 @@ const strings = {
               </label>
               <label class="block text-sm">
                 <span class="mb-1 block font-medium">{t('ed.cooldown')}</span>
-                <input class="field data" name="cooldown" inputmode="numeric" value="60" />
+                <input class="field data" name="cooldown" inputmode="numeric" value="15" />
               </label>
             </div>
           </div>
@@ -682,7 +682,7 @@ const strings = {
     paintHue();
     (field('kind') as HTMLSelectElement).value = m.answer_kind ?? 'none';
     (field('points') as HTMLInputElement).value = String(m.points ?? 10);
-    (field('cooldown') as HTMLInputElement).value = String(m.cooldown_seconds ?? 60);
+    (field('cooldown') as HTMLInputElement).value = String(m.cooldown_seconds ?? 15);
     (field('onWrong') as HTMLSelectElement).value = m.on_wrong ?? 'retry';
     (field('deduct') as HTMLInputElement).value = String(m.deduct_points ?? 5);
     (field('accepted') as HTMLTextAreaElement).value = (m.accepted ?? []).join('\n');
@@ -815,7 +815,7 @@ const strings = {
       const el = document.createElement('div');
       el.style.cssText =
         'width:18px;height:18px;border-radius:50%;cursor:pointer;' +
-        `background:${m.colour_hex || '#45C4B0'};border:2px solid #fff;` +
+        `background:${m.colour_hex || '#0066CC'};border:2px solid #fff;` +
         'box-shadow:0 1px 4px rgba(0,0,0,.5)';
 
       const pin = new maplibregl.Marker({ element: el, draggable: true })
@@ -1173,7 +1173,7 @@ const strings = {
         p_accepted: kind === 'exact' ? accepted : null,
         p_correct_choices: kind === 'choice' ? correct : null,
         p_points: num('points') ?? 10,
-        p_cooldown_seconds: num('cooldown') ?? (kind === 'free' ? 0 : 60),
+        p_cooldown_seconds: num('cooldown') ?? (kind === 'free' ? 0 : 15),
         p_on_wrong: (field('onWrong') as HTMLSelectElement)?.value || 'retry',
         p_deduct_points: num('deduct') ?? 0,
         p_after_text: after,

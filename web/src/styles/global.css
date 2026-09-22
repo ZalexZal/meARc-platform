@@ -5,13 +5,13 @@
    ==========================================================================
 
    The visual language is taken from the product's own surface rather than from
-   a landing-page fashion: an inverted street map after dark, a teal signal
+   a landing-page fashion: an inverted street map after dark, a blue signal
    colour, distance rings, coordinates set in a mono face. Somebody who has used
    the app should recognise the website as the same object seen from above.
 
-   #45C4B0 is not a new brand colour. It is the exact accent the Unity client
-   already draws its pins and rings in, carried across so the two clients do not
-   look like two products.
+   The blue is not a website colour. It is the exact accent the Unity client
+   draws its buttons and pins in (#0066CC light, a lighter blue on dark),
+   carried across so the two clients do not look like two products.
 
    Three theme states, not two. An explicit choice stamps data-theme on <html>;
    the default "system" setting stamps nothing at all, and only
@@ -56,10 +56,10 @@
 
   /* Darkened from the app's #45C4B0, which is a night colour and fails against
      white. Same hue, enough contrast to read as body-adjacent text. */
-  --signal: #0d7c6b;
-  --signal-bright: #12a48c;
+  --signal: #0066cc;
+  --signal-bright: #0071e3;
   --signal-ink: #ffffff;
-  --signal-wash: #dff2ee;
+  --signal-wash: #e8f1fb;
 
   /* A lamp, not a highlighter. Used only where something has been earned. */
   --lamp: #a75f14;
@@ -94,10 +94,10 @@
     --ink-dim: #93aab5;
     --ink-faint: #617984;
 
-    --signal: #45c4b0;
-    --signal-bright: #6fe0cd;
-    --signal-ink: #04231e;
-    --signal-wash: rgba(69, 196, 176, 0.12);
+    --signal: #2997ff;
+    --signal-bright: #4aa8ff;
+    --signal-ink: #04182e;
+    --signal-wash: rgba(41, 151, 255, 0.14);
 
     --lamp: #f0a868;
     --lamp-wash: rgba(240, 168, 104, 0.12);
@@ -130,10 +130,10 @@
   --ink-dim: #93aab5;
   --ink-faint: #617984;
 
-  --signal: #45c4b0;
-  --signal-bright: #6fe0cd;
-  --signal-ink: #04231e;
-  --signal-wash: rgba(69, 196, 176, 0.12);
+  --signal: #2997ff;
+  --signal-bright: #4aa8ff;
+  --signal-ink: #04182e;
+  --signal-wash: rgba(41, 151, 255, 0.14);
 
   --lamp: #f0a868;
   --lamp-wash: rgba(240, 168, 104, 0.12);
@@ -219,7 +219,12 @@ h1, h2, h3, h4 {
 
 p { text-wrap: pretty; }
 
-a { color: inherit; }
+/* In the base layer, not unlayered. Unlayered it outranked every @layer rule,
+   so a .btn-primary that happened to be an <a> - Sign up, Build a trail - drew
+   its label in body ink on the blue instead of white. */
+@layer base {
+  a { color: inherit; }
+}
 
 img, svg, video { max-width: 100%; height: auto; display: block; }
 

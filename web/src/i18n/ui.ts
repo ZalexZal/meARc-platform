@@ -104,6 +104,16 @@ export const ui = {
     'games.emptyBody':
       'Частните маршрути не се показват тук. Ако имаш код, въведи го направо в приложението.',
     'games.open': 'Отвори',
+    'games.nearMe': 'Подреди по близост',
+    'games.locating': 'Търсим къде се намирате…',
+    'games.sorted': 'Най-близките са първи. Местоположението ви не напуска тази страница.',
+    'games.denied': 'Без достъп до местоположението. Списъкът остава по дата.',
+    'games.away': 'на {0}',
+    'games.openApp': 'Отвори в приложението',
+    'games.map': 'Старт на картата',
+    'games.qr': 'QR код',
+    'games.qrHint': 'Сканирайте с камерата на телефона, после „Отвори в приложението“.',
+    'games.noApp': 'AR Trail още не е инсталирано на този телефон. Инсталирайте го и сканирайте кода отново.',
     'games.loading': 'Зареждане…',
     'games.failed': 'Списъкът не се зареди. Провери връзката и опитай пак.',
 
@@ -531,6 +541,16 @@ export const ui = {
     'games.emptyBody':
       'Private trails are not listed here. If you have a code, type it straight into the app.',
     'games.open': 'Open',
+    'games.nearMe': 'Sort by distance',
+    'games.locating': 'Finding where you are…',
+    'games.sorted': 'Nearest first. Your location never leaves this page.',
+    'games.denied': 'No access to your location. The list stays sorted by date.',
+    'games.away': '{0} away',
+    'games.openApp': 'Open in the app',
+    'games.map': 'Start on the map',
+    'games.qr': 'QR code',
+    'games.qrHint': 'Scan it with a phone camera, then tap Open in the app.',
+    'games.noApp': 'AR Trail isn’t installed on this phone yet. Install it, then scan the code again.',
     'games.loading': 'Loading…',
     'games.failed': 'The list did not load. Check your connection and try again.',
 
