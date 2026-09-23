@@ -31,7 +31,9 @@ export async function who(): Promise<Who> {
  * rather than being told they are not signed in, which they are.
  */
 export async function requireUser(
-  { needsReal = true, signInPath = '/signin' } = {}
+  // In the reader's language. It was '/signin' for everybody, so an English
+  // reader who opened /en/account/ signed out landed on the Bulgarian form.
+  { needsReal = true, signInPath = location.pathname.startsWith('/en/') ? '/en/signin' : '/signin' } = {}
 ): Promise<User> {
   const { user, anonymous, configured: ok } = await who();
 

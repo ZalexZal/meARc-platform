@@ -63,7 +63,7 @@ const badges = {
   bg: {
     first_trail: ['Първи маршрут', 'Завърши всички спирки на който и да е маршрут.'],
     guided: ['Воден път', 'Завърши воден маршрут.'],
-    flag_runner: ['Флагоносец', 'Завърши маршрут „Капитулирай флага“ с отбора си.'],
+    flag_runner: ['Флагоносец', 'Завърши маршрут тип „Състезание“ с отбора си.'],
     free_roamer: ['Свободен скитник', 'Завърши маршрут „Свободно падане“, където спирките са в произволен ред.'],
     scholar: ['Отличник', 'Завърши образователен маршрут.'],
     flawless: ['Безупречен', 'Отборът ти отговаря правилно на всеки въпрос от първия път, без подсказки и без пропуски.'],
@@ -76,7 +76,7 @@ const badges = {
   en: {
     first_trail: ['First trail', 'Finish every stop on any trail.'],
     guided: ['Guided walker', 'Finish a guided trail.'],
-    flag_runner: ['Flag runner', 'Finish a Capture-the-flag trail with your team.'],
+    flag_runner: ['Flag runner', 'Finish a Competition trail with your team.'],
     free_roamer: ['Free roamer', 'Finish a Freefall trail, where the stops can be taken in any order.'],
     scholar: ['Scholar', 'Finish an Educational trail.'],
     flawless: ['Flawless', 'Your team answers every question right the first time, with no hints and no skips.'],
@@ -606,12 +606,12 @@ const rail = [
 
   q('[data-signout]')?.addEventListener('click', async () => {
     await signOut();
-    location.href = '/';
+    location.href = location.pathname.startsWith('/en/') ? '/en/' : '/';
   });
 
   q('[data-signout-all]')?.addEventListener('click', async () => {
     await client.auth.signOut({ scope: 'global' });
-    location.href = '/';
+    location.href = location.pathname.startsWith('/en/') ? '/en/' : '/';
   });
 
   q('[data-go-delete]')?.addEventListener('click', () => {
@@ -685,6 +685,6 @@ const rail = [
     const { error } = await client.rpc('delete_my_account', { p_keep_trails: keep });
     if (error) { button.disabled = false; alert(error.message); return; }
     await signOut();
-    location.href = '/';
+    location.href = location.pathname.startsWith('/en/') ? '/en/' : '/';
   });
 </script>

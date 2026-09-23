@@ -4,4 +4,4 @@ import LegalPage from '../../components/LegalPage.astro';
 import { langFromUrl } from '../../i18n/ui';
 const lang = langFromUrl(Astro.url);
 ---
-<Base><LegalPage lang={lang} kind="privacy" /></Base>
+<Base title={(lang === 'bg' ? 'Поверителност' : 'Privacy') + ' — AR Trail'}><LegalPage lang={lang} kind="privacy" /></Base>

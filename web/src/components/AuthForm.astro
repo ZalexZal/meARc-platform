@@ -12,7 +12,11 @@ const up = mode === 'signup';
   <h1 class="text-3xl">{up ? t('auth.signup.title') : t('auth.signin.title')}</h1>
 
   <form class="card mt-8 space-y-5 p-6" data-auth-form data-mode={mode}
-        data-agree-error={t("err.mustAgree")} novalidate>
+        data-agree-error={t("err.mustAgree")} novalidate
+        data-errors={JSON.stringify({
+          fill: t('err.fill'), weak: t('err.weakPassword'), generic: t('err.generic'),
+          network: t('err.network'), bad: t('err.badCredentials'), taken: t('err.emailTaken'),
+        })}>
     {up && (
       <div>
         <label class="mb-1.5 block text-sm font-medium" for="name">{t('auth.name')}</label>
@@ -90,6 +94,24 @@ const up = mode === 'signup';
     const done = document.querySelector('[data-auth-done]') as HTMLElement;
     const ids = document.querySelector('[data-auth-ids]') as HTMLElement;
 
+    // The page's own language. These were English on both sites, and the
+    // server's messages went through untranslated ("Invalid login credentials").
+    const said = JSON.parse(form.dataset.errors ?? '{}');
+    const translate = (raw: string) =>
+      /invalid login credentials/i.test(raw) ? said.bad
+      : /already (registered|been registered)|already exists/i.test(raw) ? said.taken
+      : /password/i.test(raw) && /(at least|short|weak)/i.test(raw) ? said.weak
+      : /fetch|network/i.test(raw) ? said.network
+      : raw === 'not-configured' ? said.generic
+      : raw;   // rare and specific (a rate limit, say): the server's words beat a shrug
+
+    // Back to the page that sent the reader here, when it is one of ours.
+    // requireUser adds ?next=, and this ignored it, so opening My trails
+    // signed out meant signing in and then finding My trails again by hand.
+    const next = new URLSearchParams(location.search).get('next');
+    const home = location.pathname.startsWith('/en/') ? '/en/' : '/';
+    const onward = next && next.startsWith('/') && !next.startsWith('//') ? next : home;
+
     const show = (message: string) => {
       errorBox.textContent = message;
       errorBox.classList.remove('hidden');
@@ -109,7 +131,7 @@ const up = mode === 'signup';
       const password = String(data.get('password') ?? '');
       const name = String(data.get('name') ?? '').trim();
 
-      if (!email || !password) { show('Fill in both fields.'); return; }
+      if (!email || !password) { show(said.fill); return; }
 
       // Agreeing is an act, not a link somebody walked past.
       const agree = form.querySelector('[data-auth-agree]') as HTMLInputElement | null;
@@ -118,7 +140,7 @@ const up = mode === 'signup';
         return;
       }
       if (mode === 'signup' && password.length < 8) {
-        show('The password needs to be at least 8 characters.');
+        show(said.weak);
         return;
       }
 
@@ -133,7 +155,7 @@ const up = mode === 'signup';
       submit.disabled = false;
       submit.textContent = label;
 
-      if (result.error) { show(result.error); return; }
+      if (result.error) { show(translate(result.error)); return; }
 
       // Recorded against the account, so the acceptance survives the tick box.
       if (mode === 'signup') await acceptTerms(TERMS_VERSION);
@@ -153,7 +175,7 @@ const up = mode === 'signup';
           ids.classList.remove('hidden');
         }
       } else {
-        window.location.href = '/';
+        window.location.href = onward;
       }
     });
   }

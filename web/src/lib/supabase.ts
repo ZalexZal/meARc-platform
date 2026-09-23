@@ -141,6 +141,11 @@ export async function signIn(email: string, password: string) {
   return { error: null, abandonedAnonymous: abandoning };
 }
 
+/**
+ * This browser only. supabase-js signs out everywhere by default, so the plain
+ * Sign out button did the same thing as "Sign out on every device" - leaving
+ * the website also signed you out of the app on your phone.
+ */
 export async function signOut() {
-  await db()?.auth.signOut();
+  await db()?.auth.signOut({ scope: 'local' });
 }

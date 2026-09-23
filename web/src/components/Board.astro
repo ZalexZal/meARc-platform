@@ -1,9 +1,10 @@
 ---
-import { useTranslations, type Lang } from '../i18n/ui';
+import { useTranslations, localise, type Lang } from '../i18n/ui';
 
 interface Props { lang: Lang; }
 const { lang } = Astro.props;
 const t = useTranslations(lang);
+const href = localise(lang);
 
 const strings = {
   lang,
@@ -54,6 +55,10 @@ const strings = {
   <p class="mt-8 text-[var(--ink-dim)]" data-board-loading>{t('games.loading')}</p>
   <p class="mt-8 hidden text-[var(--ink-dim)]" data-board-empty>{t('ed.boardEmpty')}</p>
   <p class="mt-8 hidden text-sm text-[var(--alert)]" data-board-failed>{t('games.failed')}</p>
+  <!-- No trail in the address. It used to say the connection had failed. -->
+  <p class="mt-8 hidden text-[var(--ink-dim)]" data-board-none>
+    {t('board.none')} <a class="text-[var(--signal)] underline-offset-2 hover:underline" href={href('/my-trails')}>{t('nav.mine')}</a>
+  </p>
 
   <div class="scroll-x mt-8"><table class="table" data-board></table></div>
 
@@ -84,12 +89,13 @@ const strings = {
   const worldId = param('id');
 
   const only = (which: string | null) => {
-    ['[data-board-loading]', '[data-board-empty]', '[data-board-failed]'].forEach((sel) =>
+    ['[data-board-loading]', '[data-board-empty]', '[data-board-failed]', '[data-board-none]'].forEach((sel) =>
       q(sel)?.classList.add('hidden'));
     if (which) q(which)?.classList.remove('hidden');
   };
 
-  if (!worldId || !configured()) { only('[data-board-failed]'); }
+  if (!worldId) { only('[data-board-none]'); }
+  else if (!configured()) { only('[data-board-failed]'); }
   else {
     const client = db()!;
 
@@ -143,7 +149,12 @@ const strings = {
     // world_teams answers the owner and refuses everybody else, so the error
     // IS the permission check - a walker reading a public board simply never
     // sees the section.
-    const teams = await client.rpc('world_teams', { p_world: worldId });
+    // Not asked at all without a session: a stranger's refusal still landed in
+    // the console as a red 401 on every public board.
+    const { data: session } = await client.auth.getSession();
+    const teams = session.session
+      ? await client.rpc('world_teams', { p_world: worldId })
+      : { error: true, data: null };
 
     if (!teams.error && teams.data) {
       q('[data-teams-section]')!.classList.remove('hidden');

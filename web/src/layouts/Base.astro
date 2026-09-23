@@ -20,7 +20,10 @@ const pageDescription = description ?? t('meta.description' as UIKey);
 // The same page in the other language, so the switch lands on the equivalent
 // page rather than dumping everyone on the home page.
 const path = Astro.url.pathname.replace(/^\/en/, '') || '/';
-const other = lang === 'bg' ? `/en${path === '/' ? '' : path}` : path;
+// The 404 page has no English twin; its switch goes to the other home.
+const other = path.startsWith('/404')
+  ? '/en/'
+  : lang === 'bg' ? `/en${path === '/' ? '' : path}` : path;
 ---
 
 <!doctype html>

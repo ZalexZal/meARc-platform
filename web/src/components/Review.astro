@@ -7,6 +7,8 @@ const t = useTranslations(lang);
 const href = localise(lang);
 
 const strings = {
+  modes: { ctf: t('new.mode.ctf'), freefall: t('new.mode.freefall'),
+           guide: t('new.mode.guide'), educational: t('new.mode.educational') },
   stop: t('n.stop'), stops: t('n.stops'),
   by: t('rev.by'),
   open: t('rev.open'),
@@ -114,7 +116,7 @@ const strings = {
         <div class="min-w-0">
           <h2 class="text-lg">${escapeHtml(w.name)}</h2>
           <p class="data mt-2 text-xs text-[var(--ink-dim)]">
-            ${escapeHtml(count(w.marker_count, S.stop, S.stops))} · ${escapeHtml(w.mode ?? '')}
+            ${escapeHtml(count(w.marker_count, S.stop, S.stops))} · ${escapeHtml(S.modes?.[w.mode] ?? w.mode ?? '')}
             · ${escapeHtml(S.by)} ${escapeHtml(w.owner_email ?? '—')}
           </p>
         </div>

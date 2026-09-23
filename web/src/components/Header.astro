@@ -17,7 +17,7 @@ const links: { label: UIKey; to: string }[] = [
 <header
   class="sticky top-0 z-40 border-b border-[var(--line-soft)] bg-[color-mix(in_srgb,var(--ground)_88%,transparent)] backdrop-blur-md"
 >
-  <div class="mx-auto flex h-16 max-w-6xl items-center gap-3 px-4 sm:px-6">
+  <div class="relative mx-auto flex h-16 max-w-6xl items-center gap-3 px-4 sm:px-6">
     <a href={href('/')} class="flex items-center gap-2.5 shrink-0" aria-label="AR Trail">
       <!-- A pin standing on a ring: the marker and the distance around it, which
            is the whole product in one glyph. -->
@@ -65,6 +65,31 @@ const links: { label: UIKey; to: string }[] = [
     </nav>
 
     <div class="ml-auto flex items-center gap-1.5">
+      <!-- The whole menu on a phone. Below md the nav above is hidden, and with
+           it every way to Trails, How to play, My trails, Sign in and Build a
+           trail - a phone visitor could reach none of them from the header.
+           A native disclosure: it opens and closes with no script at all. -->
+      <details class="md:hidden" data-menu>
+        <summary
+          class="grid h-11 w-11 cursor-pointer list-none place-items-center rounded-lg text-[var(--ink-dim)] transition-colors hover:bg-[var(--surface-2)] hover:text-[var(--ink)] [&::-webkit-details-marker]:hidden"
+          aria-label={t('nav.menu')}
+        >
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true">
+            <path d="M4 7h16M4 12h16M4 17h16" />
+          </svg>
+        </summary>
+        <!-- Anchored to the header, not to the button: from the button it
+             opened off the left edge of the screen. -->
+        <nav class="card absolute inset-x-4 top-[60px] z-50 flex flex-col p-2 sm:left-auto sm:w-72" aria-label={t('nav.menu')}>
+          {links.map((l) => (
+            <a href={href(l.to)} class="rounded-lg px-3 py-3 text-[15px] hover:bg-[var(--surface-2)]">{t(l.label)}</a>
+          ))}
+          <a href={href('/my-trails')} data-auth-in hidden class="rounded-lg px-3 py-3 text-[15px] hover:bg-[var(--surface-2)]">{t('nav.mine')}</a>
+          <a href={href('/create')} data-auth-in hidden class="rounded-lg px-3 py-3 text-[15px] font-semibold text-[var(--signal)] hover:bg-[var(--surface-2)]">{t('nav.create')}</a>
+          <a href={href('/signin')} data-auth-out hidden class="rounded-lg px-3 py-3 text-[15px] font-semibold text-[var(--signal)] hover:bg-[var(--surface-2)]">{t('nav.signin')}</a>
+        </nav>
+      </details>
+
       <button
         type="button"
         data-theme-toggle
@@ -107,6 +132,12 @@ const links: { label: UIKey; to: string }[] = [
 
 <script>
   import { who } from '../lib/session';
+
+  // A tap anywhere else closes the phone menu, the way a menu is expected to.
+  const menu = document.querySelector('[data-menu]') as HTMLDetailsElement | null;
+  document.addEventListener('click', (event) => {
+    if (menu?.open && !menu.contains(event.target as Node)) menu.open = false;
+  });
 
   // Neither pair is visible until this decides, so nobody sees the wrong one.
   const { user, anonymous } = await who();
