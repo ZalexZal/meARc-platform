@@ -25,6 +25,8 @@ const strings = {
   repEmptyBody: t('rep.emptyBody'),
   repMarker: t('rep.marker'),
   repTrail: t('rep.trail'),
+  repTeam: t('rep.team'),
+  repDisqualify: t('rep.disqualify'),
   repBy: t('rep.by'),
   repAnon: t('rep.anonymous'),
   repPlaced: t('rep.placed'),
@@ -143,7 +145,7 @@ const strings = {
   }
 
   function report(r: any) {
-    const kind = r.target === 'marker' ? S.repMarker : S.repTrail;
+    const kind = r.target === 'marker' ? S.repMarker : r.target === 'team' ? S.repTeam : S.repTrail;
     const reason = S.reasons[r.reason] ?? r.reason;
 
     // A removed target keeps its report and loses its buttons. The record is
@@ -151,7 +153,7 @@ const strings = {
     const actions = r.gone
       ? `<span class="text-xs text-[var(--ink-dim)]">${escapeHtml(S.repGone)}</span>`
       : `<button class="btn btn-danger btn-sm"
-                 data-report="remove" data-id="${r.id}">${escapeHtml(S.repRemove)}</button>
+                 data-report="remove" data-id="${r.id}">${escapeHtml(r.target === 'team' ? S.repDisqualify : S.repRemove)}</button>
          <button class="btn btn-quiet btn-sm"
                  data-report="dismiss" data-id="${r.id}">${escapeHtml(S.repDismiss)}</button>`;
 
@@ -271,7 +273,18 @@ const strings = {
 
     let error = null;
 
-    if (remove && target) {
+    if (remove && target && target.target === 'team') {
+      // A team's name is the problem, not the trail: the team comes off the
+      // board, with the note as its reason, and the trail is left alone.
+      error = (await client.rpc('moderator_disqualify', {
+        p_team: target.team_id, p_reason: note || S.reasons[target.reason] || target.reason, p_on: true,
+      })).error;
+      if (!error) {
+        error = (await client.rpc('resolve_report', {
+          p_report: id, p_state: 'actioned', p_note: note || null,
+        })).error;
+      }
+    } else if (remove && target) {
       // The pictures before the rows. remove_world deletes the trail outright,
       // and once it has, media_paths has nothing left to answer about - which
       // is how a trail taken down for its photos leaves those photos sitting in

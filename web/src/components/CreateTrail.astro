@@ -108,7 +108,10 @@ const modes = [
     if (error) {
       submit.disabled = false;
       submit.textContent = label;
-      errorBox.textContent = error.message;
+      errorBox.textContent = /parent needs to agree/i.test(error.message)
+        ? (conf.lang === 'bg' ? 'Родител или настойник трябва първо да се съгласи.'
+                              : 'A parent or guardian has to agree first.')
+        : error.message;
       errorBox.classList.remove('hidden');
       return;
     }

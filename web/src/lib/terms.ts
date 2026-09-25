@@ -7,4 +7,4 @@
  * changing the date in both, so everyone is asked again instead of an old
  * acceptance being held against new text.
  */
-export const TERMS_VERSION = '2026-09-12';
+export const TERMS_VERSION = '2026-09-25';

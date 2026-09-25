@@ -59,6 +59,10 @@ const strings = {
   colourNone: t('ed.colourNone'),
   revealOff: t('ed.revealOff'),
   boardHref: href('/board'),
+  hidden: t('board.hidden'), revBlock: t('rev.block'), revBlockConfirm: t('rev.blockConfirm'),
+  ownerWord: t('ed.owner'), editorWord: t('ed.editor'), leaveConfirm: t('ed.leaveConfirm'),
+  here: t('ed.here'), conflict: t('ed.conflict'), inviteHref: href('/editor-invite'),
+  myTrailsHref: href('/my-trails'),
 };
 ---
 
@@ -71,6 +75,10 @@ const strings = {
         <span class="eyebrow" data-trail-mode></span>
         <span class="eyebrow" data-trail-status></span>
       </p>
+      <p class="mt-2 hidden max-w-md text-sm text-[var(--ink-dim)]" data-you-edit>{t('ed.youEdit')}</p>
+      <!-- Who else has this trail open right now. Realtime presence: gone the
+           moment their tab closes, and never stored anywhere. -->
+      <p class="mt-2 hidden flex-wrap items-center gap-1.5 text-xs text-[var(--ink-dim)]" data-presence></p>
     </div>
 
     <div class="flex flex-wrap items-center gap-2">
@@ -80,18 +88,18 @@ const strings = {
               data-trail-code></code>
         <button class="btn btn-ghost btn-sm" type="button" data-copy-code>{t('pub.copy')}</button>
         <button class="text-xs text-[var(--ink-faint)] underline-offset-2 hover:text-[var(--ink)] hover:underline"
-                type="button" data-rotate title={t('ed.rotateHint')}>{t('ed.rotate')}</button>
+                type="button" data-rotate data-owner-only title={t('ed.rotateHint')}>{t('ed.rotate')}</button>
       </div>
       <!-- Only ordered trails have a next marker to withhold, so this is
            switched off and explained on the two that do not. -->
-      <label class="card flex items-center gap-2 px-3 py-2 text-xs" data-reveal-row>
+      <label class="card flex items-center gap-2 px-3 py-2 text-xs" data-reveal-row data-owner-only>
         <input type="checkbox" data-reveal />
         <span>{t('ed.reveal')}</span>
       </label>
 
       <!-- Beside the code, because both are things you set once for the whole
            trail and then read out to a room. -->
-      <label class="card flex items-center gap-2 px-3 py-2 text-xs"
+      <label class="card flex items-center gap-2 px-3 py-2 text-xs" data-owner-only
              title={t('ed.teamSizeHint')}>
         <span class="eyebrow">{t('ed.teamSize')}</span>
         <input class="data w-12 bg-transparent text-base font-medium text-[var(--ink)] outline-none"
@@ -102,7 +110,7 @@ const strings = {
            button here that wrote the same two columns with different words, so a
            trail could be "published" on one screen and "only me" on the other,
            and both were telling the truth about a different column. -->
-      <div>
+      <div data-owner-only>
         <div class="tabs" data-levels>
           <button class="tab" type="button" data-level="draft">{t('vis.private')}</button>
           <button class="tab" type="button" data-level="code">{t('vis.unlisted')}</button>
@@ -183,6 +191,11 @@ const strings = {
                 {tab.id === 'media' && <span class="data ml-1 text-2xs" data-count-media></span>}
               </button>
             ))}
+        </div>
+
+        <div class="note note-lamp mt-4 hidden flex-wrap items-center justify-between gap-3 text-sm" data-remote-change role="status">
+          <span>{t('ed.changed')}</span>
+          <button type="button" class="btn btn-quiet btn-sm" data-remote-reload>{t('ed.reload')}</button>
         </div>
 
         <div class="space-y-4 pt-6" data-panel="basics">
@@ -410,6 +423,27 @@ const strings = {
     </div>
   </div>
 
+  <section class="mt-14" data-editors>
+    <h2 class="text-lg">{t('ed.editors')}</h2>
+    <p class="mt-2 max-w-2xl text-sm text-[var(--ink-dim)]">{t('ed.editorsLede')}</p>
+    <ul class="mt-4 max-w-2xl" data-editor-list></ul>
+
+    <div class="card mt-4 max-w-2xl space-y-3 p-4" data-owner-only>
+      <div class="flex flex-wrap gap-2">
+        <button type="button" class="btn btn-quiet btn-sm" data-invite-make>{t('ed.invite')}</button>
+        <button type="button" class="btn btn-ghost btn-sm hidden" data-invite-new>{t('ed.inviteNew')}</button>
+        <button type="button" class="btn btn-ghost btn-sm hidden" data-invite-stop>{t('ed.inviteStop')}</button>
+      </div>
+      <div class="hidden gap-2" data-invite-box>
+        <input class="field data text-xs" readonly data-invite-link aria-label={t('ed.invite')} />
+        <button type="button" class="btn btn-primary btn-sm shrink-0" data-invite-copy>{t('pub.copy')}</button>
+      </div>
+      <p class="text-xs text-[var(--ink-faint)]">{t('ed.inviteHint')}</p>
+    </div>
+
+    <button type="button" class="btn btn-quiet btn-sm mt-4 hidden" data-editor-leave>{t('ed.leave')}</button>
+  </section>
+
   <section class="mt-14">
     <h2 class="text-lg">
       {t('ed.review')}
@@ -431,7 +465,7 @@ const strings = {
   <!-- There was no way to remove a trail at all: My trails could only hide
        one. The owner may delete their own row (worlds_delete_owner), and the
        markers, teams and scores go with it. -->
-  <section class="mt-14 border-t border-[var(--line)] pt-8" data-delete-trail>
+  <section class="mt-14 border-t border-[var(--line)] pt-8" data-delete-trail data-owner-only>
     <h2 class="text-lg">{t('ed.deleteTitle')}</h2>
     <p class="mt-2 max-w-xl text-sm text-[var(--ink-dim)]">{t('ed.deleteBody')}</p>
     <button type="button" class="btn btn-danger-quiet mt-4" data-delete-trail-btn>{t('ed.deleteButton')}</button>
@@ -500,6 +534,15 @@ const strings = {
   if (!owned) { q('[data-editor-loading]')!.textContent = S.notYours; throw new Error('not yours'); }
 
   text(q('[data-trail-name]'), owned.name);
+
+  // An editor gets the stops and nothing about the trail itself. RLS already
+  // refuses them; hiding the controls is so they are not offered a refusal.
+  const isOwner = owned.role === 'owner';
+  if (!isOwner) {
+    qa('[data-owner-only]').forEach((el) => ((el as HTMLElement).hidden = true));
+    q('[data-you-edit]')?.classList.remove('hidden');
+    q('[data-editor-leave]')?.classList.remove('hidden');
+  }
 
   // Deleting. The files first, while media_paths can still find them - the
   // same order the moderators' Remove uses - then the row, which takes the
@@ -642,6 +685,20 @@ const strings = {
   let fitted = false;   // the map has been fitted to the trail's markers
   let choices: { bg: string; en: string; correct: boolean }[] = [];
 
+  // Which version of the selected stop the form was filled from, and whether
+  // this tab is in the middle of saving it (so its own echo is not news).
+  let formVersion: number | null = null;
+  let savingNow = false;
+
+  // Presence is set up further down; until then there is nobody to tell.
+  let announce: () => void = () => {};
+
+  function showRemoteChange(on: boolean) {
+    const box = q('[data-remote-change]') as HTMLElement;
+    box.classList.toggle('hidden', !on);
+    box.classList.toggle('flex', on);
+  }
+
   const form = q('[data-marker-form]') as HTMLFormElement;
   const field = (n: string) =>
     form.elements.namedItem(n) as HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement;
@@ -720,6 +777,10 @@ const strings = {
 
     const m = markers.find((x) => x.id === id);
     if (!m) return;
+
+    formVersion = m.version;
+    showRemoteChange(false);
+    announce();
 
     (field('titleBg') as HTMLInputElement).value = m.content?.bg?.title ?? '';
     (field('titleEn') as HTMLInputElement).value = m.content?.en?.title ?? '';
@@ -876,9 +937,15 @@ const strings = {
 
       pin.on('dragend', async () => {
         const { lng, lat } = pin.getLngLat();
-        const { error } = await client.rpc('move_marker', { p_marker: m.id, p_lat: lat, p_lng: lng });
+        if (selected === m.id) savingNow = true;
+        const { data, error } = await client.rpc('move_marker', { p_marker: m.id, p_lat: lat, p_lng: lng });
+        savingNow = false;
         if (error) { alert(error.message); await load(); return; }
         m.lat = lat; m.lng = lng;
+        if (Array.isArray(data) ? data[0]?.version : (data as any)?.version) {
+          m.version = Array.isArray(data) ? data[0].version : (data as any).version;
+          if (selected === m.id) formVersion = m.version;
+        }
         if (selected === m.id) {
           (field('lat') as HTMLInputElement).value = String(lat);
           (field('lng') as HTMLInputElement).value = String(lng);
@@ -1208,18 +1275,32 @@ const strings = {
       content.en = { ...(content.en ?? {}), choices: kept.map((c) => c.en || c.bg) };
     }
 
-    const { error: upErr } = await client.from('markers')
+    // Only over the version this form was filled from. If somebody else saved
+    // the stop in between, the row's version has moved on, nothing matches, and
+    // this save is refused rather than silently writing over theirs.
+    const saving = selected;
+    savingNow = true;
+    const { data: wrote, error: upErr } = await client.from('markers')
       .update({
         content,
         radius_m: num('radius') ?? 100,
         colour_hex: hue === null ? null : hueToHex(hue),
         status: 'published',
       })
-      .eq('id', selected);
-    if (upErr) { fail(upErr.message); return; }
+      .eq('id', saving)
+      .eq('version', formVersion ?? -1)
+      .select('version');
+    if (upErr) { savingNow = false; fail(upErr.message); return; }
+    if (!wrote || wrote.length === 0) {
+      savingNow = false;
+      showRemoteChange(true);
+      fail(S.conflict);
+      return;
+    }
+    formVersion = wrote[0].version;
 
     const moved = await client.rpc('move_marker', { p_marker: selected, p_lat: lat, p_lng: lng });
-    if (moved.error) { fail(moved.error.message, 'place'); return; }
+    if (moved.error) { savingNow = false; fail(moved.error.message, 'place'); return; }
 
     if (kind === 'none') {
       await client.rpc('clear_marker_answer', { p_marker: selected });
@@ -1244,13 +1325,23 @@ const strings = {
         p_deduct_points: num('deduct') ?? 0,
         p_after_text: after,
       });
-      if (aErr) { fail(aErr.message, 'answer'); return; }
+      if (aErr) { savingNow = false; fail(aErr.message, 'answer'); return; }
     }
 
     button.disabled = false;
     button.textContent = S.saved;
     setTimeout(() => { button.textContent = label; }, 1400);
     await load();
+    // move_marker bumped the version again; take whatever the row says now.
+    formVersion = markers.find((m) => m.id === saving)?.version ?? formVersion;
+    savingNow = false;
+  });
+
+  q('[data-remote-reload]')?.addEventListener('click', async () => {
+    const id = selected;
+    await load();
+    await select(markers.some((m) => m.id === id) ? id : null);
+    q('[data-marker-error]')!.classList.add('hidden');
   });
 
   q('[data-marker-delete]')?.addEventListener('click', async () => {
@@ -1308,10 +1399,12 @@ const strings = {
           <p class="eyebrow">${escapeHtml(title)} · ${escapeHtml(r.team_name)}</p>
           <p class="mt-1.5 break-words text-sm">${escapeHtml(r.submitted)}</p>
         </div>
-        <div class="flex shrink-0 gap-2">
+        <div class="flex shrink-0 flex-wrap gap-2">
           <button class="btn btn-primary btn-sm" data-accept="${r.submission_id}">${S.accept}</button>
           <button class="btn btn-danger-quiet btn-sm"
                   data-reject="${r.submission_id}">${S.reject}</button>
+          <button class="btn btn-ghost btn-sm" data-block-player="${r.submission_id}"
+                  data-team="${escapeHtml(r.team_name)}">${escapeHtml(S.revBlock)}</button>
         </div>
       </li>`;
     }).join('');
@@ -1326,6 +1419,18 @@ const strings = {
       b.addEventListener('click', () => decide((b as HTMLElement).dataset.accept!, true)));
     list.querySelectorAll('[data-reject]').forEach((b) =>
       b.addEventListener('click', () => decide((b as HTMLElement).dataset.reject!, false)));
+
+    // The answer stays in the queue to be judged; the person who sent it
+    // leaves the trail and cannot come back.
+    list.querySelectorAll('[data-block-player]').forEach((b) =>
+      b.addEventListener('click', async () => {
+        const el = b as HTMLElement;
+        if (!confirm(S.revBlockConfirm.replace('{0}', el.dataset.team ?? ''))) return;
+        const { error: bErr } = await client.rpc('block_user',
+          { p_kind: 'submission', p_target: el.dataset.blockPlayer });
+        if (bErr) { alert(bErr.message); return; }
+        el.remove();
+      }));
 
     // Keyboard-driven: sixty submissions is not sixty dialogs.
     document.onkeydown = (event) => {
@@ -1356,7 +1461,7 @@ const strings = {
       <tbody>${rows.map((r: any) => `
         <tr class="border-b border-[var(--line-soft)]">
           <td class="data py-2 pr-3">${r.rank}</td>
-          <td class="py-2 pr-3">${escapeHtml(r.team_name)}${r.is_mine ? ` <span class="eyebrow">${S.you}</span>` : ''}</td>
+          <td class="py-2 pr-3">${r.team_name ? escapeHtml(r.team_name) : escapeHtml(S.hidden)}${r.is_mine ? ` <span class="eyebrow">${S.you}</span>` : ''}</td>
           <td class="data py-2 pr-3 text-right">${r.points}</td>
           <td class="data py-2 pr-3 text-right text-[var(--ink-dim)]">${r.stops_solved}</td>
           <td class="data py-2 text-right text-[var(--ink-dim)]">${duration(r.elapsed_seconds)}</td>
@@ -1364,6 +1469,157 @@ const strings = {
   }
 
   await Promise.all([loadReview(), loadBoard()]);
+
+  // ---------------------------------------------------------------- editors
+  const me = (await client.auth.getUser()).data.user;
+
+  async function loadEditors() {
+    const { data } = await client.rpc('trail_editors', { p_world: worldId });
+    const list = q('[data-editor-list]')!;
+    list.innerHTML = (data ?? []).map((e: any) => `
+      <li class="flex items-center justify-between gap-3 border-t border-[var(--line-soft)] py-2.5 text-sm">
+        <span class="min-w-0 truncate">${escapeHtml(e.name || e.email || '—')}${
+          e.name && e.email ? ` <span class="text-[var(--ink-faint)]">${escapeHtml(e.email)}</span>` : ''}${
+          e.is_me ? ` <span class="eyebrow">${escapeHtml(S.you)}</span>` : ''}</span>
+        <span class="flex shrink-0 items-center gap-2">
+          <span class="eyebrow">${escapeHtml(e.role === 'owner' ? S.ownerWord : S.editorWord)}</span>
+          ${isOwner && e.role === 'editor'
+            ? `<button type="button" class="btn btn-ghost btn-sm" data-remove-editor="${escapeHtml(e.user_id)}">${escapeHtml(S.remove)}</button>`
+            : ''}
+        </span>
+      </li>`).join('');
+
+    list.querySelectorAll('[data-remove-editor]').forEach((b) => b.addEventListener('click', async () => {
+      const { error: rErr } = await client.rpc('remove_editor',
+        { p_world: worldId, p_user: (b as HTMLElement).dataset.removeEditor });
+      if (rErr) { alert(rErr.message); return; }
+      await loadEditors();
+    }));
+  }
+
+  function showInvite(code: string | null) {
+    const box = q('[data-invite-box]') as HTMLElement;
+    box.classList.toggle('hidden', !code);
+    box.classList.toggle('flex', Boolean(code));
+    q('[data-invite-make]')!.classList.toggle('hidden', Boolean(code));
+    q('[data-invite-new]')!.classList.toggle('hidden', !code);
+    q('[data-invite-stop]')!.classList.toggle('hidden', !code);
+    if (code) {
+      (q('[data-invite-link]') as HTMLInputElement).value =
+        `${location.origin}${S.inviteHref}?code=${encodeURIComponent(code)}`;
+    }
+  }
+
+  if (isOwner) {
+    // Shown if one already exists; made only when asked.
+    const { data: existing } = await client.from('editor_invites')
+      .select('code').eq('world_id', worldId).maybeSingle();
+    showInvite(existing?.code ?? null);
+
+    const make = async (fresh: boolean) => {
+      const { data, error: iErr } = await client.rpc('editor_invite', { p_world: worldId, p_new: fresh });
+      if (iErr) { alert(iErr.message); return; }
+      showInvite(data as string);
+    };
+    q('[data-invite-make]')?.addEventListener('click', () => make(false));
+    q('[data-invite-new]')?.addEventListener('click', () => make(true));
+    q('[data-invite-stop]')?.addEventListener('click', async () => {
+      const { error: sErr } = await client.rpc('stop_editor_invite', { p_world: worldId });
+      if (sErr) { alert(sErr.message); return; }
+      showInvite(null);
+    });
+    q('[data-invite-copy]')?.addEventListener('click', async (event) => {
+      const button = event.currentTarget as HTMLElement;
+      try {
+        await navigator.clipboard.writeText((q('[data-invite-link]') as HTMLInputElement).value);
+        text(button, S.copied);
+        setTimeout(() => text(button, S.copy), 1400);
+      } catch { (q('[data-invite-link]') as HTMLInputElement).select(); }
+    });
+  }
+
+  q('[data-editor-leave]')?.addEventListener('click', async () => {
+    if (!confirm(S.leaveConfirm)) return;
+    const { error: lErr } = await client.from('world_members').delete()
+      .eq('world_id', worldId).eq('user_id', me?.id ?? '');
+    if (lErr) { alert(lErr.message); return; }
+    location.href = S.myTrailsHref;
+  });
+
+  await loadEditors();
+
+  // ------------------------------------------------------------------- live
+  //
+  // One channel per trail. Postgres changes arrive only for rows this person's
+  // own token may read - the trail's owner and editors - because Realtime runs
+  // them past the same row-level security as a select. Presence says who else
+  // has the editor open, and which stop.
+  // A display name, never the email: anybody who knows a trail's id can join
+  // this channel's presence, and a public trail's id is on the library page.
+  const myName = (me?.user_metadata?.display_name as string) || S.editorWord;
+  let refreshTimer: ReturnType<typeof setTimeout> | null = null;
+
+  const refreshSoon = () => {
+    if (refreshTimer) clearTimeout(refreshTimer);
+    refreshTimer = setTimeout(async () => { refreshTimer = null; await load(); }, 400);
+  };
+
+  const ours = (markerId: string | undefined) => Boolean(markerId) && markers.some((m) => m.id === markerId);
+
+  // A key made up per tab, for the same reason as the name: nothing about
+  // the account goes out on a channel strangers can join.
+  const tabKey = crypto.randomUUID();
+  const channel = client.channel(`trail:${worldId}`, { config: { presence: { key: tabKey } } });
+
+  channel
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'markers', filter: `world_id=eq.${worldId}` },
+      (change: any) => {
+        const row = change.new?.id ? change.new : change.old;
+        if (row?.id && row.id === selected && !savingNow) {
+          // Deleted under us, or saved by somebody else at a newer version.
+          if (change.eventType === 'DELETE' || (change.new?.version ?? 0) > (formVersion ?? 0)) {
+            showRemoteChange(true);
+          }
+        }
+        refreshSoon();
+      })
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'marker_hints' },
+      (change: any) => {
+        const id = change.new?.marker_id ?? change.old?.marker_id;
+        if (id && id === selected) loadHints();
+        if (ours(id)) refreshSoon();
+      })
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'marker_media' },
+      (change: any) => {
+        const id = change.new?.marker_id ?? change.old?.marker_id;
+        if (id && id === selected) loadMedia();
+        if (ours(id)) refreshSoon();
+      })
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'marker_answers' },
+      (change: any) => {
+        if (ours(change.new?.marker_id ?? change.old?.marker_id)) refreshSoon();
+      })
+    .on('presence', { event: 'sync' }, () => {
+      const others = Object.entries(channel.presenceState())
+        .filter(([key]) => key !== tabKey)
+        .map(([, metas]: [string, any]) => metas[0]);
+      const box = q('[data-presence]') as HTMLElement;
+      box.classList.toggle('hidden', others.length === 0);
+      box.classList.toggle('flex', others.length > 0);
+      box.innerHTML = others.length
+        ? `<span>${escapeHtml(S.here)}</span>` + others.map((o: any) => {
+            const stop = markers.find((m) => m.id === o.stop);
+            const title = stop ? (stop.content?.[S.lang]?.title || stop.content?.bg?.title || '') : '';
+            return `<span class="badge badge-quiet">${escapeHtml(o.name || '—')}${title ? ` · ${escapeHtml(title)}` : ''}</span>`;
+          }).join('')
+        : '';
+    })
+    .subscribe((status: string) => {
+      if (status === 'SUBSCRIBED') announce();
+    });
+
+  // Which stop this tab has open, for everybody else's presence line.
+  announce = () => { channel.track({ name: myName, stop: selected }).catch(() => {}); };
 
   // Last, not beside load(): everything it reads is declared further down this
   // file, and a const is not readable before its declaration has been reached.

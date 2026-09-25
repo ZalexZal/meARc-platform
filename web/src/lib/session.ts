@@ -10,7 +10,8 @@
  * The security is in the database. Every one of these pages can only render data
  * the caller's own token is allowed to fetch.
  */
-import { db, configured, isAnonymous } from './supabase';
+import { db, configured, isAnonymous, finishPending } from './supabase';
+import { TERMS_VERSION } from './terms';
 import type { User } from '@supabase/supabase-js';
 
 export type Who = { user: User | null; anonymous: boolean; configured: boolean };
@@ -33,7 +34,8 @@ export async function who(): Promise<Who> {
 export async function requireUser(
   // In the reader's language. It was '/signin' for everybody, so an English
   // reader who opened /en/account/ signed out landed on the Bulgarian form.
-  { needsReal = true, signInPath = location.pathname.startsWith('/en/') ? '/en/signin' : '/signin' } = {}
+  { needsReal = true, signInPath = location.pathname.startsWith('/en/') ? '/en/signin' : '/signin',
+    terms = true } = {}
 ): Promise<User> {
   const { user, anonymous, configured: ok } = await who();
 
@@ -46,6 +48,25 @@ export async function requireUser(
     const back = encodeURIComponent(location.pathname + location.search);
     location.replace(`${signInPath}?next=${back}`);
     return new Promise(() => {});
+  }
+
+  // The terms this site runs on now. An account that accepted older ones -
+  // or none, because confirmation held its sign-up back - is asked before it
+  // goes further. Guests are asked by the app, which is where guests are.
+  if (terms && !anonymous) {
+    const read = async () => (await db()!.from('profiles')
+      .select('terms_version').eq('id', user.id).maybeSingle()).data?.terms_version;
+
+    if ((await read()) !== TERMS_VERSION) {
+      await finishPending(user);
+
+      if ((await read()) !== TERMS_VERSION) {
+        const back = encodeURIComponent(location.pathname + location.search);
+        const gate = location.pathname.startsWith('/en/') ? '/en/accept-terms' : '/accept-terms';
+        location.replace(`${gate}/?next=${back}`);
+        return new Promise(() => {});
+      }
+    }
   }
 
   return user;

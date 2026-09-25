@@ -14,6 +14,9 @@ const strings = {
   failed: t('games.failed'), pending: t('acct.pending'),
   code: t('board.code'), noTeams: t('board.noTeams'), alone: t('board.alone'),
   point: t('n.point'), pointN: t('n.points'),
+  hidden: t('board.hidden'), report: t('board.report'), reportConfirm: t('board.reportConfirm'),
+  reported: t('board.reported'), block: t('board.block'), blockConfirm: t('board.blockConfirm'),
+  blocked: t('board.blocked'),
   stop: t('n.stop'), stopN: t('n.stops'),
 
   modOpen: t('mod.open'), modClose: t('mod.close'), modLede: t('mod.lede'),
@@ -24,6 +27,8 @@ const strings = {
   adjustedBy: t('mod.adjustedBy'),
   dqDo: t('mod.dqDo'), dqHelp: t('mod.dqHelp'), dqOn: t('mod.dqOn'),
   undq: t('mod.undq'), modFailed: t('mod.failed'),
+  warnings: t('mod.warnings'), warnHelp: t('mod.warnHelp'),
+  warn: { mock: t('mod.warn.mock'), far: t('mod.warn.far'), fast: t('mod.warn.fast') },
 
   // Ending a game is new enough to keep its words here rather than in ui.ts.
   ...(lang === 'bg' ? {
@@ -61,6 +66,7 @@ const strings = {
   </p>
 
   <div class="scroll-x mt-8"><table class="table" data-board></table></div>
+  <p class="mt-3 hidden text-sm" data-board-said role="status"></p>
 
   <!-- Only the owner is served this, so the section is drawn after the call
        comes back rather than hidden behind a second permission check. -->
@@ -99,6 +105,11 @@ const strings = {
   else {
     const client = db()!;
 
+    // Asked once, up front: whether to offer Report and Block on the rows.
+    // Both need somebody signed in to say who is reporting or blocking.
+    const { data: session } = await client.auth.getSession();
+    const signedIn = Boolean(session.session);
+
     const summary = await client.rpc('trail_summary', { p_world: worldId });
     const trail = Array.isArray(summary.data) ? summary.data[0] : summary.data;
     if (trail?.name) text(q('[data-board-title]'), trail.name);
@@ -131,18 +142,53 @@ const strings = {
           <th class="num">${escapeHtml(S.points)}</th>
           <th class="num">${escapeHtml(S.solved)}</th>
           <th class="num">${escapeHtml(S.time)}</th>
+          ${signedIn ? '<th></th>' : ''}
         </tr></thead>
         <tbody>${data.map((r: any) => `
           <tr class="${r.is_mine ? 'is-mine' : ''}">
             <td class="data text-[var(--ink-dim)]">${r.rank}</td>
-            <td>${escapeHtml(r.team_name)}${
+            <td>${r.team_name ? escapeHtml(r.team_name) : `<span class="text-[var(--ink-faint)]">${escapeHtml(S.hidden)}</span>`}${
               r.is_mine ? ` <span class="eyebrow">${escapeHtml(S.you)}</span>` : ''}${
               Number(r.pending) > 0 ? ` <span class="data text-xs" style="color:var(--lamp)">+${r.pending}?</span>` : ''}</td>
             <td class="num font-medium">${r.points}</td>
             <td class="num text-[var(--ink-dim)]">${r.stops_solved}</td>
             <td class="num text-[var(--ink-dim)]">${duration(r.elapsed_seconds)}</td>
+            ${signedIn ? `<td class="whitespace-nowrap text-right text-xs">${
+              r.is_mine || !r.team_name ? '' :
+              `<button type="button" class="row-act" data-report-team="${escapeHtml(r.team_id)}" data-name="${escapeHtml(r.team_name)}">${escapeHtml(S.report)}</button>
+               <button type="button" class="row-act" data-block-team="${escapeHtml(r.team_id)}" data-name="${escapeHtml(r.team_name)}">${escapeHtml(S.block)}</button>`}</td>` : ''}
           </tr>`).join('')}</tbody>`;
     };
+
+    // Once, on the table, because drawBoard replaces the rows it would be on.
+    q('[data-board]')!.addEventListener('click', async (event) => {
+      const target = event.target as HTMLElement;
+      const said = q('[data-board-said]') as HTMLElement;
+      const tell = (message: string, bad = false) => {
+        text(said, message);
+        said.style.color = bad ? 'var(--alert)' : 'var(--signal)';
+        said.classList.remove('hidden');
+      };
+
+      const report = target.closest('[data-report-team]') as HTMLElement | null;
+      if (report) {
+        if (!confirm(S.reportConfirm.replace('{0}', report.dataset.name ?? ''))) return;
+        const { error } = await client.rpc('report_team',
+          { p_team: report.dataset.reportTeam, p_reason: 'offensive' });
+        tell(error ? (error.message || S.modFailed) : S.reported, Boolean(error));
+        return;
+      }
+
+      const block = target.closest('[data-block-team]') as HTMLElement | null;
+      if (block) {
+        if (!confirm(S.blockConfirm.replace('{0}', block.dataset.name ?? ''))) return;
+        const { error } = await client.rpc('block_user',
+          { p_kind: 'team', p_target: block.dataset.blockTeam });
+        if (error) { tell(error.message || S.modFailed, true); return; }
+        tell(S.blocked);
+        await drawBoard();
+      }
+    });
 
     await drawBoard();
 
@@ -151,8 +197,7 @@ const strings = {
     // sees the section.
     // Not asked at all without a session: a stranger's refusal still landed in
     // the console as a red 401 on every public board.
-    const { data: session } = await client.auth.getSession();
-    const teams = session.session
+    const teams = signedIn
       ? await client.rpc('world_teams', { p_world: worldId })
       : { error: true, data: null };
 
@@ -240,6 +285,10 @@ const strings = {
                     ? ` · <span style="color:var(--lamp)">${moved > 0 ? '+' : ''}${moved} ${escapeHtml(S.adjustedBy)}</span>`
                     : ''}
                 </p>
+                ${Object.keys(t.warnings ?? {}).length
+                  ? `<p class="note note-lamp mt-4 text-sm" title="${escapeHtml(S.warnHelp)}"><strong>${escapeHtml(S.warnings)}:</strong> ${
+                      Object.entries(t.warnings).map(([k, n]) => `${Number(n)} ${escapeHtml(S.warn[k] ?? k)}`).join(' · ')}</p>`
+                  : ''}
                 ${out ? `<p class="note note-alert mt-4 text-sm"><strong>${escapeHtml(S.dqOn)}</strong>${
                   t.disqualified_reason ? ` — ${escapeHtml(t.disqualified_reason)}` : ''}</p>` : ''}
 
@@ -377,3 +426,11 @@ const strings = {
     }
   }
 </script>
+
+<style>
+  :global(.row-act) {
+    color: var(--ink-faint); padding: 4px 6px; border-radius: 6px;
+  }
+  :global(.row-act:hover) { color: var(--alert); background: var(--alert-wash); }
+  :global(.row-act:focus-visible) { outline: 2px solid var(--signal); outline-offset: 1px; }
+</style>

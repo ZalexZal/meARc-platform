@@ -1,0 +1,10 @@
+---
+import Base from '../../layouts/Base.astro';
+import Reset from '../../components/Reset.astro';
+import { langFromUrl, useTranslations } from '../../i18n/ui';
+const lang = langFromUrl(Astro.url);
+const t = useTranslations(lang);
+---
+<Base title={t('reset.title') + ' — AR Trail'}>
+  <Reset lang={lang} />
+</Base>

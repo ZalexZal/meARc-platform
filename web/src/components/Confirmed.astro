@@ -1,0 +1,62 @@
+---
+import { useTranslations, localise, type Lang } from '../i18n/ui';
+
+interface Props { lang: Lang; }
+const { lang } = Astro.props;
+const t = useTranslations(lang);
+const href = localise(lang);
+---
+
+<!-- Where an email confirmation link lands. Supabase puts the session in the
+     address; the client reads it on load. What is left is to finish anything
+     the sign-up could not do without a session, and to say where to go. -->
+<section class="mx-auto max-w-lg px-4 py-24 text-center sm:px-6">
+  <p class="text-[var(--ink-dim)]" data-conf-wait>{t('games.loading')}</p>
+
+  <div class="hidden" data-conf-ok>
+    <h1 class="text-3xl">{t('conf.title')}</h1>
+    <p class="mt-4 text-[var(--ink-dim)]">{t('conf.body')}</p>
+    <p class="mt-2 text-sm text-[var(--ink-dim)]">{t('conf.app')}</p>
+    <div class="mt-8 flex flex-wrap justify-center gap-3">
+      <!-- A link the app answers to. The id is not a trail, so it opens the
+           app and does nothing else. Shown on Android only. -->
+      <a class="btn btn-primary hidden" data-conf-app
+         href="intent://join/app#Intent;scheme=artrail;package=com.alex.artrail;end">{t('conf.openApp')}</a>
+      <a class="btn btn-quiet" href={href('/account')}>{t('conf.account')}</a>
+    </div>
+  </div>
+
+  <div class="hidden" data-conf-failed>
+    <h1 class="text-3xl">{t('conf.failed')}</h1>
+    <p class="mt-4 text-sm text-[var(--ink-dim)]" data-conf-why></p>
+    <a class="btn btn-quiet mt-8" href={href('/signin')}>{t('auth.submitIn')}</a>
+  </div>
+</section>
+
+<script>
+  import { db, finishPending } from '../lib/supabase';
+  import { text } from '../lib/session';
+
+  const q = (s: string) => document.querySelector(s) as HTMLElement;
+  const hash = new URLSearchParams(location.hash.slice(1));
+  const query = new URLSearchParams(location.search);
+  const problem = hash.get('error_description') ?? query.get('error_description');
+
+  const client = db();
+  const { data } = client ? await client.auth.getSession() : { data: { session: null } };
+  const user = data.session?.user ?? null;
+
+  q('[data-conf-wait]').classList.add('hidden');
+
+  if (problem || !user) {
+    q('[data-conf-failed]').classList.remove('hidden');
+    text(q('[data-conf-why]'), problem ?? '');
+  } else {
+    await finishPending(user);
+    q('[data-conf-ok]').classList.remove('hidden');
+    if (/android/i.test(navigator.userAgent)) q('[data-conf-app]').classList.remove('hidden');
+    // The tokens have done their job; keep them out of the history and of
+    // anything the reader copies from the address bar.
+    history.replaceState(null, '', location.pathname);
+  }
+</script>

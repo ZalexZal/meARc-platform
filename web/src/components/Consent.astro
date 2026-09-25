@@ -1,0 +1,180 @@
+---
+import { useTranslations, localise, type Lang } from '../i18n/ui';
+import { TERMS_VERSION } from '../lib/terms';
+
+interface Props { lang: Lang; }
+const { lang } = Astro.props;
+const t = useTranslations(lang);
+const href = localise(lang);
+
+const strings = {
+  lang, termsVersion: TERMS_VERSION,
+  child: t('cons.child'), asked: t('cons.asked'), granted: t('cons.granted'),
+  guardian: t('cons.guardian'), agree: t('cons.agree'), refuse: t('cons.refuse'),
+  refuseConfirm: t('cons.refuseConfirm'), needGuardian: t('cons.needGuardian'),
+  withdraw: t('cons.withdraw'), withdrawConfirm: t('cons.withdrawConfirm'),
+  erased: t('cons.erased'), done: t('cons.done'), none: t('cons.none'),
+  linkSent: t('cons.linkSent'), failed: t('err.generic'),
+};
+---
+
+<!-- Where a parent lands from the email a child's app asked for. Opening that
+     link signed them in, which is the proof the address is theirs; this page
+     shows every request made to it and takes the answer. -->
+<article class="mx-auto max-w-2xl px-4 py-16 sm:px-6">
+  <h1 class="text-3xl sm:text-4xl">{t('cons.title')}</h1>
+  <p class="mt-4 text-[var(--ink-dim)]">{t('cons.lede')}</p>
+
+  <div class="mt-10 space-y-7">
+    <section>
+      <h2 class="text-lg">{t('cons.what')}</h2>
+      <p class="mt-2 leading-relaxed text-[var(--ink-dim)]">{t('cons.whatBody')}</p>
+    </section>
+    <section>
+      <h2 class="text-lg">{t('cons.data')}</h2>
+      <p class="mt-2 leading-relaxed text-[var(--ink-dim)]">{t('cons.dataBody')}</p>
+    </section>
+    <section>
+      <h2 class="text-lg">{t('cons.see')}</h2>
+      <p class="mt-2 leading-relaxed text-[var(--ink-dim)]">{t('cons.seeBody')}</p>
+    </section>
+    <section>
+      <h2 class="text-lg">{t('cons.rights')}</h2>
+      <p class="mt-2 leading-relaxed text-[var(--ink-dim)]">{t('cons.rightsBody')}</p>
+      <p class="mt-3 text-sm">
+        <a class="font-medium text-[var(--signal)] underline-offset-2 hover:underline" href={href('/terms')} target="_blank" rel="noopener">{t('cons.readTerms')}</a>{' · '}<a class="font-medium text-[var(--signal)] underline-offset-2 hover:underline" href={href('/privacy')} target="_blank" rel="noopener">{t('cons.readPrivacy')}</a>
+      </p>
+    </section>
+  </div>
+
+  <p class="mt-12 text-[var(--ink-dim)]" data-cons-wait>{t('games.loading')}</p>
+
+  <!-- Signed in: the requests. -->
+  <ul class="mt-12 space-y-5" data-cons-list></ul>
+  <p class="mt-4 hidden text-sm" data-cons-said role="status"></p>
+
+  <!-- Not signed in: the link expired, or this is a different device. -->
+  <form class="card mt-12 hidden space-y-3 p-6" data-cons-signin novalidate>
+    <p class="text-sm text-[var(--ink-dim)]">{t('cons.signIn')}</p>
+    <label class="sr-only" for="cons-email">{t('auth.email')}</label>
+    <input class="field" id="cons-email" type="email" autocomplete="email" placeholder={t('auth.email')} data-cons-email />
+    <button class="btn btn-primary" type="submit">{t('cons.sendLink')}</button>
+    <p class="hidden text-sm text-[var(--ink-dim)]" data-cons-sent role="status"></p>
+  </form>
+</article>
+
+<script type="application/json" data-cons-strings set:html={JSON.stringify(strings)}></script>
+
+<script>
+  import { db, landing } from '../lib/supabase';
+  import { escapeHtml, text } from '../lib/session';
+
+  const S = JSON.parse(document.querySelector('[data-cons-strings]')!.textContent || '{}');
+  const q = (s: string) => document.querySelector(s) as HTMLElement;
+  const client = db()!;
+
+  const { data } = await client.auth.getSession();
+  const user = data.session?.user ?? null;
+  history.replaceState(null, '', location.pathname);
+  q('[data-cons-wait]').classList.add('hidden');
+
+  const say = (message: string, bad = false) => {
+    text(q('[data-cons-said]'), message);
+    q('[data-cons-said]').style.color = bad ? 'var(--alert)' : 'var(--signal)';
+    q('[data-cons-said]').classList.remove('hidden');
+  };
+
+  const when = (iso: string) => new Date(iso).toLocaleDateString(S.lang === 'bg' ? 'bg-BG' : 'en-GB',
+    { day: 'numeric', month: 'long', year: 'numeric' });
+
+  async function draw() {
+    const { data: rows, error } = await client.rpc('consents_to_answer');
+    const list = q('[data-cons-list]');
+
+    if (error) { list.innerHTML = ''; say(S.failed, true); return; }
+    if (!rows?.length) { list.innerHTML = `<li class="text-[var(--ink-dim)]">${escapeHtml(S.none)}</li>`; return; }
+
+    list.innerHTML = rows.map((r: any) => {
+      const who = escapeHtml(r.child_name || S.child);
+      return r.granted
+        ? `<li class="card p-6" data-child="${escapeHtml(r.child_id)}">
+             <p class="font-medium">${who}</p>
+             <p class="mt-1 text-sm text-[var(--ink-dim)]">${escapeHtml(S.granted.replace('{0}', when(r.answered_at)))}</p>
+             <button type="button" class="btn btn-danger-quiet btn-sm mt-4" data-withdraw>${escapeHtml(S.withdraw)}</button>
+           </li>`
+        : `<li class="card p-6" data-child="${escapeHtml(r.child_id)}">
+             <p class="font-medium">${who} <span class="text-sm font-normal text-[var(--ink-dim)]">${escapeHtml(S.asked)} ${escapeHtml(when(r.requested_at))}</span></p>
+             <label class="mt-4 flex items-start gap-2.5 text-sm">
+               <input class="mt-1 shrink-0" type="checkbox" data-guardian />
+               <span>${escapeHtml(S.guardian)}</span>
+             </label>
+             <div class="mt-5 flex flex-wrap gap-2">
+               <button type="button" class="btn btn-primary" data-agree>${escapeHtml(S.agree)}</button>
+               <button type="button" class="btn btn-quiet" data-refuse>${escapeHtml(S.refuse)}</button>
+             </div>
+           </li>`;
+    }).join('');
+  }
+
+  // Bound once on the list, because draw() replaces everything in it.
+  q('[data-cons-list]').addEventListener('click', async (event) => {
+    const target = event.target as HTMLElement;
+    const card = target.closest('[data-child]') as HTMLElement | null;
+    if (!card) return;
+    const child = card.dataset.child!;
+
+    if (target.closest('[data-agree]')) {
+      if (!(card.querySelector('[data-guardian]') as HTMLInputElement).checked) { say(S.needGuardian, true); return; }
+      const { error } = await client.rpc('answer_parent_consent',
+        { p_child: child, p_agree: true, p_terms_version: S.termsVersion });
+      if (error) { say(error.message, true); return; }
+      say(S.done);
+      await draw();
+    } else if (target.closest('[data-refuse]')) {
+      if (!confirm(S.refuseConfirm)) return;
+      const { error } = await client.rpc('answer_parent_consent',
+        { p_child: child, p_agree: false, p_terms_version: S.termsVersion });
+      if (error) { say(error.message, true); return; }
+      say(S.erased);
+      await draw();
+    } else if (target.closest('[data-withdraw]')) {
+      if (!confirm(S.withdrawConfirm)) return;
+      const { error } = await client.rpc('withdraw_parent_consent', { p_child: child });
+      if (error) { say(error.message, true); return; }
+      say(S.erased);
+      await draw();
+    }
+  });
+
+  // Only a session opened by the emailed link counts as the parent: with
+  // confirmations off, anybody can make a password account with any address.
+  // The server checks the same thing (0048); this only picks the right form.
+  const byLink = (() => {
+    try {
+      const claims = JSON.parse(atob((data.session?.access_token ?? '').split('.')[1]
+        .replace(/-/g, '+').replace(/_/g, '/')));
+      return (claims.amr ?? []).some((m: any) => m.method === 'otp' || m.method === 'magiclink');
+    } catch { return false; }
+  })();
+
+  if (user && user.email && byLink) {
+    await draw();
+  } else {
+    const form = q('[data-cons-signin]') as HTMLFormElement;
+    form.classList.remove('hidden');
+    form.addEventListener('submit', async (event) => {
+      event.preventDefault();
+      const email = (q('[data-cons-email]') as HTMLInputElement).value.trim();
+      if (!email) return;
+      // A sign-in link back to this page. It never makes an account the
+      // address did not already have: a parent was given one when asked.
+      // The same sentence whether or not the address has an account, so this
+      // form cannot be used to find out which addresses do.
+      await client.auth.signInWithOtp({
+        email, options: { shouldCreateUser: false, emailRedirectTo: landing('consent') },
+      });
+      text(q('[data-cons-sent]'), S.linkSent);
+      q('[data-cons-sent]').classList.remove('hidden');
+    });
+  }
+</script>

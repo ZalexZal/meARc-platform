@@ -1,0 +1,10 @@
+---
+import Base from '../../layouts/Base.astro';
+import Confirmed from '../../components/Confirmed.astro';
+import { langFromUrl, useTranslations } from '../../i18n/ui';
+const lang = langFromUrl(Astro.url);
+const t = useTranslations(lang);
+---
+<Base title={t('conf.title') + ' — AR Trail'}>
+  <Confirmed lang={lang} />
+</Base>

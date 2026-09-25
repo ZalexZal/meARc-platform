@@ -1,0 +1,126 @@
+---
+import { useTranslations, localise, type Lang } from '../i18n/ui';
+
+interface Props { lang: Lang; }
+const { lang } = Astro.props;
+const t = useTranslations(lang);
+const href = localise(lang);
+
+const strings = {
+  lang, age: t('err.age'), parentEmail: t('err.parentEmail'), mustAgree: t('err.mustAgree'),
+  tooYoung: t('err.tooYoung'),
+  parentSentBody: t('auth.parentSentBody'), home: href('/'),
+};
+---
+
+<!-- Asked once per version of the terms, of anybody signed in on the website.
+     requireUser sends people here; this is the only signed-in page that does
+     not itself ask. -->
+<section class="mx-auto flex max-w-md flex-col px-4 py-20 sm:px-6" hidden data-guarded>
+  <h1 class="text-3xl">{t('terms.gate.title')}</h1>
+  <p class="mt-4 text-[var(--ink-dim)]">{t('terms.gate.lede')}</p>
+
+  <form class="card mt-8 space-y-5 p-6" data-gate novalidate>
+    <p class="text-sm">
+      <a class="font-medium text-[var(--signal)] underline-offset-2 hover:underline" href={href('/terms')} target="_blank" rel="noopener">{t('auth.agreeTerms')}</a>{' · '}<a class="font-medium text-[var(--signal)] underline-offset-2 hover:underline" href={href('/privacy')} target="_blank" rel="noopener">{t('auth.agreePrivacy')}</a>
+    </p>
+
+    <fieldset class="space-y-2">
+      <legend class="mb-1.5 block text-sm font-medium">{t('auth.age')}</legend>
+      <div class="flex flex-wrap gap-x-5 gap-y-2">
+        <label class="flex items-center gap-2 text-sm"><input type="radio" name="age" value="14+" /> {t('auth.age14')}</label>
+        <label class="flex items-center gap-2 text-sm"><input type="radio" name="age" value="under14" /> {t('auth.ageUnder')}</label>
+          <label class="flex items-center gap-2 text-sm">
+            <input type="radio" name="age" value="under13" /> {t('auth.age12')}
+          </label>
+      </div>
+      <div class="hidden pt-2" data-parent>
+        <label class="mb-1.5 block text-sm font-medium" for="gate-parent">{t('auth.parentEmail')}</label>
+        <input class="field" id="gate-parent" type="email" autocomplete="off" data-parent-email />
+        <p class="mt-1.5 text-xs text-[var(--ink-faint)]">{t('auth.parentHelp')}</p>
+      </div>
+    </fieldset>
+
+    <label class="flex items-start gap-2.5 text-sm">
+      <input class="mt-1 shrink-0" type="checkbox" data-gate-agree />
+      <span>{t('auth.agreeRead')} {t('auth.agreeTerms')} {t('auth.agreeAnd')} {t('auth.agreePrivacy')}.</span>
+    </label>
+
+    <p class="hidden rounded-lg border border-[var(--alert)] bg-[var(--alert-wash)] px-3 py-2.5 text-sm text-[var(--alert)]"
+       data-gate-error role="alert"></p>
+
+    <button class="btn btn-primary w-full" type="submit">{t('terms.gate.accept')}</button>
+  </form>
+
+  <div class="card mt-8 hidden p-6 text-center" data-gate-parent>
+    <h2 class="text-xl">{t('auth.parentSent')}</h2>
+    <p class="mt-2 text-sm text-[var(--ink-dim)]" data-gate-parent-body></p>
+  </div>
+</section>
+
+<script type="application/json" data-gate-strings set:html={JSON.stringify(strings)}></script>
+
+<script>
+  import { db, acceptTerms, askParent } from '../lib/supabase';
+  import { requireUser, reveal, param, text } from '../lib/session';
+  import { TERMS_VERSION } from '../lib/terms';
+
+  const S = JSON.parse(document.querySelector('[data-gate-strings]')!.textContent || '{}');
+  const q = (s: string) => document.querySelector(s) as HTMLElement;
+
+  const user = await requireUser({ needsReal: true, terms: false });
+  const client = db()!;
+  const next = param('next');
+  const onward = next && next.startsWith('/') && !next.startsWith('//') ? next : S.home;
+
+  // An answer already given is offered back, not asked from scratch.
+  const { data: profile } = await client.from('profiles')
+    .select('age_band').eq('id', user.id).maybeSingle();
+  if (profile?.age_band) {
+    (document.querySelector(`input[name="age"][value="${profile.age_band}"]`) as HTMLInputElement).checked = true;
+  }
+
+  const form = q('[data-gate]') as HTMLFormElement;
+  const young = () => (form.querySelector('input[name="age"]:checked') as HTMLInputElement)?.value === 'under14';
+  const syncParent = () => q('[data-parent]').classList.toggle('hidden', !young());
+  form.querySelectorAll('input[name="age"]').forEach((r) => r.addEventListener('change', syncParent));
+  syncParent();
+  reveal();
+
+  form.addEventListener('submit', async (event) => {
+    event.preventDefault();
+    const error = q('[data-gate-error]');
+    const fail = (m: string) => { text(error, m); error.classList.remove('hidden'); };
+    error.classList.add('hidden');
+
+    const age = (form.querySelector('input[name="age"]:checked') as HTMLInputElement)?.value;
+    const parent = (q('[data-parent-email]') as HTMLInputElement).value.trim();
+
+    if (!age) { fail(S.age); return; }
+    if (age === 'under13') { fail(S.tooYoung); return; }
+    if (!(q('[data-gate-agree]') as HTMLInputElement).checked) { fail(S.mustAgree); return; }
+
+    const { data: state } = await client.rpc('consent_state');
+    const alreadyAsked = state && ['pending', 'granted'].includes(state.state);
+
+    if (young() && !alreadyAsked
+        && (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(parent) || parent.toLowerCase() === (user.email ?? '').toLowerCase())) {
+      fail(S.parentEmail);
+      return;
+    }
+
+    const accepted = await acceptTerms(TERMS_VERSION, young());
+    if (accepted.error) { fail(accepted.error); return; }
+
+    if (young() && !alreadyAsked) {
+      const asked = await askParent(parent, S.lang);
+      if (asked.error) { fail(asked.error); return; }
+      form.classList.add('hidden');
+      q('[data-gate-parent]').classList.remove('hidden');
+      text(q('[data-gate-parent-body]'), S.parentSentBody.replace('{0}', parent));
+      return;
+    }
+
+    location.replace(onward);
+  });
+</script>

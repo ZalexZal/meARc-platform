@@ -31,6 +31,12 @@ const copy = {
     signOutAllHint: 'За когато си влизал на чужд телефон или компютър.',
     legal: 'Условия и поверителност', terms: 'Условия за ползване', policy: 'Политика за поверителност',
     level: 'Ниво',
+    blocked: 'Блокирани хора',
+    blockedLede: 'Не виждаш маршрутите им и имената на отборите им, а те не могат да влизат в твоите маршрути. Блокираш от приложението, от класирането или от отговорите за преглед.',
+    blockedNone: 'Не си блокирал никого.', unblock: 'Отблокирай', unblocked: 'Отблокиран.',
+    viaTrail: 'Създател на „{0}“', viaTeam: 'Създател на отбора „{0}“', viaPlayer: 'Играч от отбора „{0}“',
+    consentPending: 'Родителят ти още не се е съгласил. Писахме на {0}. Дотогава не можеш да влизаш в маршрути.',
+    consentResend: 'Изпрати писмото пак', consentResent: 'Изпратено пак.',
   },
   en: {
     overview: 'Overview', badges: 'Badges', walked: 'Trails walked',
@@ -54,6 +60,12 @@ const copy = {
     signOutAllHint: 'For when you signed in on somebody else\'s phone or computer.',
     legal: 'Terms and privacy', terms: 'Terms of use', policy: 'Privacy policy',
     level: 'Level',
+    blocked: 'Blocked people',
+    blockedLede: 'You don’t see their trails or their team names, and they can’t join your trails. You block people from the app, from a leaderboard, or from the answers you review.',
+    blockedNone: 'You haven’t blocked anyone.', unblock: 'Unblock', unblocked: 'Unblocked.',
+    viaTrail: 'Creator of “{0}”', viaTeam: 'Founder of team “{0}”', viaPlayer: 'A player from team “{0}”',
+    consentPending: 'Your parent hasn’t agreed yet. We wrote to {0}. Until they do, you can’t join trails.',
+    consentResend: 'Send the email again', consentResent: 'Sent again.',
   },
 }[lang];
 
@@ -148,6 +160,10 @@ const rail = [
         </div>
 
         <p class="notice" data-stats-later hidden>{copy.statsLater}</p>
+        <div class="notice hidden flex-wrap items-center justify-between gap-3" data-consent-note>
+          <span data-consent-text></span>
+          <button type="button" class="btn btn-quiet btn-sm" data-consent-resend>{copy.consentResend}</button>
+        </div>
 
         <div class="kpis" data-kpis>
           <div class="kpi"><b data-k-trails>—</b><small>{copy.kTrails}</small></div>
@@ -277,6 +293,13 @@ const rail = [
             </div>
           </div>
         </div>
+
+        <div class="card panel-card" data-blocked-card>
+          <h2 class="text-base">{copy.blocked}</h2>
+          <p class="text-sm text-[var(--ink-dim)]">{copy.blockedLede}</p>
+          <ul class="blocked-list" data-blocked-list></ul>
+          <p class="msg" data-blocked-msg aria-live="polite"></p>
+        </div>
       </div>
     </div>
   </div>
@@ -387,6 +410,13 @@ const rail = [
   .msg.bad { color: var(--alert); }
   .msg.good { color: var(--signal); }
 
+  .blocked-list { display: grid; }
+  .blocked-list :global(li) {
+    display: flex; align-items: center; justify-content: space-between; gap: 12px;
+    padding: 10px 0; border-top: 1px solid var(--line-soft); font-size: 0.9rem;
+  }
+  .blocked-list :global(li span) { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
   .danger {
     border: 1px solid var(--alert); background: var(--alert-wash); border-radius: 14px; padding: 14px 16px;
     display: flex; flex-wrap: wrap; gap: 14px; align-items: center; justify-content: space-between;
@@ -404,7 +434,7 @@ const rail = [
 </style>
 
 <script>
-  import { db, signOut } from '../lib/supabase';
+  import { db, signOut, askParent } from '../lib/supabase';
   import { requireUser, reveal, escapeHtml, text, count } from '../lib/session';
 
   const S = JSON.parse(document.querySelector('[data-acct-strings]')!.textContent || '{}');
@@ -460,6 +490,21 @@ const rail = [
 
   q('[data-acct-loading]')?.remove();
   reveal();
+
+  // An under-14 waiting on a parent sees why nothing lets them in, and can
+  // send the email again.
+  const { data: consent } = await client.rpc('consent_state');
+  if (consent?.state === 'pending') {
+    const note = q('[data-consent-note]') as HTMLElement;
+    note.classList.remove('hidden');
+    note.classList.add('flex');
+    text(q('[data-consent-text]'), S.consentPending.replace('{0}', consent.parent_email ?? ''));
+    q('[data-consent-resend]')?.addEventListener('click', async (e) => {
+      (e.currentTarget as HTMLButtonElement).disabled = true;
+      const again = await askParent(consent.parent_email, S.lang);
+      text(q('[data-consent-text]'), again.error ?? S.consentResent);
+    });
+  }
 
   // ---------------------------------------------------------- the numbers
   const medal = (key: string, earned: boolean, tier = 0) => {
@@ -618,6 +663,34 @@ const rail = [
     // Straight to the step that asks, not to a page that makes you look for it.
     setTimeout(() => (q('[data-delete]') as HTMLButtonElement)?.click(), 0);
   });
+
+  // ------------------------------------------------------------- blocked
+  // Straight from user_blocks: row-level security limits it to the rows this
+  // person made, and deleting one is the whole of unblocking.
+  async function drawBlocked() {
+    const list = q('[data-blocked-list]')!;
+    const { data, error } = await client.from('user_blocks')
+      .select('blocked_id,via,label').order('created_at', { ascending: false });
+    if (error) { list.innerHTML = ''; return; }
+    const rows = data ?? [];
+    const via: Record<string, string> = { trail: S.viaTrail, team: S.viaTeam, player: S.viaPlayer };
+
+    list.innerHTML = rows.length
+      ? rows.map((r: any) => `<li><span>${escapeHtml((via[r.via] ?? '{0}').replace('{0}', r.label))}</span>
+          <button class="btn btn-quiet btn-sm" type="button" data-unblock="${escapeHtml(r.blocked_id)}">${escapeHtml(S.unblock)}</button></li>`).join('')
+      : `<li><span class="text-[var(--ink-dim)]">${escapeHtml(S.blockedNone)}</span></li>`;
+
+    list.querySelectorAll('[data-unblock]').forEach((b) => b.addEventListener('click', async () => {
+      (b as HTMLButtonElement).disabled = true;
+      const { error: e } = await client.from('user_blocks').delete()
+        .eq('blocked_id', (b as HTMLElement).dataset.unblock!);
+      if (e) { say('[data-blocked-msg]', S.failed, 'bad'); (b as HTMLButtonElement).disabled = false; return; }
+      say('[data-blocked-msg]', S.unblocked, 'good');
+      await drawBlocked();
+    }));
+  }
+
+  drawBlocked();
 
   // ------------------------------------------------------------- my data
   q('[data-export]')?.addEventListener('click', async (event) => {

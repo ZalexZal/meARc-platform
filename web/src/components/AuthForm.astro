@@ -16,6 +16,9 @@ const up = mode === 'signup';
         data-errors={JSON.stringify({
           fill: t('err.fill'), weak: t('err.weakPassword'), generic: t('err.generic'),
           network: t('err.network'), bad: t('err.badCredentials'), taken: t('err.emailTaken'),
+          age: t('err.age'), parentEmail: t('err.parentEmail'), unconfirmed: t('err.unconfirmed'),
+          tooYoung: t('err.tooYoung'),
+          slowDown: t('err.slowDown'), resent: t('auth.resent'), parentSentBody: t('auth.parentSentBody'),
         })}>
     {up && (
       <div>
@@ -36,6 +39,10 @@ const up = mode === 'signup';
         class="field" id="password" name="password" type="password" required minlength="8"
         autocomplete={up ? 'new-password' : 'current-password'}
       />
+      {!up && (
+        <a class="mt-1.5 inline-block text-xs text-[var(--signal)] underline-offset-2 hover:underline"
+           href={href('/reset')}>{t('auth.forgotLink')}</a>
+      )}
     </div>
 
     <!-- Errors sit next to the control that produced them, not in a banner at
@@ -44,6 +51,28 @@ const up = mode === 'signup';
       class="hidden rounded-lg border border-[var(--alert)] bg-[var(--alert-wash)] px-3 py-2.5 text-sm text-[var(--alert)]"
       data-auth-error role="alert"
     ></p>
+
+    {up && (
+      <fieldset class="space-y-2" data-age>
+        <legend class="mb-1.5 block text-sm font-medium">{t('auth.age')}</legend>
+        <div class="flex flex-wrap gap-x-5 gap-y-2">
+          <label class="flex items-center gap-2 text-sm">
+            <input type="radio" name="age" value="14+" /> {t('auth.age14')}
+          </label>
+          <label class="flex items-center gap-2 text-sm">
+            <input type="radio" name="age" value="under14" /> {t('auth.ageUnder')}
+          </label>
+          <label class="flex items-center gap-2 text-sm">
+            <input type="radio" name="age" value="under13" /> {t('auth.age12')}
+          </label>
+        </div>
+        <div class="hidden pt-2" data-parent>
+          <label class="mb-1.5 block text-sm font-medium" for="parent">{t('auth.parentEmail')}</label>
+          <input class="field" id="parent" name="parent" type="email" autocomplete="off" />
+          <p class="mt-1.5 text-xs text-[var(--ink-faint)]">{t('auth.parentHelp')}</p>
+        </div>
+      </fieldset>
+    )}
 
     {up && (
       <div class="space-y-2">
@@ -78,12 +107,20 @@ const up = mode === 'signup';
   <div class="card mt-6 hidden p-6 text-center" data-auth-done>
     <h2 class="text-xl">{t('auth.checkInbox')}</h2>
     <p class="mt-2 text-sm text-[var(--ink-dim)]">{t('auth.checkInboxBody')}</p>
+    <button class="btn btn-quiet btn-sm mt-5" type="button" data-auth-resend>{t('auth.resend')}</button>
+    <p class="mt-3 hidden text-xs text-[var(--ink-dim)]" data-auth-resent role="status"></p>
     <p class="data mt-4 hidden text-xs text-[var(--ink-faint)]" data-auth-ids></p>
+  </div>
+
+  <!-- An under-14 whose account is live: the parent has been written to. -->
+  <div class="card mt-6 hidden p-6 text-center" data-auth-parent>
+    <h2 class="text-xl">{t('auth.parentSent')}</h2>
+    <p class="mt-2 text-sm text-[var(--ink-dim)]" data-auth-parent-body></p>
   </div>
 </section>
 
 <script>
-  import { signUp, signIn, acceptTerms, configured } from '../lib/supabase';
+  import { signUp, signIn, acceptTerms, askParent, resendConfirmation, configured } from '../lib/supabase';
   import { TERMS_VERSION } from '../lib/terms';
 
   const form = document.querySelector('[data-auth-form]') as HTMLFormElement | null;
@@ -102,6 +139,8 @@ const up = mode === 'signup';
       : /already (registered|been registered)|already exists/i.test(raw) ? said.taken
       : /password/i.test(raw) && /(at least|short|weak)/i.test(raw) ? said.weak
       : /fetch|network/i.test(raw) ? said.network
+      : /not confirmed/i.test(raw) ? said.unconfirmed
+      : /rate limit|too many/i.test(raw) ? said.slowDown
       : raw === 'not-configured' ? said.generic
       : raw;   // rare and specific (a rate limit, say): the server's words beat a shrug
 
@@ -111,6 +150,11 @@ const up = mode === 'signup';
     const next = new URLSearchParams(location.search).get('next');
     const home = location.pathname.startsWith('/en/') ? '/en/' : '/';
     const onward = next && next.startsWith('/') && !next.startsWith('//') ? next : home;
+
+    form.querySelectorAll('input[name="age"]').forEach((radio) => radio.addEventListener('change', () => {
+      const young = (form.querySelector('input[name="age"]:checked') as HTMLInputElement)?.value === 'under14';
+      form.querySelector('[data-parent]')?.classList.toggle('hidden', !young);
+    }));
 
     const show = (message: string) => {
       errorBox.textContent = message;
@@ -130,8 +174,22 @@ const up = mode === 'signup';
       const email = String(data.get('email') ?? '').trim();
       const password = String(data.get('password') ?? '');
       const name = String(data.get('name') ?? '').trim();
+      const age = String(data.get('age') ?? '');
+      const parent = String(data.get('parent') ?? '').trim();
+      const under14 = age === 'under14';
 
       if (!email || !password) { show(said.fill); return; }
+
+      // Asked of everybody, kept as nothing more than the answer.
+      if (mode === 'signup' && !age) { show(said.age); return; }
+      // Google Play will not let an app with location be aimed at under-13s,
+      // and this app is nothing without location.
+      if (mode === 'signup' && age === 'under13') { show(said.tooYoung); return; }
+      if (mode === 'signup' && under14
+          && (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(parent) || parent.toLowerCase() === email.toLowerCase())) {
+        show(said.parentEmail);
+        return;
+      }
 
       // Agreeing is an act, not a link somebody walked past.
       const agree = form.querySelector('[data-auth-agree]') as HTMLInputElement | null;
@@ -148,8 +206,15 @@ const up = mode === 'signup';
       const label = submit.textContent;
       submit.textContent = '…';
 
+      // The age and the parent ride along in the account's metadata, so that
+      // when confirmation holds the account back, the confirmed page can finish
+      // the job once there is a session to finish it with.
       const result = mode === 'signup'
-        ? await signUp(email, password, name || undefined)
+        ? await signUp(email, password, name || undefined, {
+            terms_version: TERMS_VERSION,
+            age_band: under14 ? 'under14' : '14+',
+            ...(under14 && { parent_email: parent }),
+          })
         : await signIn(email, password);
 
       submit.disabled = false;
@@ -157,16 +222,43 @@ const up = mode === 'signup';
 
       if (result.error) { show(translate(result.error)); return; }
 
+      const held = mode === 'signup' && 'needsConfirmation' in result && result.needsConfirmation;
+
       // Recorded against the account, so the acceptance survives the tick box.
-      if (mode === 'signup') await acceptTerms(TERMS_VERSION);
+      // Only with a session: a held account has none yet, and the confirmed
+      // page records it from the metadata above.
+      if (mode === 'signup' && !held) {
+        await acceptTerms(TERMS_VERSION, under14);
+        if (under14) {
+          const asked = await askParent(parent, location.pathname.startsWith('/en/') ? 'en' : 'bg');
+          if (asked.error) { show(translate(asked.error)); return; }
+          form.classList.add('hidden');
+          const box = document.querySelector('[data-auth-parent]') as HTMLElement;
+          box.classList.remove('hidden');
+          (box.querySelector('[data-auth-parent-body]') as HTMLElement).textContent =
+            said.parentSentBody.replace('{0}', parent);
+          return;
+        }
+      }
 
       // Only promise an email when one is actually coming. signUp reports that,
       // and this form ignored it: with confirmations off the account is live at
       // once, but everybody was still told to open a link that was never sent.
       // The first real tester sat waiting for it.
-      if (mode === 'signup' && 'needsConfirmation' in result && result.needsConfirmation) {
+      if (held) {
         form.classList.add('hidden');
         done.classList.remove('hidden');
+
+        const upgraded = 'upgraded' in result && Boolean(result.upgraded);
+        document.querySelector('[data-auth-resend]')?.addEventListener('click', async (e) => {
+          const button = e.currentTarget as HTMLButtonElement;
+          button.disabled = true;
+          const again = await resendConfirmation(email, upgraded);
+          const note = document.querySelector('[data-auth-resent]') as HTMLElement;
+          note.textContent = again.error ? translate(again.error) : said.resent;
+          note.classList.remove('hidden');
+          setTimeout(() => { button.disabled = false; }, 30000);
+        });
 
         // The claim that matters, printed rather than asserted: an upgrade keeps
         // the id, so the progress hanging off it survives.

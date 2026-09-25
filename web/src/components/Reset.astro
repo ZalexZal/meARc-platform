@@ -1,0 +1,93 @@
+---
+import { useTranslations, localise, type Lang } from '../i18n/ui';
+
+interface Props { lang: Lang; }
+const { lang } = Astro.props;
+const t = useTranslations(lang);
+const href = localise(lang);
+
+const strings = {
+  sent: t('reset.sent'), done: t('reset.done'), expired: t('reset.expired'),
+  weak: t('err.weakPassword'), accountHref: href('/account'),
+};
+---
+
+<!-- Two pages in one. Without a recovery session it asks for the email and
+     sends the link; the link comes back here with one, and it asks for the
+     new password. -->
+<section class="mx-auto flex max-w-md flex-col px-4 py-20 sm:px-6">
+  <h1 class="text-3xl">{t('reset.title')}</h1>
+
+  <form class="card mt-8 space-y-4 p-6" data-reset-ask novalidate>
+    <p class="text-sm text-[var(--ink-dim)]">{t('reset.lede')}</p>
+    <div>
+      <label class="mb-1.5 block text-sm font-medium" for="reset-email">{t('auth.email')}</label>
+      <input class="field" id="reset-email" type="email" autocomplete="email" required data-reset-email />
+    </div>
+    <button class="btn btn-primary w-full" type="submit">{t('reset.send')}</button>
+    <p class="hidden text-sm text-[var(--ink-dim)]" data-reset-said role="status"></p>
+  </form>
+
+  <form class="card mt-8 hidden space-y-4 p-6" data-reset-new novalidate>
+    <div>
+      <label class="mb-1.5 block text-sm font-medium" for="reset-pw">{t('reset.newPw')}</label>
+      <input class="field" id="reset-pw" type="password" autocomplete="new-password" minlength="8" required data-reset-pw />
+    </div>
+    <button class="btn btn-primary w-full" type="submit">{t('reset.save')}</button>
+    <p class="hidden text-sm" data-reset-done role="status"></p>
+  </form>
+</section>
+
+<script type="application/json" data-reset-strings set:html={JSON.stringify(strings)}></script>
+
+<script>
+  import { db, landing } from '../lib/supabase';
+  import { text } from '../lib/session';
+
+  const S = JSON.parse(document.querySelector('[data-reset-strings]')!.textContent || '{}');
+  const q = (s: string) => document.querySelector(s) as HTMLElement;
+  const client = db()!;
+
+  // Read before the client clears the address: a recovery link says so in
+  // the fragment, and an expired one says why.
+  const hash = new URLSearchParams(location.hash.slice(1));
+  const recovering = hash.get('type') === 'recovery';
+  const problem = hash.get('error_description');
+
+  const { data } = await client.auth.getSession();
+  history.replaceState(null, '', location.pathname);
+
+  if (recovering && data.session) {
+    q('[data-reset-ask]').classList.add('hidden');
+    q('[data-reset-new]').classList.remove('hidden');
+  } else if (problem) {
+    text(q('[data-reset-said]'), S.expired);
+    q('[data-reset-said]').classList.remove('hidden');
+  }
+
+  q('[data-reset-ask]').addEventListener('submit', async (event) => {
+    event.preventDefault();
+    const email = (q('[data-reset-email]') as HTMLInputElement).value.trim();
+    if (!email) return;
+    // The same answer whether or not the address has an account.
+    await client.auth.resetPasswordForEmail(email, { redirectTo: landing('reset') });
+    text(q('[data-reset-said]'), S.sent);
+    q('[data-reset-said]').classList.remove('hidden');
+  });
+
+  q('[data-reset-new]').addEventListener('submit', async (event) => {
+    event.preventDefault();
+    const password = (q('[data-reset-pw]') as HTMLInputElement).value;
+    const done = q('[data-reset-done]');
+    done.classList.remove('hidden');
+
+    if (password.length < 8) { text(done, S.weak); done.style.color = 'var(--alert)'; return; }
+
+    const { error } = await client.auth.updateUser({ password });
+    if (error) { text(done, error.message); done.style.color = 'var(--alert)'; return; }
+
+    text(done, S.done);
+    done.style.color = 'var(--signal)';
+    setTimeout(() => { location.href = S.accountHref; }, 1500);
+  });
+</script>

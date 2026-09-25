@@ -1,0 +1,42 @@
+---
+import { useTranslations, localise, type Lang } from '../i18n/ui';
+
+interface Props { lang: Lang; }
+const { lang } = Astro.props;
+const t = useTranslations(lang);
+const href = localise(lang);
+
+const strings = { trailHref: href('/trail'), failed: t('inv.failed') };
+---
+
+<!-- Where an editor invite link lands. It asks the server to add you, then
+     sends you straight to the trail - there is nothing to decide on this page,
+     so it only shows itself when something went wrong. -->
+<section class="mx-auto max-w-lg px-4 py-24 text-center sm:px-6" hidden data-guarded>
+  <h1 class="text-2xl sm:text-3xl">{t('inv.title')}</h1>
+  <p class="mt-4 text-[var(--ink-dim)]" data-inv-said>{t('inv.working')}</p>
+  <a class="btn btn-quiet mt-8 hidden" href={href('/my-trails')} data-inv-back>{t('nav.mine')}</a>
+</section>
+
+<script type="application/json" data-inv-strings set:html={JSON.stringify(strings)}></script>
+
+<script>
+  import { db } from '../lib/supabase';
+  import { requireUser, reveal, param, text } from '../lib/session';
+
+  const S = JSON.parse(document.querySelector('[data-inv-strings]')!.textContent || '{}');
+
+  // A real account: an editor is somebody the owner can name.
+  await requireUser({ needsReal: true });
+  reveal();
+
+  const code = param('code') ?? '';
+  const { data, error } = await db()!.rpc('join_as_editor', { p_code: code });
+
+  if (error || !data) {
+    text(document.querySelector('[data-inv-said]'), S.failed);
+    document.querySelector('[data-inv-back]')?.classList.remove('hidden');
+  } else {
+    location.replace(`${S.trailHref}?id=${encodeURIComponent(data as string)}`);
+  }
+</script>
