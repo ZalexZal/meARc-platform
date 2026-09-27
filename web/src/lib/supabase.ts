@@ -171,6 +171,24 @@ export async function askParent(parentEmail: string, lang: 'bg' | 'en') {
   return { error: null };
 }
 
+/** A 13-year-old's account, agreed to by a parent who made a code for it. */
+export async function redeemParentCode(code: string) {
+  const c = db();
+  if (!c) return { error: 'not-configured' as const };
+  const { error } = await c.rpc('redeem_child_invite', { p_code: code.trim() });
+  return { error: error?.message ?? null };
+}
+
+/**
+ * Remembered on this device once somebody answers "12 or younger", so the age
+ * question cannot simply be answered again with a bigger number. This is the
+ * neutral age screen the children's-privacy rules expect; it is no proof of
+ * anything, and nothing else is kept.
+ */
+const TOO_YOUNG = 'artrail.tooYoung';
+export const markTooYoung = () => { try { localStorage.setItem(TOO_YOUNG, '1'); } catch { /* private mode */ } };
+export const isTooYoung = () => { try { return localStorage.getItem(TOO_YOUNG) === '1'; } catch { return false; } };
+
 /**
  * Finishes a sign-up that email confirmation held back.
  *
@@ -191,10 +209,11 @@ export async function finishPending(user: User) {
     await acceptTerms(String(meta.terms_version), meta.age_band === 'under14');
   }
 
-  if (meta.age_band === 'under14' && meta.parent_email) {
+  if (meta.age_band === 'under14' && (meta.parent_email || meta.parent_code)) {
     const { data: state } = await c.rpc('consent_state');
     if (state?.state === 'needed') {
-      await askParent(String(meta.parent_email), location.pathname.startsWith('/en/') ? 'en' : 'bg');
+      if (meta.parent_code) await redeemParentCode(String(meta.parent_code));
+      else await askParent(String(meta.parent_email), location.pathname.startsWith('/en/') ? 'en' : 'bg');
     }
   }
 }

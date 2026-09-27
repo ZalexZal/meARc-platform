@@ -37,6 +37,10 @@ const copy = {
     viaTrail: 'Създател на „{0}“', viaTeam: 'Създател на отбора „{0}“', viaPlayer: 'Играч от отбора „{0}“',
     consentPending: 'Родителят ти още не се е съгласил. Писахме на {0}. Дотогава не можеш да влизаш в маршрути.',
     consentResend: 'Изпрати писмото пак', consentResent: 'Изпратено пак.',
+    consentNeeded: 'На 13 години си, затова родител или настойник трябва да се съгласи, преди да влизаш в маршрути. Напиши имейла му или код от родителския му профил.',
+    parentEmail: 'Имейл на родител', parentCode: 'Код от родителя', sendLink: 'Изпрати линк', useCode: 'Използвай кода',
+    codeDone: 'Готово: родителят ти се е съгласил.',
+    badCode: 'Този код не работи. Помоли родителя си за нов.',
   },
   en: {
     overview: 'Overview', badges: 'Badges', walked: 'Trails walked',
@@ -66,6 +70,10 @@ const copy = {
     viaTrail: 'Creator of “{0}”', viaTeam: 'Founder of team “{0}”', viaPlayer: 'A player from team “{0}”',
     consentPending: 'Your parent hasn’t agreed yet. We wrote to {0}. Until they do, you can’t join trails.',
     consentResend: 'Send the email again', consentResent: 'Sent again.',
+    consentNeeded: 'You’re 13, so a parent or guardian has to agree before you join trails. Write their email, or a code from their parent account.',
+    parentEmail: 'Parent’s email', parentCode: 'Code from your parent', sendLink: 'Send the link', useCode: 'Use the code',
+    codeDone: 'Done: your parent has agreed.',
+    badCode: 'That code doesn’t work. Ask your parent for a new one.',
   },
 }[lang];
 
@@ -163,6 +171,18 @@ const rail = [
         <div class="notice hidden flex-wrap items-center justify-between gap-3" data-consent-note>
           <span data-consent-text></span>
           <button type="button" class="btn btn-quiet btn-sm" data-consent-resend>{copy.consentResend}</button>
+        </div>
+        <div class="notice hidden space-y-3" id="parent" data-consent-needed>
+          <p>{copy.consentNeeded}</p>
+          <div class="row-input">
+            <input class="field-input" type="email" autocomplete="off" placeholder={copy.parentEmail} aria-label={copy.parentEmail} data-needed-email />
+            <button type="button" class="btn btn-quiet btn-sm" data-needed-send>{copy.sendLink}</button>
+          </div>
+          <div class="row-input">
+            <input class="field-input uppercase tracking-widest" maxlength="12" autocomplete="off" placeholder={copy.parentCode} aria-label={copy.parentCode} data-needed-code />
+            <button type="button" class="btn btn-quiet btn-sm" data-needed-use>{copy.useCode}</button>
+          </div>
+          <p class="msg" data-needed-msg aria-live="polite"></p>
         </div>
 
         <div class="kpis" data-kpis>
@@ -434,7 +454,7 @@ const rail = [
 </style>
 
 <script>
-  import { db, signOut, askParent } from '../lib/supabase';
+  import { db, signOut, askParent, redeemParentCode } from '../lib/supabase';
   import { requireUser, reveal, escapeHtml, text, count } from '../lib/session';
 
   const S = JSON.parse(document.querySelector('[data-acct-strings]')!.textContent || '{}');
@@ -494,6 +514,33 @@ const rail = [
   // An under-14 waiting on a parent sees why nothing lets them in, and can
   // send the email again.
   const { data: consent } = await client.rpc('consent_state');
+
+  // No parent asked yet - a wrong code at sign-up, or an account made before
+  // there was a way to ask. Both ways in, here.
+  if (consent?.state === 'needed') {
+    q('[data-consent-needed]')?.classList.remove('hidden');
+    const said = (m: string, good = false) => {
+      const el = q('[data-needed-msg]') as HTMLElement;
+      el.textContent = m;
+      el.className = 'msg ' + (good ? 'good' : 'bad');
+    };
+    q('[data-needed-send]')?.addEventListener('click', async () => {
+      const email = (q('[data-needed-email]') as HTMLInputElement).value.trim();
+      if (!email) return;
+      const asked = await askParent(email, S.lang);
+      if (asked.error) { said(asked.error); return; }
+      location.reload();
+    });
+    q('[data-needed-use]')?.addEventListener('click', async () => {
+      const code = (q('[data-needed-code]') as HTMLInputElement).value.trim();
+      if (!code) return;
+      const redeemed = await redeemParentCode(code);
+      if (redeemed.error) { said(/does not work/.test(redeemed.error) ? S.badCode : redeemed.error); return; }
+      said(S.codeDone, true);
+      setTimeout(() => location.reload(), 1200);
+    });
+  }
+
   if (consent?.state === 'pending') {
     const note = q('[data-consent-note]') as HTMLElement;
     note.classList.remove('hidden');

@@ -5,6 +5,6 @@ import { langFromUrl, useTranslations } from '../i18n/ui';
 const lang = langFromUrl(Astro.url);
 const t = useTranslations(lang);
 ---
-<Base title={t('cons.title') + ' — AR Trail'}>
+<Base title={t('par.title') + ' — AR Trail'}>
   <Consent lang={lang} />
 </Base>

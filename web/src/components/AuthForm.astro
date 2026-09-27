@@ -17,7 +17,8 @@ const up = mode === 'signup';
           fill: t('err.fill'), weak: t('err.weakPassword'), generic: t('err.generic'),
           network: t('err.network'), bad: t('err.badCredentials'), taken: t('err.emailTaken'),
           age: t('err.age'), parentEmail: t('err.parentEmail'), unconfirmed: t('err.unconfirmed'),
-          tooYoung: t('err.tooYoung'),
+          tooYoung: t('err.tooYoung'), parentEither: t('err.parentEither'),
+          tooYoungHere: t('err.tooYoungHere'),
           slowDown: t('err.slowDown'), resent: t('auth.resent'), parentSentBody: t('auth.parentSentBody'),
         })}>
     {up && (
@@ -70,6 +71,9 @@ const up = mode === 'signup';
           <label class="mb-1.5 block text-sm font-medium" for="parent">{t('auth.parentEmail')}</label>
           <input class="field" id="parent" name="parent" type="email" autocomplete="off" />
           <p class="mt-1.5 text-xs text-[var(--ink-faint)]">{t('auth.parentHelp')}</p>
+          <label class="mb-1.5 mt-4 block text-sm font-medium" for="pcode">{t('auth.parentCode')}</label>
+          <input class="field data uppercase tracking-widest" id="pcode" name="pcode" autocomplete="off" maxlength="12" />
+          <p class="mt-1.5 text-xs text-[var(--ink-faint)]">{t('auth.parentCodeHelp')}</p>
         </div>
       </fieldset>
     )}
@@ -120,7 +124,8 @@ const up = mode === 'signup';
 </section>
 
 <script>
-  import { signUp, signIn, acceptTerms, askParent, resendConfirmation, configured } from '../lib/supabase';
+  import { signUp, signIn, acceptTerms, askParent, resendConfirmation, redeemParentCode,
+           markTooYoung, isTooYoung, configured } from '../lib/supabase';
   import { TERMS_VERSION } from '../lib/terms';
 
   const form = document.querySelector('[data-auth-form]') as HTMLFormElement | null;
@@ -151,6 +156,11 @@ const up = mode === 'signup';
     const home = location.pathname.startsWith('/en/') ? '/en/' : '/';
     const onward = next && next.startsWith('/') && !next.startsWith('//') ? next : home;
 
+    // This device has already said "12 or younger": no form to answer again.
+    if (mode === 'signup' && isTooYoung()) {
+      form.innerHTML = `<p class="text-sm">${said.tooYoungHere}</p>`;
+    }
+
     form.querySelectorAll('input[name="age"]').forEach((radio) => radio.addEventListener('change', () => {
       const young = (form.querySelector('input[name="age"]:checked') as HTMLInputElement)?.value === 'under14';
       form.querySelector('[data-parent]')?.classList.toggle('hidden', !young);
@@ -176,6 +186,7 @@ const up = mode === 'signup';
       const name = String(data.get('name') ?? '').trim();
       const age = String(data.get('age') ?? '');
       const parent = String(data.get('parent') ?? '').trim();
+      const pcode = String(data.get('pcode') ?? '').trim().toUpperCase();
       const under14 = age === 'under14';
 
       if (!email || !password) { show(said.fill); return; }
@@ -184,8 +195,9 @@ const up = mode === 'signup';
       if (mode === 'signup' && !age) { show(said.age); return; }
       // Google Play will not let an app with location be aimed at under-13s,
       // and this app is nothing without location.
-      if (mode === 'signup' && age === 'under13') { show(said.tooYoung); return; }
-      if (mode === 'signup' && under14
+      if (mode === 'signup' && age === 'under13') { markTooYoung(); show(said.tooYoung); return; }
+      if (mode === 'signup' && under14 && !parent && !pcode) { show(said.parentEither); return; }
+      if (mode === 'signup' && under14 && !pcode
           && (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(parent) || parent.toLowerCase() === email.toLowerCase())) {
         show(said.parentEmail);
         return;
@@ -213,7 +225,8 @@ const up = mode === 'signup';
         ? await signUp(email, password, name || undefined, {
             terms_version: TERMS_VERSION,
             age_band: under14 ? 'under14' : '14+',
-            ...(under14 && { parent_email: parent }),
+            ...(under14 && pcode && { parent_code: pcode }),
+            ...(under14 && !pcode && { parent_email: parent }),
           })
         : await signIn(email, password);
 
@@ -229,6 +242,16 @@ const up = mode === 'signup';
       // page records it from the metadata above.
       if (mode === 'signup' && !held) {
         await acceptTerms(TERMS_VERSION, under14);
+        if (under14 && pcode) {
+          // Agreed to already, by the parent who made the code.
+          const redeemed = await redeemParentCode(pcode);
+          // The account exists either way. A wrong code goes to the account
+          // page, which asks again - by code or by the parent's email.
+          window.location.href = redeemed.error
+            ? (location.pathname.startsWith('/en/') ? '/en/account/#parent' : '/account/#parent')
+            : onward;
+          return;
+        }
         if (under14) {
           const asked = await askParent(parent, location.pathname.startsWith('/en/') ? 'en' : 'bg');
           if (asked.error) { show(translate(asked.error)); return; }

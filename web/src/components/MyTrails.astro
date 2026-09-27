@@ -37,6 +37,14 @@ const strings = {
   review: t('mine.review'),
   editHref: href('/trail'),
   boardHref: href('/board'),
+  lang,
+  rmTitle: t('rm.title'), rmTrail: t('rm.trail'), rmStop: t('rm.stop'), rmReasons: t('rm.reasons'),
+  rmNote: t('rm.note'), rmGround: t('rm.ground'), rmContest: t('rm.contest'), rmSeen: t('rm.seen'),
+  reasons: {
+    private_property: t('rep.reason.private_property'), unsafe: t('rep.reason.unsafe'),
+    offensive: t('rep.reason.offensive'), wrong_place: t('rep.reason.wrong_place'),
+    spam: t('rep.reason.spam'), other: t('rep.reason.other'),
+  },
 };
 ---
 
@@ -55,6 +63,11 @@ const strings = {
       <a class="btn btn-primary" href={href('/create')}>{t('mine.new')}</a>
     </div>
   </header>
+
+  <!-- What a reviewer took down, and why: the statement of reasons the Digital
+       Services Act asks for (art. 17). Shown until the creator says they have
+       read it, and kept in their data download after. -->
+  <div class="mt-10 hidden space-y-3" data-notices role="status"></div>
 
   <!-- Three states, all of them drawn. A list that can only render rows shows a
        blank rectangle for the two cases that happen most on a young account:
@@ -91,6 +104,40 @@ const strings = {
 
   await requireUser({ needsReal: false });
   const client = db()!;
+
+  // ---------------------------------------------------------------- removals
+  const drawNotices = async () => {
+    const { data: notices } = await client.from('moderation_notices')
+      .select('id,kind,title,trail_name,reasons,note,created_at')
+      .is('seen_at', null).order('created_at', { ascending: false });
+    const box = document.querySelector('[data-notices]') as HTMLElement;
+    const rows = notices ?? [];
+    box.classList.toggle('hidden', rows.length === 0);
+    const day = (iso: string) => new Date(iso).toLocaleDateString(S.lang === 'bg' ? 'bg-BG' : 'en-GB',
+      { day: 'numeric', month: 'long', year: 'numeric' });
+
+    box.innerHTML = rows.map((n: any) => {
+      const what = n.kind === 'trail'
+        ? S.rmTrail.replace('{0}', n.title ?? '—').replace('{1}', day(n.created_at))
+        : S.rmStop.replace('{0}', n.title ?? '—').replace('{1}', n.trail_name ?? '—').replace('{2}', day(n.created_at));
+      const reasons = (n.reasons ?? []).map((r: string) => S.reasons[r] ?? r).join(', ');
+      return `<article class="note note-alert p-5 text-sm">
+        <p class="font-semibold">${escapeHtml(S.rmTitle)}</p>
+        <p class="mt-2">${escapeHtml(what)}</p>
+        ${reasons ? `<p class="mt-1">${escapeHtml(S.rmReasons.replace('{0}', reasons))}</p>` : ''}
+        ${n.note ? `<p class="mt-1">${escapeHtml(S.rmNote.replace('{0}', n.note))}</p>` : ''}
+        <p class="mt-2 text-[var(--ink-dim)]">${escapeHtml(S.rmGround)}</p>
+        <p class="mt-1 text-[var(--ink-dim)]">${escapeHtml(S.rmContest)}</p>
+        <button type="button" class="btn btn-quiet btn-sm mt-3" data-seen="${escapeHtml(n.id)}">${escapeHtml(S.rmSeen)}</button>
+      </article>`;
+    }).join('');
+
+    box.querySelectorAll('[data-seen]').forEach((b) => b.addEventListener('click', async () => {
+      await client.rpc('notice_seen', { p_notice: (b as HTMLElement).dataset.seen });
+      await drawNotices();
+    }));
+  };
+  drawNotices();
 
   // Private and unlisted are the owner's to set. Public is not: it is a request
   // that somebody else grants, so it is a different kind of control and is drawn

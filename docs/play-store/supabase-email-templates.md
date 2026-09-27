@@ -32,20 +32,18 @@ Subject: Потвърди имейла си · Confirm your email — AR Trail
 <p>If you made the account in the app, go back to it afterwards.</p>
 <p>If it wasn't you, delete this email and nothing will change.</p>
 
-## Magic Link   (this is the email a PARENT receives)
-Subject: Детето ви иска да ползва AR Trail · Your child wants to use AR Trail
+## Magic Link   (parents: sign-in to the parent account, and a child's request)
+Subject: Вход в AR Trail · Sign in to AR Trail
 
 <p>Здравейте,</p>
-<p>Дете на 13 години посочи този имейл като имейл на родител или настойник, за да ползва AR Trail — приложение за градски маршрути с добавена реалност.</p>
-<p>По закон под 14 години профилът може да се ползва само със съгласието на родител. Отворете линка, за да прочетете какво пазим и да решите:</p>
-<p><a href="{{ .ConfirmationURL }}">Прочети и реши</a></p>
-<p>Ако не познавате това дете, просто изтрийте писмото. Линкът важи един час; на същата страница може да поискате нов.</p>
+<p>Ето линкът за вход в родителския ви профил в AR Trail. Ако дете на 13 години е посочило този имейл като имейл на родител или настойник, ще видите искането му веднага след като влезете, и ще можете да се съгласите или да откажете.</p>
+<p><a href="{{ .ConfirmationURL }}">Влез</a></p>
+<p>Ако не сте поискали това и не познавате такова дете, просто изтрийте писмото. Линкът важи един час.</p>
 <hr>
 <p>Hello,</p>
-<p>A 13-year-old gave this email as a parent's or guardian's, to use AR Trail - an app for augmented-reality city trails.</p>
-<p>By law, under 14 the account can only be used with a parent's consent. Open the link to read what we keep and to decide:</p>
-<p><a href="{{ .ConfirmationURL }}">Read and decide</a></p>
-<p>If you don't know this child, just delete this email. The link works for one hour; you can ask for a new one on the same page.</p>
+<p>Here is your sign-in link to your AR Trail parent account. If a 13-year-old gave this email as a parent's or guardian's, you will see their request as soon as you sign in, and can agree or refuse.</p>
+<p><a href="{{ .ConfirmationURL }}">Sign in</a></p>
+<p>If you didn't ask for this and don't know such a child, just delete this email. The link works for one hour.</p>
 
 ## Reset Password
 Subject: Нова парола · New password — AR Trail

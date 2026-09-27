@@ -9,58 +9,89 @@ const href = localise(lang);
 
 const strings = {
   lang, termsVersion: TERMS_VERSION,
-  child: t('cons.child'), asked: t('cons.asked'), granted: t('cons.granted'),
+  child: t('cons.child'), asked: t('cons.asked'),
   guardian: t('cons.guardian'), agree: t('cons.agree'), refuse: t('cons.refuse'),
   refuseConfirm: t('cons.refuseConfirm'), needGuardian: t('cons.needGuardian'),
   withdraw: t('cons.withdraw'), withdrawConfirm: t('cons.withdrawConfirm'),
-  erased: t('cons.erased'), done: t('cons.done'), none: t('cons.none'),
-  linkSent: t('cons.linkSent'), failed: t('err.generic'),
+  erased: t('cons.erased'), done: t('cons.done'), failed: t('err.generic'),
+  linkSent: t('par.linkSent'), signedAs: t('par.signedAs'), none: t('par.none'),
+  waiting: t('par.waiting'), agreedOn: t('par.agreedOn'), trails: t('par.trails'),
+  teams: t('par.teams'), walked: t('par.walked'), badges: t('par.badges'),
+  lastActive: t('par.lastActive'), never: t('par.never'), download: t('par.download'),
+  code: t('par.code'), codeHow: t('par.codeHow'), expires: t('par.expires'),
+  cancel: t('par.cancel'), needName: t('par.needName'),
 };
 ---
 
-<!-- Where a parent lands from the email a child's app asked for. Opening that
-     link signed them in, which is the proof the address is theirs; this page
-     shows every request made to it and takes the answer. -->
+<!-- The parent's side of an under-14's account. A parent lands here from the
+     link a child's request sent them, or comes on their own to add a child.
+     Everything below the explanation needs a session opened by an emailed
+     link: that is the proof the inbox is theirs (0048). -->
 <article class="mx-auto max-w-2xl px-4 py-16 sm:px-6">
-  <h1 class="text-3xl sm:text-4xl">{t('cons.title')}</h1>
-  <p class="mt-4 text-[var(--ink-dim)]">{t('cons.lede')}</p>
+  <h1 class="text-3xl sm:text-4xl">{t('par.title')}</h1>
+  <p class="mt-4 text-[var(--ink-dim)]">{t('par.lede')}</p>
 
-  <div class="mt-10 space-y-7">
-    <section>
-      <h2 class="text-lg">{t('cons.what')}</h2>
-      <p class="mt-2 leading-relaxed text-[var(--ink-dim)]">{t('cons.whatBody')}</p>
-    </section>
-    <section>
-      <h2 class="text-lg">{t('cons.data')}</h2>
-      <p class="mt-2 leading-relaxed text-[var(--ink-dim)]">{t('cons.dataBody')}</p>
-    </section>
-    <section>
-      <h2 class="text-lg">{t('cons.see')}</h2>
-      <p class="mt-2 leading-relaxed text-[var(--ink-dim)]">{t('cons.seeBody')}</p>
-    </section>
-    <section>
-      <h2 class="text-lg">{t('cons.rights')}</h2>
-      <p class="mt-2 leading-relaxed text-[var(--ink-dim)]">{t('cons.rightsBody')}</p>
-      <p class="mt-3 text-sm">
+  <details class="card mt-8 p-5">
+    <summary class="cursor-pointer font-medium">{t('cons.what')}</summary>
+    <div class="mt-4 space-y-5 text-sm leading-relaxed text-[var(--ink-dim)]">
+      <p>{t('cons.whatBody')}</p>
+      <div><h2 class="text-base text-[var(--ink)]">{t('cons.data')}</h2><p class="mt-1">{t('cons.dataBody')}</p></div>
+      <div><h2 class="text-base text-[var(--ink)]">{t('cons.see')}</h2><p class="mt-1">{t('cons.seeBody')}</p></div>
+      <div><h2 class="text-base text-[var(--ink)]">{t('cons.rights')}</h2><p class="mt-1">{t('cons.rightsBody')}</p></div>
+      <p>
         <a class="font-medium text-[var(--signal)] underline-offset-2 hover:underline" href={href('/terms')} target="_blank" rel="noopener">{t('cons.readTerms')}</a>{' · '}<a class="font-medium text-[var(--signal)] underline-offset-2 hover:underline" href={href('/privacy')} target="_blank" rel="noopener">{t('cons.readPrivacy')}</a>
       </p>
+    </div>
+  </details>
+
+  <p class="mt-10 text-[var(--ink-dim)]" data-cons-wait>{t('games.loading')}</p>
+
+  <!-- Not signed in by link: ask for one. -->
+  <form class="card mt-10 hidden space-y-3 p-6" data-cons-signin novalidate>
+    <p class="text-sm text-[var(--ink-dim)]">{t('par.signIn')}</p>
+    <label class="sr-only" for="cons-email">{t('auth.email')}</label>
+    <input class="field" id="cons-email" type="email" autocomplete="email" placeholder={t('auth.email')} data-cons-email />
+    <button class="btn btn-primary" type="submit">{t('par.sendLink')}</button>
+    <p class="hidden text-sm text-[var(--ink-dim)]" data-cons-sent role="status"></p>
+  </form>
+
+  <!-- Signed in by link: the children, and adding one. -->
+  <div class="mt-10 hidden" data-parent>
+    <p class="text-sm text-[var(--ink-dim)]" data-signed-as></p>
+
+    <section class="mt-6">
+      <h2 class="text-xl">{t('par.children')}</h2>
+      <ul class="mt-4 space-y-4" data-cons-list></ul>
+    </section>
+
+    <section class="card mt-10 space-y-4 p-6">
+      <h2 class="text-xl">{t('par.add')}</h2>
+      <p class="text-sm text-[var(--ink-dim)]">{t('par.addLede')}</p>
+      <form class="space-y-3" data-add novalidate>
+        <label class="block text-sm">
+          <span class="mb-1 block font-medium">{t('par.childName')}</span>
+          <input class="field" maxlength="40" autocomplete="off" data-add-name />
+        </label>
+        <label class="flex items-start gap-2.5 text-sm">
+          <input class="mt-1 shrink-0" type="checkbox" data-add-guardian />
+          <span>{t('cons.guardian')}</span>
+        </label>
+        <button class="btn btn-primary" type="submit">{t('par.makeCode')}</button>
+      </form>
+      <div class="hidden rounded-xl border border-[var(--line)] p-4" data-new-code>
+        <p class="text-sm font-medium" data-new-code-for></p>
+        <p class="data mt-2 text-3xl font-semibold tracking-[0.2em] text-[var(--signal)]" data-new-code-value></p>
+        <p class="mt-2 text-xs text-[var(--ink-dim)]" data-new-code-expires></p>
+        <p class="mt-3 text-sm text-[var(--ink-dim)]">{t('par.codeHow')}</p>
+      </div>
+      <div class="hidden" data-open>
+        <h3 class="text-sm font-semibold">{t('par.openCodes')}</h3>
+        <ul class="mt-2" data-open-list></ul>
+      </div>
     </section>
   </div>
 
-  <p class="mt-12 text-[var(--ink-dim)]" data-cons-wait>{t('games.loading')}</p>
-
-  <!-- Signed in: the requests. -->
-  <ul class="mt-12 space-y-5" data-cons-list></ul>
   <p class="mt-4 hidden text-sm" data-cons-said role="status"></p>
-
-  <!-- Not signed in: the link expired, or this is a different device. -->
-  <form class="card mt-12 hidden space-y-3 p-6" data-cons-signin novalidate>
-    <p class="text-sm text-[var(--ink-dim)]">{t('cons.signIn')}</p>
-    <label class="sr-only" for="cons-email">{t('auth.email')}</label>
-    <input class="field" id="cons-email" type="email" autocomplete="email" placeholder={t('auth.email')} data-cons-email />
-    <button class="btn btn-primary" type="submit">{t('cons.sendLink')}</button>
-    <p class="hidden text-sm text-[var(--ink-dim)]" data-cons-sent role="status"></p>
-  </form>
 </article>
 
 <script type="application/json" data-cons-strings set:html={JSON.stringify(strings)}></script>
@@ -84,26 +115,52 @@ const strings = {
     q('[data-cons-said]').classList.remove('hidden');
   };
 
-  const when = (iso: string) => new Date(iso).toLocaleDateString(S.lang === 'bg' ? 'bg-BG' : 'en-GB',
-    { day: 'numeric', month: 'long', year: 'numeric' });
+  const when = (iso: string | null) => iso
+    ? new Date(iso).toLocaleDateString(S.lang === 'bg' ? 'bg-BG' : 'en-GB', { day: 'numeric', month: 'long', year: 'numeric' })
+    : S.never;
 
-  async function draw() {
-    const { data: rows, error } = await client.rpc('consents_to_answer');
+  // Only a session opened by the emailed link counts as the parent: with
+  // confirmations off, anybody can make a password account with any address.
+  // The server checks the same thing (0048); this only picks the right screen.
+  const byLink = (() => {
+    try {
+      const claims = JSON.parse(atob((data.session?.access_token ?? '').split('.')[1]
+        .replace(/-/g, '+').replace(/_/g, '/')));
+      return (claims.amr ?? []).some((m: any) => m.method === 'otp' || m.method === 'magiclink');
+    } catch { return false; }
+  })();
+
+  async function drawChildren() {
+    const { data: rows, error } = await client.rpc('my_children');
     const list = q('[data-cons-list]');
-
     if (error) { list.innerHTML = ''; say(S.failed, true); return; }
-    if (!rows?.length) { list.innerHTML = `<li class="text-[var(--ink-dim)]">${escapeHtml(S.none)}</li>`; return; }
+    if (!rows?.length) { list.innerHTML = `<li class="text-sm text-[var(--ink-dim)]">${escapeHtml(S.none)}</li>`; return; }
 
     list.innerHTML = rows.map((r: any) => {
-      const who = escapeHtml(r.child_name || S.child);
+      const who = escapeHtml(r.name || S.child);
+      const facts = `
+        <dl class="mt-4 grid grid-cols-2 gap-x-4 gap-y-2 text-sm sm:grid-cols-4">
+          <div><dt class="text-xs text-[var(--ink-faint)]">${escapeHtml(S.walked)}</dt><dd class="data">${Number(r.walked)}</dd></div>
+          <div><dt class="text-xs text-[var(--ink-faint)]">${escapeHtml(S.badges)}</dt><dd class="data">${Number(r.badges)}</dd></div>
+          <div class="col-span-2"><dt class="text-xs text-[var(--ink-faint)]">${escapeHtml(S.lastActive)}</dt><dd>${escapeHtml(when(r.last_active))}</dd></div>
+          <div class="col-span-2 sm:col-span-4"><dt class="text-xs text-[var(--ink-faint)]">${escapeHtml(S.trails)}</dt><dd>${
+            r.trails.length ? r.trails.map((x: any) => escapeHtml(x.name)).join(', ') : '—'}</dd></div>
+          <div class="col-span-2 sm:col-span-4"><dt class="text-xs text-[var(--ink-faint)]">${escapeHtml(S.teams)}</dt><dd>${
+            r.teams.length ? r.teams.map((x: string) => escapeHtml(x)).join(', ') : '—'}</dd></div>
+        </dl>`;
       return r.granted
         ? `<li class="card p-6" data-child="${escapeHtml(r.child_id)}">
              <p class="font-medium">${who}</p>
-             <p class="mt-1 text-sm text-[var(--ink-dim)]">${escapeHtml(S.granted.replace('{0}', when(r.answered_at)))}</p>
-             <button type="button" class="btn btn-danger-quiet btn-sm mt-4" data-withdraw>${escapeHtml(S.withdraw)}</button>
+             <p class="mt-1 text-sm text-[var(--ink-dim)]">${escapeHtml(S.agreedOn.replace('{0}', when(r.answered_at)))}</p>
+             ${facts}
+             <div class="mt-5 flex flex-wrap gap-2">
+               <button type="button" class="btn btn-quiet btn-sm" data-download>${escapeHtml(S.download)}</button>
+               <button type="button" class="btn btn-danger-quiet btn-sm" data-withdraw>${escapeHtml(S.withdraw)}</button>
+             </div>
            </li>`
         : `<li class="card p-6" data-child="${escapeHtml(r.child_id)}">
-             <p class="font-medium">${who} <span class="text-sm font-normal text-[var(--ink-dim)]">${escapeHtml(S.asked)} ${escapeHtml(when(r.requested_at))}</span></p>
+             <p class="font-medium">${who} <span class="text-sm font-normal" style="color:var(--lamp)">${escapeHtml(S.waiting)}</span></p>
+             <p class="mt-1 text-sm text-[var(--ink-dim)]">${escapeHtml(S.asked)} ${escapeHtml(when(r.requested_at))}</p>
              <label class="mt-4 flex items-start gap-2.5 text-sm">
                <input class="mt-1 shrink-0" type="checkbox" data-guardian />
                <span>${escapeHtml(S.guardian)}</span>
@@ -116,7 +173,19 @@ const strings = {
     }).join('');
   }
 
-  // Bound once on the list, because draw() replaces everything in it.
+  async function drawCodes() {
+    const { data: codes } = await client.rpc('my_child_invites');
+    const box = q('[data-open]');
+    box.classList.toggle('hidden', !codes?.length);
+    q('[data-open-list]').innerHTML = (codes ?? []).map((c: any) => `
+      <li class="flex items-center justify-between gap-3 border-t border-[var(--line-soft)] py-2 text-sm">
+        <span><span class="data font-medium tracking-widest">${escapeHtml(c.code)}</span>
+          <span class="text-[var(--ink-dim)]"> · ${escapeHtml(c.child_name)} · ${escapeHtml(S.expires.replace('{0}', when(c.expires_at)))}</span></span>
+        <button type="button" class="btn btn-ghost btn-sm" data-cancel-code="${escapeHtml(c.code)}">${escapeHtml(S.cancel)}</button>
+      </li>`).join('');
+  }
+
+  // Bound once on the list, because drawChildren() replaces everything in it.
   q('[data-cons-list]').addEventListener('click', async (event) => {
     const target = event.target as HTMLElement;
     const card = target.closest('[data-child]') as HTMLElement | null;
@@ -129,36 +198,62 @@ const strings = {
         { p_child: child, p_agree: true, p_terms_version: S.termsVersion });
       if (error) { say(error.message, true); return; }
       say(S.done);
-      await draw();
+      await drawChildren();
     } else if (target.closest('[data-refuse]')) {
       if (!confirm(S.refuseConfirm)) return;
       const { error } = await client.rpc('answer_parent_consent',
         { p_child: child, p_agree: false, p_terms_version: S.termsVersion });
       if (error) { say(error.message, true); return; }
       say(S.erased);
-      await draw();
+      await drawChildren();
     } else if (target.closest('[data-withdraw]')) {
       if (!confirm(S.withdrawConfirm)) return;
       const { error } = await client.rpc('withdraw_parent_consent', { p_child: child });
       if (error) { say(error.message, true); return; }
       say(S.erased);
-      await draw();
+      await drawChildren();
+    } else if (target.closest('[data-download]')) {
+      const { data: json, error } = await client.rpc('export_child_data', { p_child: child });
+      if (error) { say(error.message, true); return; }
+      const url = URL.createObjectURL(new Blob([JSON.stringify(json, null, 2)], { type: 'application/json' }));
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `artrail-child-data-${new Date().toISOString().slice(0, 10)}.json`;
+      a.click();
+      URL.revokeObjectURL(url);
     }
   });
 
-  // Only a session opened by the emailed link counts as the parent: with
-  // confirmations off, anybody can make a password account with any address.
-  // The server checks the same thing (0048); this only picks the right form.
-  const byLink = (() => {
-    try {
-      const claims = JSON.parse(atob((data.session?.access_token ?? '').split('.')[1]
-        .replace(/-/g, '+').replace(/_/g, '/')));
-      return (claims.amr ?? []).some((m: any) => m.method === 'otp' || m.method === 'magiclink');
-    } catch { return false; }
-  })();
+  q('[data-open-list]').addEventListener('click', async (event) => {
+    const button = (event.target as HTMLElement).closest('[data-cancel-code]') as HTMLElement | null;
+    if (!button) return;
+    await client.rpc('cancel_child_invite', { p_code: button.dataset.cancelCode });
+    await drawCodes();
+  });
+
+  q('[data-add]').addEventListener('submit', async (event) => {
+    event.preventDefault();
+    const name = (q('[data-add-name]') as HTMLInputElement).value.trim();
+    if (!name) { say(S.needName, true); return; }
+    if (!(q('[data-add-guardian]') as HTMLInputElement).checked) { say(S.needGuardian, true); return; }
+
+    const { data: made, error } = await client.rpc('create_child_invite',
+      { p_child_name: name, p_terms_version: S.termsVersion });
+    if (error || !made) { say(error?.message ?? S.failed, true); return; }
+
+    q('[data-new-code]').classList.remove('hidden');
+    text(q('[data-new-code-for]'), S.code.replace('{0}', made.child_name));
+    text(q('[data-new-code-value]'), made.code);
+    text(q('[data-new-code-expires]'), S.expires.replace('{0}', when(made.expires_at)));
+    (q('[data-add-name]') as HTMLInputElement).value = '';
+    (q('[data-add-guardian]') as HTMLInputElement).checked = false;
+    await drawCodes();
+  });
 
   if (user && user.email && byLink) {
-    await draw();
+    q('[data-parent]').classList.remove('hidden');
+    text(q('[data-signed-as]'), S.signedAs.replace('{0}', user.email));
+    await Promise.all([drawChildren(), drawCodes()]);
   } else {
     const form = q('[data-cons-signin]') as HTMLFormElement;
     form.classList.remove('hidden');
@@ -166,12 +261,11 @@ const strings = {
       event.preventDefault();
       const email = (q('[data-cons-email]') as HTMLInputElement).value.trim();
       if (!email) return;
-      // A sign-in link back to this page. It never makes an account the
-      // address did not already have: a parent was given one when asked.
-      // The same sentence whether or not the address has an account, so this
-      // form cannot be used to find out which addresses do.
+      // A parent account is made by signing in the first time. The same
+      // sentence whether or not the address had one, so the form cannot be
+      // used to find out which addresses do.
       await client.auth.signInWithOtp({
-        email, options: { shouldCreateUser: false, emailRedirectTo: landing('consent') },
+        email, options: { shouldCreateUser: true, emailRedirectTo: landing('parent') },
       });
       text(q('[data-cons-sent]'), S.linkSent);
       q('[data-cons-sent]').classList.remove('hidden');

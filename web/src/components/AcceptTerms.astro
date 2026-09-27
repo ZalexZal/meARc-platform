@@ -8,7 +8,7 @@ const href = localise(lang);
 
 const strings = {
   lang, age: t('err.age'), parentEmail: t('err.parentEmail'), mustAgree: t('err.mustAgree'),
-  tooYoung: t('err.tooYoung'),
+  tooYoung: t('err.tooYoung'), parentEither: t('err.parentEither'), tooYoungHere: t('err.tooYoungHere'),
   parentSentBody: t('auth.parentSentBody'), home: href('/'),
 };
 ---
@@ -38,6 +38,8 @@ const strings = {
         <label class="mb-1.5 block text-sm font-medium" for="gate-parent">{t('auth.parentEmail')}</label>
         <input class="field" id="gate-parent" type="email" autocomplete="off" data-parent-email />
         <p class="mt-1.5 text-xs text-[var(--ink-faint)]">{t('auth.parentHelp')}</p>
+        <label class="mb-1.5 mt-4 block text-sm font-medium" for="gate-code">{t('auth.parentCode')}</label>
+        <input class="field data uppercase tracking-widest" id="gate-code" autocomplete="off" maxlength="12" data-parent-code />
       </div>
     </fieldset>
 
@@ -61,7 +63,7 @@ const strings = {
 <script type="application/json" data-gate-strings set:html={JSON.stringify(strings)}></script>
 
 <script>
-  import { db, acceptTerms, askParent } from '../lib/supabase';
+  import { db, acceptTerms, askParent, redeemParentCode, markTooYoung } from '../lib/supabase';
   import { requireUser, reveal, param, text } from '../lib/session';
   import { TERMS_VERSION } from '../lib/terms';
 
@@ -95,15 +97,17 @@ const strings = {
 
     const age = (form.querySelector('input[name="age"]:checked') as HTMLInputElement)?.value;
     const parent = (q('[data-parent-email]') as HTMLInputElement).value.trim();
+    const pcode = (q('[data-parent-code]') as HTMLInputElement).value.trim().toUpperCase();
 
     if (!age) { fail(S.age); return; }
-    if (age === 'under13') { fail(S.tooYoung); return; }
+    if (age === 'under13') { markTooYoung(); fail(S.tooYoung); return; }
     if (!(q('[data-gate-agree]') as HTMLInputElement).checked) { fail(S.mustAgree); return; }
 
     const { data: state } = await client.rpc('consent_state');
     const alreadyAsked = state && ['pending', 'granted'].includes(state.state);
 
-    if (young() && !alreadyAsked
+    if (young() && !alreadyAsked && !parent && !pcode) { fail(S.parentEither); return; }
+    if (young() && !alreadyAsked && !pcode
         && (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(parent) || parent.toLowerCase() === (user.email ?? '').toLowerCase())) {
       fail(S.parentEmail);
       return;
@@ -111,6 +115,13 @@ const strings = {
 
     const accepted = await acceptTerms(TERMS_VERSION, young());
     if (accepted.error) { fail(accepted.error); return; }
+
+    if (young() && !alreadyAsked && pcode) {
+      const redeemed = await redeemParentCode(pcode);
+      if (redeemed.error) { fail(redeemed.error); return; }
+      location.replace(onward);
+      return;
+    }
 
     if (young() && !alreadyAsked) {
       const asked = await askParent(parent, S.lang);
