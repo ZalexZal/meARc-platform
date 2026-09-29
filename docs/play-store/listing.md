@@ -19,7 +19,7 @@ AR Trail превръща разходката из града в маршрут
 • Отговорете на въпроса, за да отключите следващата спирка. В маршрут-състезание отборът ви се състезава с другите за точки, с класиране на живо.
 • Подсказки, когато сте закъсали, срещу точки, които създателят определя.
 • Водените и учебните маршрути не броят точки — само разходката.
-• Започнете с демото: две тренировъчни спирки, без да ходите никъде.
+• Започнете с демото: три тренировъчни спирки, без да ходите никъде.
 • Публичните маршрути наблизо са на един допир; частните се отварят с код или линк.
 
 Честно и безопасно:
@@ -38,7 +38,7 @@ AR Trail turns a walk through town into a trail. Somebody who knows the place �
 • Answer the question to unlock the next stop. On a competition trail your team races others for points, with a live leaderboard.
 • Hints when you're stuck, at a price in points the creator sets.
 • Guided and educational trails keep no score — just the walk.
-• Start with the demo: two practice stops, no walking needed.
+• Start with the demo: three practice stops, no walking needed.
 • Public trails near you are one tap away; private ones open with a code or a link.
 
 Fair and safe:
