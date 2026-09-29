@@ -7,8 +7,8 @@ in augmented reality. The Android app is in
 [`AR-Trails`](https://github.com/ZalexZal/AR-Trails).
 
 **Live site:** [artrails.netlify.app](https://artrails.netlify.app) ·
-**App:** 0.2.0 (build 3) · **Database:** migrations 0001–0051 ·
-**Terms version:** 2026-09-27
+**App:** 0.4.0 (build 5) · **Database:** migrations 0001–0054 ·
+**Terms version:** 2026-09-29
 
 ## Contents
 
@@ -207,6 +207,9 @@ proven on a real phone and what still waits for a field test.
   changing email and password, blocked people, and deleting the account.
 - Settings: light/dark theme, Bulgarian/English, nearby alerts, replay the
   practice trail, About, Data and sources.
+- **Send feedback**: a message to the person running AR Trail, with the app
+  version and phone model shown before it goes, and "you may reply by email"
+  for accounts that have one.
 
 **Safety**
 - **Report** any stop, trail or team name, with six reasons and one tap.
@@ -222,6 +225,12 @@ proven on a real phone and what still waits for a field test.
   You can nudge the marker a metre at a time relative to where you face, or put
   it where you stand, then save. This fixes the metres of error a map click
   always carries.
+- **Add a stop here**: on a trail you own or edit, the camera places a new stop
+  where you stand, as a draft only you and your editors see, and opens it in the
+  capture bar. Its words are written on the website, which publishes it.
+- **Shape**: the capture bar switches a stop between pin, sphere, cone, cube and
+  sign, saved at once and swapped in the camera, so the choice is made looking at
+  the thing itself.
 
 ### For a creator (the website)
 
@@ -231,7 +240,9 @@ proven on a real phone and what still waits for a field test.
   - A map where you click to place a stop and drag to move it (two fingers on a
     phone).
   - Five tabs per stop:
-    - **Basics**: title and text in Bulgarian and English.
+    - **Basics**: title and text in Bulgarian and English, the colour, and the
+      **shape** the stop takes in the camera: pin, sphere, cone, cube, or a
+      **sign** with up to 80 characters of words on it in each language.
     - **Place**: coordinates and an arrival radius, with a warning when radii
       overlap.
     - **Answer**: kind, options, accepted spellings, points, the wrong-answer
@@ -245,7 +256,8 @@ proven on a real phone and what still waits for a field test.
   - Drag to reorder stops.
 - **A trail from a spreadsheet**: one row per stop (CSV or pasted straight from
   Excel), checked row by row in your language before anything is imported, with a
-  template that has an example row filled in.
+  template that has an example row filled in. The `shape` column takes the
+  same five shapes, and `sign_bg` / `sign_en` the words on a sign.
 - **Building together**: an invite link makes someone an editor. Editors see
   each other live, and a save over someone's newer version is refused instead of
   silently lost.
@@ -300,6 +312,8 @@ proven on a real phone and what still waits for a field test.
   so your position never leaves the page), a map link to each trail's start, a
   QR code, and Open in the app.
 - How to play, Terms of use and Privacy policy, in both languages.
+- `/feedback`: send feedback from the website. The reviewer reads it in
+  `/review`, and marks it handled.
 
 ## How it works inside
 
@@ -384,7 +398,7 @@ flowchart TD
 | People | `profiles` (display name, age band, terms version), `user_blocks`, `platform_admins` |
 | Parents | `parental_consents`, `child_invites` |
 | Trails | `worlds` (mode, visibility, status, join code, team size, reveal, `ended_at`), `world_members` (owner / editor / viewer), `editor_invites` |
-| Stops | `markers` (PostGIS point, step, radius, colour, text in both languages, version for safe co-editing), `marker_answers` (the key, readable by nobody), `marker_hints`, `marker_media` |
+| Stops | `markers` (PostGIS point, step, radius, colour, shape, text in both languages, version for safe co-editing), `marker_answers` (the key, readable by nobody), `marker_hints`, `marker_media` |
 | Play | `teams`, `team_members`, `marker_submissions`, `marker_progress`, `hint_reveals`, `stop_visits`, `team_adjustments` |
 | Fair play | `player_fixes` (last accepted position, one day), `position_flags` |
 | Records | `walked_trails`, `earned_badges`, `reports` (with a snapshot), `moderation_notices` |
@@ -433,6 +447,7 @@ publishes `markers` and their tables for co-editing.
 | `/board?id=…` | Leaderboard; for the owner: teams, codes, warnings, moderator levers, End game |
 | `/review` | Reviewer: listing queue, reports inbox, free-text answers |
 | `/parent`, `/consent` | Parent account; a parent's answer to a child's request |
+| `/feedback` | Send feedback (signed in); it lands in `/review` |
 | `/terms`, `/privacy` | Terms of use and privacy policy (`LegalPage.astro`), version in `lib/terms.ts` |
 
 ## Running it
@@ -492,7 +507,9 @@ web/                    the website (Astro)
                         terms.ts (terms version), session.ts
   src/i18n/ui.ts        every string, Bulgarian and English
   legacy/               the Phase 0 marker dropper, kept for the record
-supabase/migrations/    0001–0051, applied in order
+supabase/migrations/    0001–0054, applied in order
+tools/                  backup.ps1 (weekly, encrypted), restore.ps1
+web/netlify/functions/  keep-alive.mjs, daily, so the free database never pauses
 tests/                  seam.mjs, the website↔app contract test
 docs/legal/             records of processing, DPIA, processors, breach response,
                         moderation, decisions on record
@@ -507,11 +524,11 @@ netlify.toml            deploy settings
 
 ## Version history
 
-AR Trail was built in seven versions between 26 August and 27 September 2026.
+AR Trail was built in eight versions between 26 August and 29 September 2026.
 Each one ended with something working end to end. The numbers below are the
 project's own names for those stages. The **Android build** column is what the
-app itself reported: `versionName` 0.1.0 until 23 September and 0.2.0 since.
-Google Play will see 0.2.0 as the first release.
+app itself reported: `versionName` 0.1.0 until 23 September, 0.2.0 from 25
+September, and 0.3.0 from 29 September.
 
 | Version | Dates (2026) | Name | Android build | Database |
 |---|---|---|---|---|
@@ -522,6 +539,7 @@ Google Play will see 0.2.0 as the first release.
 | 5 | 18–23 Sep | Field tests, the public library and the demo | 0.1.0 (2) | 0042–0043 |
 | 6 | 25 Sep | Stage 2: safe, fair, built together, ready for Play | **0.2.0 (3)**, first `.aab` | 0044–0048 |
 | 7 | 27 Sep | The parent account, and the law kept | 0.2.0 (3), rebuilt | 0049–0051 |
+| 8 | 29 Sep | Ready for the closed test: feedback, promises kept, tested on the phone | **0.3.0 (4)** | 0052–0053 |
 
 ### Version 1: The gate (26–28 August)
 
@@ -788,10 +806,92 @@ Commits: website `2894c5e` · app `c968425`
 
 Commits: website `444b0e0` · app `8fd24d0`
 
-### Since version 7
+### Version 8: Ready for the closed test (29 September)
 
-- These README files.
-- The store listing now says the practice trail has three stops (it said two).
+The phase before Google's closed test. You decided four things: build a
+feedback button, stay on Supabase's free plan, delete unused guest accounts
+after 6 months, and prepare the Play reviewer account and screenshots.
+
+- **Feedback (0052):**
+  - "Send feedback" is in the app (You → Help) and on the website
+    (`/feedback`, linked from the footer).
+  - Messages land in `/review` with the app version and phone model, or the
+    page and browser, and a reply link only if the sender allowed it.
+  - Ten a day per person. A 13-year-old is refused until a parent agrees.
+  - Messages are in the data export, deleted with the account, and gone after
+    12 months.
+- **Promises kept automatically (0052):** a nightly database job (pg_cron)
+  deletes:
+  - answer positions older than a day, which the privacy policy had promised
+    but only happened when someone answered;
+  - parent codes 30 days after use or expiry;
+  - feedback after 12 months;
+  - guest accounts unused for 6 months.
+- **On the free plan, safely:**
+  - A daily Netlify scheduled function keeps the database from pausing, and
+    leaves a timestamp in `heartbeat`.
+  - `tools/backup.ps1` makes an AES-256-encrypted weekly backup of the
+    database and every media file, keeps 8 weeks, and never leaves a readable
+    copy behind. `tools/restore.ps1` opens one.
+- **Names (0053):** a name given at sign-up now reaches the profile that boards
+  and team cards read. Before, the operator's own account showed as "Player".
+- **Fixes from a full test on the phone** (block, fake GPS, the parent code,
+  the age lock):
+  - A 13-year-old could reach the trail doors, because the app asked the
+    server about consent before the "13" had reached it. The server still
+    refused the join, but the app now believes its own answer until the
+    server has it.
+  - A refused join said "couldn't reach the server"; it now says a parent has
+    to agree.
+  - The "13 and older" refusal was hidden behind the Accept button, and Accept
+    is now gone once the phone is locked.
+  - Standing on a stop with a fake-location app said "come closer"; it now
+    names the app.
+  - A trail report was titled "this stop".
+  - "Отблокирай" broke in two.
+  - The team code had a gap in it.
+  - The terms now say which trails are checked before anyone sees them.
+- **Terms version 2026-09-29.** The privacy policy names the feedback, the new
+  retention rules and the backups.
+- **The Play reviewer account** is made. Its password is in the operator's keys
+  folder.
+
+Commits: website and app, 29 September
+
+### Version 9: Shapes in the street (30 September)
+
+The first pieces of the AR library, and capture mode finished: a stop can now be
+made standing on its spot.
+
+- **Five shapes (0054):**
+  - Pin (the old marker), sphere, cone, cube, and a sign with words on it.
+  - Picked in the editor, in the spreadsheet import, or in the camera's
+    capture bar.
+  - Each stands on the same pale ring and takes the stop's colour. A sign turns
+    to face the reader; its words come in the reader's language and fall back to
+    the stop's title.
+  - The database accepts only these five, and a sign's words only up to 80
+    characters, so an app that does not know a shape is never sent one.
+- **Add a stop here:** on a trail you own or edit, the camera places a stop
+  where you stand (never with a faked location, never with a fix rougher than
+  12 m) and opens it for nudging.
+  - It is a **draft**: `markers_near` sends drafts only to the trail's owner and
+    editors. Walkers see it once it has words and is saved on the website.
+- **Shape in the camera:** one press cycles the shape, saved through
+  `set_marker_shape`, which checks the same edit rights as everything else.
+- **Three draft Yambol trails**, owned by the operator's account, unlisted (by
+  code only) until reviewed:
+  - "Ямбол: сърцето на града" (guided): the Bezisten, the Eski Mosque, the
+    theatre, the history museum, Georges Papazoff.
+  - "Каргона: църкви и мост" (freefall): the Armenian church, the Kargona
+    bridge, the Drazhev memorial, St George, Holy Trinity.
+  - "Ямбол: кой знае повече?" (competition): five questions, each answered by
+    the text of its stop.
+  - Places from OpenStreetMap; facts checked against Bulgarian Wikipedia. That
+    check found the Bezisten dated wrongly in our own examples: it was built
+    around 1509–1510, not in the 15th century.
+
+Commits: website and app, 30 September
 
 ## Database migrations
 
@@ -850,10 +950,13 @@ Each file's header explains the problem it solves. In order:
 | 0049 | A badge is yours |
 | 0050 | A parent's account, and a reason for every removal |
 | 0051 | Thirteen stays thirteen |
+| 0052 | What testers say (feedback), and the privacy policy's promises kept by a nightly job |
+| 0053 | A name is a name: the account's name reaches the profile |
+| 0054 | Shapes in the street: five marker shapes, a sign's words, drafts sent to their creators, `set_marker_shape` |
 
 ## Status
 
-*As of 29 September 2026. The goal is a Google Play release; the date is not
+*As of 30 September 2026. The goal is a Google Play release; the date is not
 set.*
 
 **Proven.** Each of these has been checked on a Samsung Galaxy A54 (Android 16),
@@ -874,6 +977,8 @@ deleted afterwards:
 **Built, waiting for a phone or an outdoor test:**
 - Version 6 and 7 on the phone: block, the fake-GPS refusal, capture mode, the
   parent-consent door and parent code, and email confirmation.
+- Version 9 outdoors: the five shapes standing on their spots, Add a stop here,
+  and switching a shape from the camera.
 - Two phones racing at one stop outdoors.
 
 **Waiting on the operator:**
@@ -884,7 +989,7 @@ deleted afterwards:
 - Signing Supabase's data processing agreement.
 - A lawyer's read of the terms and privacy policy (the pages say they are an
   unreviewed draft until then).
-- 3–5 real public trails.
+- Reviewing the three draft Yambol trails, then making them public.
 
 **The original roadmap**, from the platform handbook:
 
@@ -896,9 +1001,9 @@ deleted afterwards:
 | 4 Real-time co-editing with safe saves | ✅ | Version 6 |
 | 5 Moderation: terms, report, block, inbox | ✅ | Versions 3, 6, 7 (the admin map and a blocklist of sensitive places are not built) |
 | 6 Public library with an approval queue | ✅ | Versions 3, 5 |
-| 7 Capture mode | ✅ built | Version 6, outdoor test pending |
+| 7 Capture mode | ✅ built | Versions 6 and 9 (add a stop, shape), outdoor test pending |
 | 8 Competition mode with server-side answers and anti-spoofing | ✅ | Versions 3, 6 |
-| 9 Creators' own 3D models | ⏸ deferred | |
+| 9 Creators' own 3D models | 🟡 started | Version 9: five built-in shapes; uploads deferred |
 | 10 Store preparation | 🟡 | Built; the operator's steps remain |
 | 11 iPhone | ⏸ | Needs a Mac |
 
