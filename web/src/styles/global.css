@@ -662,6 +662,47 @@ input[type="file"].field::file-selector-button:hover { border-color: var(--ink-f
   border-radius: 999px;
 }
 
+/* -------------------------------------------------------------- the shapes
+
+   What stands in the street. Five cards, each the shape drawn in the stop's
+   own colour, so the choice reads as "this, in the camera". The radio inside
+   is visually hidden but still the control: arrow keys move between shapes. */
+
+.shape-picker {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.shape-option {
+  display: grid;
+  justify-items: center;
+  gap: 4px;
+  padding: 10px 4px 8px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  cursor: pointer;
+  color: var(--ink-dim);
+  text-align: center;
+}
+
+.shape-option svg {
+  width: 34px;
+  height: 34px;
+  color: var(--shape-tint, currentColor);
+}
+
+.shape-option:has(input:checked) {
+  border-color: var(--signal);
+  box-shadow: 0 0 0 1px var(--signal);
+  color: var(--ink);
+}
+
+.shape-option:has(input:focus-visible) {
+  outline: 2px solid var(--signal);
+  outline-offset: 2px;
+}
+
 /* ------------------------------------------------------------------ meters */
 
 .meter {

@@ -26,6 +26,25 @@ const tabs = [
   { id: 'media',  label: t('tab.media') },
 ];
 
+/**
+ * What stands in the street at a stop. The keys are the ones the database
+ * accepts (0054) and the app has a prefab for; 'pin' is also what 'default'
+ * and an empty value mean. Drawn in currentColor so each card is the stop's
+ * own colour once one is picked.
+ */
+const shapes = [
+  { key: 'pin', label: t('ed.shape.pin'),
+    svg: '<svg viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M16 29s-8-8.6-8-15a8 8 0 1 1 16 0c0 6.4-8 15-8 15Z" fill="currentColor" fill-opacity=".25"/><circle cx="16" cy="14" r="3"/></svg>' },
+  { key: 'sphere', label: t('ed.shape.sphere'),
+    svg: '<svg viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="16" cy="14" r="9" fill="currentColor" fill-opacity=".25"/><path d="M11.5 10.5a5 5 0 0 1 4-2.5"/><ellipse cx="16" cy="28" rx="8" ry="2"/></svg>' },
+  { key: 'cone', label: t('ed.shape.cone'),
+    svg: '<svg viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" aria-hidden="true"><path d="M16 4 8 26h16L16 4Z" fill="currentColor" fill-opacity=".25"/><path d="M11 18h10"/><ellipse cx="16" cy="28" rx="10" ry="2"/></svg>' },
+  { key: 'cube', label: t('ed.shape.cube'),
+    svg: '<svg viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" aria-hidden="true"><path d="M16 6 26 11v11l-10 5-10-5V11l10-5Z" fill="currentColor" fill-opacity=".25"/><path d="M6 11l10 5 10-5M16 16v11"/></svg>' },
+  { key: 'sign', label: t('ed.shape.sign'),
+    svg: '<svg viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="4" width="24" height="14" rx="2" fill="currentColor" fill-opacity=".25"/><path d="M9 9h14M9 13h9M16 18v11"/></svg>' },
+];
+
 const strings = {
   lang,
   deleteConfirm: t('ed.deleteConfirm'), deleteNotOwner: t('ed.deleteNotOwner'),
@@ -47,6 +66,7 @@ const strings = {
   impNeedName: t('imp.needName'), impBadCoords: t('imp.badCoords'),
   impBadKind: t('imp.badKind'), impNeedAccepted: t('imp.needAccepted'),
   impBadOnWrong: t('imp.badOnWrong'), impDupe: t('imp.dupe'),
+  impBadShape: t('imp.badShape'), impLongSign: t('imp.longSign'),
   impRow: t('imp.row'), impReady: t('imp.ready'), impProblems: t('imp.problems'),
   impImport: t('imp.import'), impImporting: t('imp.importing'),
   impDone: t('imp.done'), impFailed: t('imp.failed'),
@@ -244,6 +264,33 @@ const strings = {
             </div>
 
             <p class="mt-2 text-xs text-[var(--ink-faint)]">{t('ed.colourHint')}</p>
+          </div>
+
+          <div>
+            <span class="mb-1 block text-sm font-medium" id="shape-label">{t('ed.shape')}</span>
+            <div class="shape-picker" role="radiogroup" aria-labelledby="shape-label" data-shapes>
+              {shapes.map((s) => (
+                <label class="shape-option">
+                  <input type="radio" name="shape" value={s.key} class="sr-only" />
+                  <Fragment set:html={s.svg} />
+                  <span class="text-xs">{s.label}</span>
+                </label>
+              ))}
+            </div>
+            <p class="mt-2 text-xs text-[var(--ink-faint)]">{t('ed.shapeHint')}</p>
+
+            <!-- A sign's words, in both languages. Only for a sign: every other
+                 shape has nothing to write on. Empty shows the stop's name. -->
+            <div class="mt-3 hidden gap-3 sm:grid-cols-2" data-sign-fields>
+              <label class="block text-sm">
+                <span class="mb-1 block font-medium">{t('ed.signBg')}</span>
+                <input class="field" name="signBg" maxlength="80" />
+              </label>
+              <label class="block text-sm">
+                <span class="mb-1 block font-medium">{t('ed.signEn')}</span>
+                <input class="field" name="signEn" maxlength="80" />
+              </label>
+            </div>
           </div>
         </div>
 
@@ -793,6 +840,9 @@ const strings = {
     // trail_markers already returns colour_hex; nothing has ever written one.
     hue = hexToHue(m.colour_hex ?? null);
     paintHue();
+    (field('signBg') as HTMLInputElement).value = m.content?.bg?.sign ?? '';
+    (field('signEn') as HTMLInputElement).value = m.content?.en?.sign ?? '';
+    setShape(m.style_key);
     (field('kind') as HTMLSelectElement).value = m.answer_kind ?? 'none';
     (field('points') as HTMLInputElement).value = String(m.points ?? 10);
     (field('cooldown') as HTMLInputElement).value = String(m.cooldown_seconds ?? 15);
@@ -1275,6 +1325,14 @@ const strings = {
       content.en = { ...(content.en ?? {}), choices: kept.map((c) => c.en || c.bg) };
     }
 
+    // A sign's words, only on a sign. Kept out of every other shape so that
+    // switching away and back does not resurrect text nobody can see.
+    const shape = chosenShape();
+    if (shape === 'sign') {
+      if (val('signBg')) content.bg.sign = val('signBg');
+      if (val('signEn')) content.en = { ...(content.en ?? {}), sign: val('signEn') };
+    }
+
     // Only over the version this form was filled from. If somebody else saved
     // the stop in between, the row's version has moved on, nothing matches, and
     // this save is refused rather than silently writing over theirs.
@@ -1285,6 +1343,7 @@ const strings = {
         content,
         radius_m: num('radius') ?? 100,
         colour_hex: hue === null ? null : hueToHex(hue),
+        style_key: shape,
         status: 'published',
       })
       .eq('id', saving)
@@ -1693,8 +1752,35 @@ const strings = {
     if (light) light.style.background = hex;
     if (dark) dark.style.background = hex;
 
+    // The shape cards take the stop's colour, so the choice reads as "this, in
+    // the camera"; with no colour chosen they stay in ink.
+    (q('[data-shapes]') as HTMLElement)?.style.setProperty('--shape-tint', chosen ? hex : 'currentColor');
+
     text(q('[data-hue-value]'), chosen ? hueToHex(hue!) : S.colourNone);
   }
+
+  const SHAPES = ['pin', 'sphere', 'cone', 'cube', 'sign'];
+
+  /** The shape the form shows: 'default', empty or unknown all mean the pin. */
+  function setShape(key: string | null | undefined) {
+    const shape = SHAPES.includes(key ?? '') ? key! : 'pin';
+    const radio = form.querySelector(`input[name="shape"][value="${shape}"]`) as HTMLInputElement | null;
+    if (radio) radio.checked = true;
+    showSignFields();
+  }
+
+  function chosenShape(): string {
+    return (form.querySelector('input[name="shape"]:checked') as HTMLInputElement | null)?.value ?? 'pin';
+  }
+
+  function showSignFields() {
+    const sign = chosenShape() === 'sign';
+    const box = q('[data-sign-fields]') as HTMLElement | null;
+    box?.classList.toggle('hidden', !sign);
+    box?.classList.toggle('grid', sign);
+  }
+
+  form.querySelectorAll('input[name="shape"]').forEach((r) => r.addEventListener('change', showSignFields));
 
   function hueFromEvent(event: PointerEvent | MouseEvent) {
     const strip = q('[data-hue]') as HTMLElement;
@@ -1741,6 +1827,8 @@ const strings = {
     'name_bg', 'name_en', 'text_bg', 'text_en', 'lat', 'lng', 'radius_m',
     'question_bg', 'question_en', 'kind', 'accepted', 'points',
     'on_wrong', 'deduct', 'wait_seconds', 'hint_bg', 'hint_en', 'hint_cost',
+    // Optional, last, so a sheet made before shapes existed still imports.
+    'shape', 'sign_bg', 'sign_en',
   ];
 
   const KINDS = ['none', 'exact', 'choice', 'free'];
@@ -1823,6 +1911,12 @@ const strings = {
     const rule = (row.on_wrong ?? '').trim().toLowerCase() || 'retry';
     if (!RULES.includes(rule)) problems.push(S.impBadOnWrong);
 
+    const shape = (row.shape ?? '').trim().toLowerCase() || 'pin';
+    if (!SHAPES.includes(shape)) problems.push(S.impBadShape);
+    if ((row.sign_bg ?? '').trim().length > 80 || (row.sign_en ?? '').trim().length > 80) {
+      problems.push(S.impLongSign);
+    }
+
     return problems;
   }
 
@@ -1840,6 +1934,7 @@ const strings = {
       '42.48412', '26.50598', '25',
       'Кой век?', 'Which century?', 'exact', '15,XV,петнайсети', '40',
       'lock', '0', '60', 'Погледни над вратата', 'Look above the door', '5',
+      'sign', 'Безистен · XV век', 'Bezisten · 15th century',
     ];
     const csv = IMPORT_COLUMNS.join(',') + '\n'
       + example.map((v) => (v.includes(',') ? `"${v}"` : v)).join(',') + '\n';
@@ -1929,9 +2024,15 @@ const strings = {
         }
       }
 
+      const shape = (r.shape ?? '').trim().toLowerCase() || 'pin';
+      if (shape === 'sign') {
+        if (r.sign_bg?.trim()) content.bg.sign = r.sign_bg.trim();
+        if (r.sign_en?.trim()) content.en = { ...(content.en ?? {}), sign: r.sign_en.trim() };
+      }
+
       const placed = await client.rpc('place_marker', {
         p_world: worldId, p_lat: Number(r.lat), p_lng: Number(r.lng),
-        p_content: content, p_status: 'published',
+        p_content: content, p_status: 'published', p_style_key: shape,
       });
 
       const id = Array.isArray(placed.data) ? placed.data[0]?.id : (placed.data as any)?.id;
