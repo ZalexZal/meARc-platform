@@ -27,5 +27,10 @@
   # supported by Astro". Raise it here and there together, or leave it alone.
   NODE_VERSION = "22"
 
+# keep-alive.mjs runs once a day so Supabase Free never pauses the project.
+# Relative to base, so web/netlify/functions.
+[functions]
+  directory = "netlify/functions"
+
 # Astro writes a directory per page, so /play/ already resolves to
 # /play/index.html. Nothing here needs a rewrite rule.

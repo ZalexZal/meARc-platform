@@ -35,6 +35,12 @@ const strings = {
   repDismiss: t('rep.dismiss'),
   repNote: t('rep.note'),
   repMap: t('rep.map'),
+  fbApp: t('fbq.app'),
+  fbWeb: t('fbq.web'),
+  fbGuest: t('fbq.guest'),
+  fbAccount: t('fbq.account'),
+  fbReply: t('fbq.reply'),
+  fbHandled: t('fbq.handled'),
   reasons: {
     private_property: t('rep.reason.private_property'),
     unsafe: t('rep.reason.unsafe'),
@@ -93,6 +99,23 @@ const strings = {
     </div>
 
     <ul class="mt-8 space-y-5" data-rep-list></ul>
+  </div>
+
+  <!-- The third: what testers and walkers told us, newest first. Handled moves
+       one out of the way; it is deleted a year after it was sent either way. -->
+  <div class="mt-20 hidden" data-fb-section>
+    <header class="max-w-2xl">
+      <h2 class="text-2xl sm:text-3xl">{t('fbq.title')}</h2>
+      <p class="mt-3 text-[var(--ink-dim)]">{t('fbq.lede')}</p>
+    </header>
+
+    <div class="mt-8 hidden" data-fb-empty>
+      <div class="card max-w-lg p-8">
+        <h3 class="text-lg">{t('fbq.empty')}</h3>
+      </div>
+    </div>
+
+    <ul class="mt-8 space-y-5" data-fb-list></ul>
   </div>
 </section>
 
@@ -224,7 +247,43 @@ const strings = {
     q('[data-rep-section]')!.classList.remove('hidden');
     q('[data-rep-empty]')!.classList.toggle('hidden', open.length > 0);
     q('[data-rep-list]')!.innerHTML = open.map(report).join('');
+
+    // --- the third
+    const { data: notes } = await client.rpc('feedback_queue', { p_include_handled: false });
+    const fresh = notes ?? [];
+
+    q('[data-fb-section]')!.classList.remove('hidden');
+    q('[data-fb-empty]')!.classList.toggle('hidden', fresh.length > 0);
+    q('[data-fb-list]')!.innerHTML = fresh.map(feedback).join('');
   }
+
+  function feedback(f: any) {
+    const when = new Date(f.created_at).toLocaleString(document.documentElement.lang === 'en' ? 'en-GB' : 'bg-BG',
+      { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
+    const from = [f.source === 'web' ? S.fbWeb : S.fbApp, f.app_version, f.device, f.place]
+      .filter(Boolean).map((x: string) => escapeHtml(x)).join(' · ');
+    const who = f.reply_to
+      ? `<a class="text-[var(--signal)] underline" href="mailto:${encodeURIComponent(f.reply_to)}">${escapeHtml(S.fbReply)} ${escapeHtml(f.reply_to)}</a>`
+      : escapeHtml(f.guest ? S.fbGuest : S.fbAccount);
+
+    return `<li class="card p-6" data-fb-id="${f.id}">
+      <p class="text-xs text-[var(--ink-faint)]">${escapeHtml(when)} · ${from}</p>
+      <p class="mt-3 whitespace-pre-wrap">${escapeHtml(f.message)}</p>
+      <div class="mt-4 flex flex-wrap items-center justify-between gap-3">
+        <span class="text-sm text-[var(--ink-dim)]">${who}</span>
+        <button type="button" class="btn btn-quiet btn-sm" data-fb-handled="${f.id}">${escapeHtml(S.fbHandled)}</button>
+      </div>
+    </li>`;
+  }
+
+  document.addEventListener('click', async (event) => {
+    const button = (event.target as HTMLElement)?.closest('[data-fb-handled]') as HTMLButtonElement | null;
+    if (!button || button.disabled) return;
+    button.disabled = true;
+    const { error } = await client.rpc('feedback_handled', { p_id: button.dataset.fbHandled, p_handled: true });
+    if (error) { button.disabled = false; return; }
+    await load();
+  });
 
   await load();
 

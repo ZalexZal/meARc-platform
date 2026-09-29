@@ -33,6 +33,9 @@ whenever the app starts keeping a new kind of data.
 | 2026-09-27 | The operator is 18 or older | Operator |
 | 2026-09-27 | A parent account sees the child's activity, downloads the child's data, manages several children, and can create the child's account (a code) | Operator |
 | 2026-09-27 | The age answer only moves towards more protection: "13" can never be changed back to "14+" by the user (migration 0051). A slip is fixed by the operator on request. "12 or younger" locks the device's sign-up | Legal review |
+| 2026-09-29 | Stay on Supabase Free: a daily keep-alive, and an encrypted weekly backup the operator runs (8 weeks kept) | Operator |
+| 2026-09-29 | Guest accounts unused for 6 months are deleted automatically | Operator |
+| 2026-09-29 | Feedback from the app and website, kept 12 months; not accepted from a 13-year-old before a parent agrees | Operator / legal review |
 
 Why 13 and not younger: Google's ARCore terms forbid the Geospatial API in any
 service "directed to children" under COPPA (under 13), and AR Trail is built on

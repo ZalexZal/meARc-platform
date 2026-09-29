@@ -1,0 +1,101 @@
+---
+import { useTranslations, type Lang } from '../i18n/ui';
+
+interface Props { lang: Lang; }
+const { lang } = Astro.props;
+const t = useTranslations(lang);
+
+const strings = {
+  sent: t('fb.sent'),
+  empty: t('fb.empty'),
+  parent: t('fb.parent'),
+  tooMany: t('fb.tooMany'),
+  failed: t('mine.failed'),
+  working: t('rev.working'),
+};
+---
+
+<!-- Send feedback from the website. The app has the same thing under You. It
+     goes to the reviewer's queue on /review, with the page it came from and the
+     browser, and nowhere else. -->
+<section class="mx-auto max-w-xl px-4 py-16 sm:px-6" hidden data-guarded>
+  <p class="eyebrow">{t('fb.eyebrow')}</p>
+  <h1 class="mt-3 text-3xl sm:text-4xl">{t('fb.title')}</h1>
+  <p class="mt-3 text-[var(--ink-dim)]">{t('fb.lede')}</p>
+
+  <form class="card mt-8 space-y-5 p-6 sm:p-8" data-fb-form novalidate>
+    <div>
+      <label for="fb-message" class="mb-1.5 block text-sm font-medium">{t('fb.label')}</label>
+      <textarea id="fb-message" class="field" maxlength="2000" rows="7"
+                placeholder={t('fb.placeholder')} data-fb-message></textarea>
+    </div>
+
+    <p class="text-xs text-[var(--ink-faint)]">{t('fb.attached')}</p>
+
+    <label class="flex items-start gap-3 text-sm" data-fb-reply-row>
+      <input type="checkbox" class="mt-0.5 h-4 w-4" data-fb-reply />
+      <span>{t('fb.reply')}</span>
+    </label>
+
+    <div class="flex flex-wrap items-center gap-3">
+      <button type="submit" class="btn btn-primary" data-fb-send>{t('fb.send')}</button>
+      <p class="text-sm" aria-live="polite" data-fb-said></p>
+    </div>
+  </form>
+</section>
+
+<script type="application/json" data-fb-strings set:html={JSON.stringify(strings)}></script>
+
+<script>
+  import { db } from '../lib/supabase';
+  import { requireUser, reveal, text } from '../lib/session';
+
+  const S = JSON.parse(document.querySelector('[data-fb-strings]')!.textContent || '{}');
+  const user = await requireUser({ needsReal: false });
+  reveal();
+
+  // Only an account with an email can be replied to.
+  if (!user.email) document.querySelector('[data-fb-reply-row]')?.classList.add('hidden');
+
+  const form = document.querySelector('[data-fb-form]') as HTMLFormElement;
+  const said = document.querySelector('[data-fb-said]') as HTMLElement;
+  const say = (m: string, good = false) => {
+    text(said, m);
+    said.style.color = good ? 'var(--signal)' : 'var(--alert)';
+  };
+
+  form.addEventListener('submit', async (event) => {
+    event.preventDefault();
+    const field = form.querySelector('[data-fb-message]') as HTMLTextAreaElement;
+    const message = field.value.trim();
+    if (!message) { say(S.empty); return; }
+
+    const send = form.querySelector('[data-fb-send]') as HTMLButtonElement;
+    send.disabled = true;
+    say(S.working, true);
+
+    const referrer = document.referrer.startsWith(location.origin)
+      ? new URL(document.referrer).pathname : '';
+
+    const { error } = await db()!.rpc('send_feedback', {
+      p_message: message,
+      p_source: 'web',
+      p_app_version: null,
+      p_device: navigator.userAgent.slice(0, 120),
+      p_place: referrer || location.pathname,
+      p_reply_ok: (form.querySelector('[data-fb-reply]') as HTMLInputElement).checked,
+    });
+
+    send.disabled = false;
+
+    if (error) {
+      say(/parent needs to agree/.test(error.message) ? S.parent
+        : /a lot of feedback/.test(error.message) ? S.tooMany
+        : S.failed);
+      return;
+    }
+
+    field.value = '';
+    say(S.sent, true);
+  });
+</script>
