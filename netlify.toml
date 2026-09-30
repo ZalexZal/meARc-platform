@@ -34,3 +34,15 @@
 
 # Astro writes a directory per page, so /play/ already resolves to
 # /play/index.html. Nothing here needs a rewrite rule.
+
+# Headers a site with accounts on it should send. Without X-Frame-Options any
+# page could load /account inside an invisible frame and steer a click onto
+# "Delete account". Geolocation stays allowed for "Sort by distance" on the
+# trails page; nothing here uses the camera or the microphone.
+[[headers]]
+  for = "/*"
+  [headers.values]
+    X-Frame-Options = "DENY"
+    X-Content-Type-Options = "nosniff"
+    Referrer-Policy = "strict-origin-when-cross-origin"
+    Permissions-Policy = "camera=(), microphone=(), geolocation=(self)"
