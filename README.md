@@ -7,7 +7,7 @@ in augmented reality. The Android app is in
 [`AR-Trails`](https://github.com/ZalexZal/AR-Trails).
 
 **Live site:** [artrails.netlify.app](https://artrails.netlify.app) ·
-**App:** 0.4.0 (build 5) · **Database:** migrations 0001–0054 ·
+**App:** 0.4.1 (build 6) · **Database:** migrations 0001–0054 ·
 **Terms version:** 2026-09-29
 
 ## Contents
@@ -891,6 +891,45 @@ made standing on its spot.
     check found the Bezisten dated wrongly in our own examples: it was built
     around 1509–1510, not in the 15th century.
 
+Commits: website and app, 30 September (night)
+
+### Version 10: A morning on the phone (30 September)
+
+The three Yambol trails went public through the listing gate (asked for as
+their owner, approved as the reviewer), and the whole app was driven on the
+phone against the live site: first run, the demo, joining from the library and
+by code, a guest turned away from a scored trail, signing in, a team, a wrong
+and a right answer checked against the phone's real position, the standings,
+feedback, Bulgarian and English, and capture mode on a throwaway trail.
+
+It found nine faults, all fixed in 0.4.1:
+
+- **Capture's Save had never worked on a phone.** Its request was built with
+  `string.Format`, and in Unity's runtime the `}}` after `{2:R}` is read as
+  part of the number's format, so the JSON lost its closing brace and every
+  move was refused. Built by concatenation now.
+- After **Add a stop here**, the capture bar stayed greyed out for the rest of
+  the session; and its button stood on top of the bar after a refusal.
+- The **Nearby** alert sat over a stop sheet's Hide and Report, and over the
+  capture bar's Save and Cancel. It now waits while either is open.
+- **The database's refusals were shown raw**: "make or join a team first", in
+  English, lower case. The known ones are translated now, and an answer sent
+  without a team opens the team sheet.
+- The camera's **Nearest** card kept naming a stop from the trail walked
+  before.
+- **Joining a trail kept the old zoom**, with every stop of the new trail off
+  the screen. The map frames its nearest stop now.
+- **Leaving a team left its questions locked** on the phone for good (the
+  answers go with the team, the phone's copy stayed). The phone now drops what
+  the server no longer has, on scored trails.
+- **The calibration chip never changed its words.** It was only rewritten
+  while its bubble was open, so it said "Cannot calibrate here", in English,
+  whatever the camera knew. Only the colour of the dot moved.
+
+The website got the security headers a site with accounts should send
+(no framing, no sniffing, a referrer policy, a permissions policy). Only HSTS
+had been sent.
+
 Commits: website and app, 30 September
 
 ## Database migrations
@@ -989,7 +1028,7 @@ deleted afterwards:
 - Signing Supabase's data processing agreement.
 - A lawyer's read of the terms and privacy policy (the pages say they are an
   unreviewed draft until then).
-- Reviewing the three draft Yambol trails, then making them public.
+- Reviewing the three Yambol trails, now public, on foot.
 
 **The original roadmap**, from the platform handbook:
 
