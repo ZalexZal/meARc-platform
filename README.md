@@ -7,7 +7,7 @@ in augmented reality. The Android app is in
 [`AR-Trails`](https://github.com/ZalexZal/AR-Trails).
 
 **Live site:** [artrails.netlify.app](https://artrails.netlify.app) ·
-**App:** 0.4.1 (build 6) · **Database:** migrations 0001–0054 ·
+**App:** 0.4.2 (build 7) · **Database:** migrations 0001–0054 ·
 **Terms version:** 2026-09-29
 
 ## Contents
@@ -932,6 +932,40 @@ had been sent.
 
 Commits: website and app, 30 September
 
+### Version 11: Loose ends, and a lock on every page (1 October)
+
+Decisions taken one by one with the operator, then done:
+
+- **The library is the three Yambol trails.** The old test trail is deleted.
+  Review is empty: two test reports from September dismissed, a test trail
+  sent back from the listing queue to code-only, and a private trail from
+  August that had lost its owner deleted.
+- **A Content-Security-Policy on every page.** Astro writes it into each page
+  and hashes every script it builds, so a script smuggled in through anything a
+  user typed does not run. The only outside script is MapLibre (cdnjs); the
+  pages connect only to Supabase (API and realtime) and the map tiles. Styles
+  stay on `'unsafe-inline'`, because rows built in the browser carry `style`
+  attributes. The theme script moved to `/theme.js` so the policy can allow
+  it. Tested on a local build and then live: every page, sign-up, the editor's
+  map with its worker and tiles, saving, the library and QR codes, feedback,
+  the theme toggle, and the full stage-2, parent, feedback and shapes suites,
+  with no violation.
+- **"Complete" means every question answered** on a trail with points (app
+  0.4.2). The strip used to say a trail was complete once every stop had been
+  found, with questions still open. Whether a stop asks a question is read
+  from its content, so it is known before the stop is opened.
+- **Stop text stays readable from anywhere**; only questions and media wait
+  until the walker arrives.
+- **The weekly backup runs itself**: a Windows scheduled task, Sundays at
+  20:00, catching up if the laptop was off, logging to `keys\backups`.
+- **Creators' own 3D models** are designed
+  (`docs/superpowers/specs/2026-10-01-own-3d-models-design.md`): GLB only, up
+  to 25 MB, checked in the browser, a required credit, downloaded when a trail
+  is joined, standing on the ground at real size, animation looped. Building it
+  waits on the outdoor test of the five built-in shapes.
+
+Commits: website and app, 1 October
+
 ## Database migrations
 
 Each file's header explains the problem it solves. In order:
@@ -995,7 +1029,7 @@ Each file's header explains the problem it solves. In order:
 
 ## Status
 
-*As of 30 September 2026. The goal is a Google Play release; the date is not
+*As of 1 October 2026. The goal is a Google Play release; the date is not
 set.*
 
 **Proven.** Each of these has been checked on a Samsung Galaxy A54 (Android 16),
@@ -1042,7 +1076,7 @@ deleted afterwards:
 | 6 Public library with an approval queue | ✅ | Versions 3, 5 |
 | 7 Capture mode | ✅ built | Versions 6 and 9 (add a stop, shape), outdoor test pending |
 | 8 Competition mode with server-side answers and anti-spoofing | ✅ | Versions 3, 6 |
-| 9 Creators' own 3D models | 🟡 started | Version 9: five built-in shapes; uploads deferred |
+| 9 Creators' own 3D models | 🟡 started | Version 9: five built-in shapes; uploads designed (version 11), built after the outdoor test |
 | 10 Store preparation | 🟡 | Built; the operator's steps remain |
 | 11 iPhone | ⏸ | Needs a Mac |
 
