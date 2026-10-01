@@ -48,17 +48,7 @@ const other = path.startsWith('/404')
     <link rel="alternate" hreflang="bg" href={new URL(path, Astro.site)} />
     <link rel="alternate" hreflang="en" href={new URL(`/en${path === '/' ? '' : path}`, Astro.site)} />
 
-    <script is:inline>
-      // Before first paint, so a reader who chose light does not get one frame
-      // of dark. Wrapped because storage throws outright in some privacy modes,
-      // and a theme preference is never worth a blank page.
-      try {
-        const saved = localStorage.getItem('artrail-theme');
-        if (saved === 'light' || saved === 'dark') {
-          document.documentElement.setAttribute('data-theme', saved);
-        }
-      } catch (e) {}
-    </script>
+    <script is:inline src="/theme.js"></script>
   </head>
 
   <body>
@@ -73,12 +63,13 @@ const other = path.startsWith('/404')
     <main id="main"><slot /></main>
     <Footer lang={lang} />
 
-    <script is:inline>
+    <script>
       // The toggle writes an explicit choice, which then beats the OS setting in
       // both directions - the reason the stylesheet carries a data-theme block
-      // as well as a media query.
+      // as well as a media query. A processed script, not is:inline: Astro's
+      // Content-Security-Policy only covers the scripts it builds.
       document.addEventListener('click', (event) => {
-        const button = event.target.closest('[data-theme-toggle]');
+        const button = (event.target as Element | null)?.closest('[data-theme-toggle]');
         if (!button) return;
 
         const root = document.documentElement;

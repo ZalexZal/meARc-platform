@@ -9,12 +9,48 @@ import tailwindcss from '@tailwindcss/vite';
 // i18n with no default prefix: Bulgarian lives at /, English at /en/. The
 // audience is Bulgarian and burying them one level down to keep the routing
 // tidy would be tidying the wrong thing.
+
+// Content-Security-Policy. Astro writes it into every page as a meta element,
+// hashing each script it renders, so a script injected into a page - through a
+// trail name, a stop's text, anything a user typed - does not run. The only
+// outside script is MapLibre for the editor's map, from cdnjs.
+//
+// Styles stay on 'unsafe-inline': pages build rows with style="" attributes in
+// innerHTML, which hashes cannot cover, and a stylesheet cannot run code.
+// frame-ancestors cannot be set from a meta element; netlify.toml sends
+// X-Frame-Options instead.
+const SUPABASE = process.env.PUBLIC_SUPABASE_URL || 'https://tajbebyhmvppqlswyjiq.supabase.co';
+
 export default defineConfig({
   site: 'https://artrail.example',
   i18n: {
     locales: ['bg', 'en'],
     defaultLocale: 'bg',
     routing: { prefixDefaultLocale: false, redirectToDefaultLocale: false },
+  },
+  security: {
+    csp: {
+      scriptDirective: { resources: ["'self'", 'https://cdnjs.cloudflare.com'] },
+      styleDirective: {
+        resources: ["'self'", "'unsafe-inline'", 'https://fonts.googleapis.com', 'https://cdnjs.cloudflare.com'],
+      },
+      directives: [
+        "default-src 'self'",
+        // The API and realtime (co-editing), and the editor's map tiles.
+        `connect-src 'self' ${SUPABASE} ${SUPABASE.replace(/^https:/, 'wss:')} https://tiles.openfreemap.org`,
+        // Uploads, QR codes (data:), map sprites (blob:), and pictures a
+        // creator linked from anywhere.
+        "img-src 'self' data: blob: https:",
+        `media-src 'self' blob: ${SUPABASE}`,
+        "font-src 'self' https://fonts.gstatic.com",
+        // MapLibre starts its worker from a blob.
+        "worker-src 'self' blob:",
+        "child-src 'self' blob:",
+        "object-src 'none'",
+        "base-uri 'self'",
+        "form-action 'self'",
+      ],
+    },
   },
   vite: {
     plugins: [tailwindcss()],
