@@ -226,10 +226,6 @@ html {
   overflow-x: clip;
 }
 
-@media (prefers-reduced-motion: reduce) {
-  html { scroll-behavior: auto; }
-}
-
 body {
   margin: 0;
   background: var(--ground);
@@ -766,17 +762,8 @@ input[type="file"].field::file-selector-button:hover { border-color: var(--ink-f
   overscroll-behavior-x: contain;
 }
 
-/* Motion is a courtesy. Where somebody has asked for less of it, the finished
-   state is shown rather than the journey to it - never a blank element that was
-   waiting for an animation that will not run. */
-@media (prefers-reduced-motion: reduce) {
-  *, *::before, *::after {
-    animation-duration: .01ms !important;
-    animation-iteration-count: 1 !important;
-    transition-duration: .01ms !important;
-  }
-  .reveal { opacity: 1 !important; transform: none !important; }
-}
+/* Motion is for everyone on this site: the system's reduce-motion setting is not
+   read, by the owner's decision (5 October 2026). */
 
 /* --------------------------------------------------------------- reveals
 
@@ -852,7 +839,3 @@ input[type="file"].field::file-selector-button:hover { border-color: var(--ink-f
 
 }
 
-@media (prefers-reduced-motion: reduce) {
-  .js-reveal [data-reveal],
-  .js-reveal [data-reveal-group] > * { opacity: 1; transform: none; transition: none; }
-}

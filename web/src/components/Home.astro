@@ -196,14 +196,10 @@ const faq = [
   const rest = document.querySelector<HTMLElement>('[data-rest]');
   const fill = document.querySelector<HTMLElement>('[data-route-fill]');
   if (rest && fill) {
-    if (matchMedia('(prefers-reduced-motion: reduce)').matches) {
-      fill.style.transform = 'scaleY(1)';
-    } else {
-      gsap.to(fill, {
-        scaleY: 1, ease: 'none',
-        scrollTrigger: { trigger: rest, start: 'top 55%', end: 'bottom 85%', scrub: 0.4 },
-      });
-    }
+    gsap.to(fill, {
+      scaleY: 1, ease: 'none',
+      scrollTrigger: { trigger: rest, start: 'top 55%', end: 'bottom 85%', scrub: 0.4 },
+    });
   }
 
   // The closing card has a small live network of its own.

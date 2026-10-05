@@ -904,7 +904,6 @@ const strings = {
   let doneSteps = new Set<number>();
   let skippedSteps = new Set<number>();
   let flashTimer = 0;
-  const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
 
   const stopNumber = (id: string | null) => {
     const i = markers.findIndex((m) => m.id === id);
@@ -958,7 +957,7 @@ const strings = {
   function bringFormIntoView(always: boolean) {
     const top = form.getBoundingClientRect().top;
     if (top < 72 || (always && top > innerHeight * 0.6)) {
-      scrollTo({ top: scrollY + top - 80, behavior: reduceMotion ? 'auto' : 'smooth' });
+      scrollTo({ top: scrollY + top - 80, behavior: 'smooth' });
     }
   }
 
@@ -2476,5 +2475,4 @@ const strings = {
   .wiz-danger { display: flex; justify-content: flex-end; padding: 0 1.25rem 1rem; background: var(--surface); }
   .hide-xs { display: inline; }
   @media (max-width: 420px) { .hide-xs { display: none; } .wiz-next { min-width: 0; flex: 1; } }
-  @media (prefers-reduced-motion: reduce) { .pane, .ready-check { animation: none; } .st-bar::after, .wiz-flash { transition: none; } }
 </style>

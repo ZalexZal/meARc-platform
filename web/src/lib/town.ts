@@ -13,8 +13,10 @@
  * Used as the home page's hero, where scroll then walks it through Build, Walk
  * and Find (`story`), and behind the top of every other page.
  *
- * It stops drawing off screen and in a hidden tab. With reduced motion it does
- * not move: the camera holds still and everything is drawn finished.
+ * It stops drawing off screen and in a hidden tab. It moves for everyone: the
+ * system's reduce-motion setting is not read, by the owner's decision (5 October
+ * 2026), because with it the town stood still for every Windows visitor who has
+ * "Show animations" off.
  */
 
 export interface TownStory {
@@ -92,7 +94,6 @@ function sprite(colour: string) {
 
 export function startTown(o: TownOptions): () => void {
   const { host, story } = o;
-  const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
   const tilt0 = o.tilt ?? 52;
   const flat = tilt0 === 0;
   const words = o.labels ?? [];
@@ -121,7 +122,10 @@ export function startTown(o: TownOptions): () => void {
   let pulses: Pulse[] = [], walkers: Walker[] = [], labels: Label[] = [];
   let F0 = { x: 0, y: 0 };
   let M = new DOMMatrix(), zoomNow = 1, camCss = '';
-  const ptr = { on: false, x: 0, y: 0, tx: 0, ty: 0, last: 0, touch: false };
+  const ptr = { on: false, x: 0, y: 0, tx: 0, ty: 0, sx: -9999, sy: -9999, last: 0, touch: false };
+  // Where each pin's head is on screen this frame, how big it is drawn and how
+  // visible: the web runs between heads, and the cursor is measured to them.
+  let hx = new Float32Array(0), hy = new Float32Array(0), hk = new Float32Array(0), hf = new Float32Array(0);
   let sNow = 0, raf = 0, running = true, visible = true, last = performance.now(), ambientIn = 0.2, fadeNow = -1;
 
   const riverOn = o.river ?? Boolean(story);
@@ -317,6 +321,8 @@ export function startTown(o: TownOptions): () => void {
       walkers.push(wk);
     }
     pulses = []; labels = [];
+    hx = new Float32Array(markers.length); hy = new Float32Array(markers.length);
+    hk = new Float32Array(markers.length); hf = new Float32Array(markers.length);
     camCss = '';
   }
 
@@ -364,8 +370,6 @@ export function startTown(o: TownOptions): () => void {
     const walkCam: Cam = { fx: wx || T.x, fy: wy || T.y, ax: mobile ? 0.5 : 0.66, ay: mobile ? 0.36 : 0.54, tilt: 48, zoom: mobile ? 1.15 : 1.3 };
     const findCam: Cam = { fx: S2.x, fy: S2.y, ax: mobile ? 0.5 : 0.7, ay: mobile ? 0.46 : 0.64, tilt: 70, zoom: mobile ? 1.6 : 1.9 };
     const outCam: Cam = { fx: F0.x, fy: F0.y, ax: mobile ? 0.5 : 0.6, ay: mobile ? 0.62 : 0.62, tilt: 60, zoom: mobile ? 0.8 : 0.9 };
-    // With reduced motion the camera never travels: each step is a cut.
-    if (reduced) return s < 0.6 ? c : s < 3.05 ? buildCam : s < 4.65 ? findCam : outCam;
     c = mixCam(c, buildCam, ease(smooth(0.45, 1.05, s)));
     c = mixCam(c, walkCam, ease(smooth(1.85, 2.3, s)));
     c = mixCam(c, findCam, ease(smooth(3.0, 3.7, s)));
@@ -424,7 +428,7 @@ export function startTown(o: TownOptions): () => void {
       let tgt = 0;
       if (excite > 0.05) {
         for (const wk of walkers) tgt = Math.max(tgt, 1 - Math.hypot(m.x - wk.x, m.y - wk.y) / reach);
-        if (ptr.on) tgt = Math.max(tgt, 1 - Math.hypot(m.x - ptr.x, m.y - ptr.y) / (reach * 1.4));
+        if (ptr.on && hf[i] > 0.05) tgt = Math.max(tgt, 1 - Math.hypot(hx[i] - ptr.sx, hy[i] - ptr.sy) / (mobile ? 150 : 210));
         tgt = Math.max(0, tgt) * excite;
       }
       m.boost *= Math.exp(-dt * 1.4);
@@ -506,13 +510,13 @@ export function startTown(o: TownOptions): () => void {
   function frame(now: number) {
     raf = 0;
     const dt = Math.min(0.05, (now - last) / 1000); last = now;
-    const t = reduced ? 0 : now / 1000;
+    const t = now / 1000;
 
     let s = 0;
     if (story) {
       const wr = story.scroller.getBoundingClientRect();
       const target = clamp(-wr.top / Math.max(1, wr.height - H), 0, 1) * 5;
-      sNow += (target - sNow) * (reduced ? 1 : 1 - Math.exp(-dt * 9));
+      sNow += (target - sNow) * (1 - Math.exp(-dt * 9));
       s = sNow;
     }
     const b = story ? smooth(0.85, 1.75, s) : 0;
@@ -522,7 +526,8 @@ export function startTown(o: TownOptions): () => void {
     const free = story ? 1 - smooth(0.3, 0.75, s) : 1;
     const dim = 1 - 0.6 * b * (1 - out);
 
-    if (!reduced) { stepWalkers(dt); stepNet(dt, dim, free); }
+    stepWalkers(dt);
+    stepNet(dt, dim, free);
 
     // Where the walk has got to.
     let wx = 0, wy = 0;
@@ -568,19 +573,9 @@ export function startTown(o: TownOptions): () => void {
       }
     }
 
-    // The network.
-    g.lineWidth = 1.6;
-    for (const [ia, ib] of links) {
-      const A = markers[ia], B = markers[ib];
-      const al = (0.24 + 0.5 * Math.max(A.a, B.a)) * dim;
-      if (al < 0.01) continue;
-      g.strokeStyle = `rgba(${BLUE},${al.toFixed(3)})`;
-      g.beginPath(); g.moveTo(A.x, A.y); g.lineTo(B.x, B.y); g.stroke();
-    }
-
     // The trail being built, and the way walked.
     if (b > 0) {
-      g.lineWidth = 2.6; g.setLineDash([8, 8]); g.lineDashOffset = reduced ? 0 : -t * 22;
+      g.lineWidth = 2.6; g.setLineDash([8, 8]); g.lineDashOffset = -t * 22;
       for (let k = 0; k < trail.length - 1; k++) {
         const u = clamp((b - (0.2 + k * 0.15)) / 0.15, 0, 1); if (u <= 0) continue;
         const A = markers[trail[k]], B = markers[trail[k + 1]];
@@ -614,24 +609,10 @@ export function startTown(o: TownOptions): () => void {
       g.beginPath(); g.arc(S2.x, S2.y, 10 + 40 * rt, 0, 6.2832); g.stroke();
     }
 
-    // Pulses, each with a short tail of light behind it.
-    if (!reduced) for (const P2 of pulses) {
-      const A = markers[P2.i], B = markers[P2.j];
-      const x = A.x + (B.x - A.x) * P2.p, y = A.y + (B.y - A.y) * P2.p;
-      const p0 = Math.max(0, P2.p - 0.22);
-      const tx = A.x + (B.x - A.x) * p0, ty = A.y + (B.y - A.y) * p0;
-      const pa = Math.min(1, P2.e) * dim;
-      const gr = g.createLinearGradient(tx, ty, x, y);
-      gr.addColorStop(0, 'rgba(140,200,255,0)'); gr.addColorStop(1, `rgba(190,225,255,${(0.85 * pa).toFixed(3)})`);
-      g.strokeStyle = gr; g.lineWidth = 2.2;
-      g.beginPath(); g.moveTo(tx, ty); g.lineTo(x, y); g.stroke();
-      g.globalAlpha = pa; g.drawImage(glowWhite, x - 12, y - 12, 24, 24); g.globalAlpha = 1;
-    }
-
     // People, as dots on the street.
     const dot = (x: number, y: number, r: number, a: number) => {
       if (a < 0.01) return;
-      const rt = reduced ? 0.5 : (t % 1.8) / 1.8;
+      const rt = (t % 1.8) / 1.8;
       g.globalAlpha = a;
       g.strokeStyle = `rgba(${BLUE},${(0.6 * (1 - rt)).toFixed(3)})`; g.lineWidth = 1.6;
       g.beginPath(); g.arc(x, y, r + 22 * rt, 0, 6.2832); g.stroke();
@@ -657,25 +638,81 @@ export function startTown(o: TownOptions): () => void {
       const open = mobile ? smooth(H * 0.72, H * 0.86, sy) : smooth(W * 0.34, W * 0.5, sx);
       return 1 - free * (1 - open);
     };
+    // Every pin's head on screen. Pins float a little, each on its own beat,
+    // so the web between them is never quite still.
     const drawn: [number, number, number, number][] = [];
     markers.forEach((m, i) => {
-      if (m.trail && b > 0.02) return;
+      hf[i] = 0;
       const [sx, sy, d] = project(m.x, m.y);
-      if (!(d > 0) || sx < -40 || sx > W + 40 || sy < -40 || sy > H + 60) return;
+      if (!(d > 0) || sx < -60 || sx > W + 60 || sy < -60 || sy > H + 80) return;
+      if (m.trail && b > 0.02) {
+        // A trail stop dropping in: its head is where its big numbered pin is.
+        const k = trail.indexOf(i);
+        const u = clamp((b - (0.08 + k * 0.15)) / 0.16, 0, 1);
+        const kk = clamp(d, 0.6, 3.2) * (k === 1 ? 1 + 1.3 * f : 1);
+        const yo = -40 * kk * (1 - back(u));
+        hx[i] = sx; hy[i] = sy + yo - 7 * 1.6 * kk * 2.15; hk[i] = kk; hf[i] = u * horizon(sy);
+        return;
+      }
+      const k = clamp(d, 0.35, 2.2);
+      const scale = k * (0.62 + 0.75 * ease(clamp(m.a, 0, 1)));
+      const bob = Math.sin(t * 1.4 + m.phase) * 2.4 * k;
+      hx[i] = sx; hy[i] = sy + bob - 7 * scale * 2.15; hk[i] = k; hf[i] = horizon(sy) * quiet(sx, sy);
       drawn.push([sy, sx, d, i]);
     });
+
+    // The web: every stop joined to its neighbours, head to head, brighter
+    // where the cursor or a pulse has woken it.
+    for (const [ia, ib] of links) {
+      const fa = hf[ia], fb = hf[ib];
+      if (fa < 0.02 || fb < 0.02) continue;
+      const act = Math.max(markers[ia].a, markers[ib].a);
+      const vis = Math.min(fa, fb) * dim;
+      const al = (0.2 + 0.6 * act) * vis;
+      const kk = Math.min(hk[ia], hk[ib]);
+      if (act > 0.3) {
+        c.strokeStyle = `rgba(140,200,255,${((act - 0.3) * 0.28 * vis).toFixed(3)})`;
+        c.lineWidth = (2.5 + 3 * act) * kk;
+        c.beginPath(); c.moveTo(hx[ia], hy[ia]); c.lineTo(hx[ib], hy[ib]); c.stroke();
+      }
+      c.strokeStyle = `rgba(${BLUE},${al.toFixed(3)})`;
+      c.lineWidth = 0.7 + 0.6 * kk;
+      c.beginPath(); c.moveTo(hx[ia], hy[ia]); c.lineTo(hx[ib], hy[ib]); c.stroke();
+    }
+
+    // Pulses running along it: a bright point with a tail of light behind it.
+    for (const P2 of pulses) {
+      const ia = P2.i, ib = P2.j;
+      const vis = Math.min(hf[ia], hf[ib]) * dim;
+      if (vis < 0.02) continue;
+      const x = hx[ia] + (hx[ib] - hx[ia]) * P2.p, y = hy[ia] + (hy[ib] - hy[ia]) * P2.p;
+      const p0 = Math.max(0, P2.p - 0.3);
+      const tx = hx[ia] + (hx[ib] - hx[ia]) * p0, ty = hy[ia] + (hy[ib] - hy[ia]) * p0;
+      const pa = Math.min(1, P2.e) * vis;
+      const kk = (hk[ia] + hk[ib]) / 2;
+      const gr = c.createLinearGradient(tx, ty, x, y);
+      gr.addColorStop(0, 'rgba(140,200,255,0)'); gr.addColorStop(1, `rgba(220,240,255,${(0.9 * pa).toFixed(3)})`);
+      c.strokeStyle = gr; c.lineWidth = 1.6 * kk + 0.6;
+      c.beginPath(); c.moveTo(tx, ty); c.lineTo(x, y); c.stroke();
+      c.globalAlpha = pa; c.drawImage(glowWhite, x - 14 * kk, y - 14 * kk, 28 * kk, 28 * kk);
+      c.fillStyle = '#ffffff'; c.beginPath(); c.arc(x, y, 1.6 + kk, 0, 6.2832); c.fill();
+      c.globalAlpha = 1;
+    }
+
+    // The pins themselves, the nearest drawn last.
     drawn.sort((p, q) => p[0] - q[0]);
     for (const [sy, sx, d, i] of drawn) {
       const m = markers[i];
-      const fade = horizon(sy) * dim * quiet(sx, sy);
+      const fade = hf[i] * dim;
       if (fade < 0.02) continue;
-      const beat = reduced ? 0.5 : 0.5 + 0.5 * Math.sin(t * 1.8 + m.phase);
+      const beat = 0.5 + 0.5 * Math.sin(t * 1.8 + m.phase);
       const halo = Math.max(m.a, 0.14 + 0.18 * beat);
       const k = clamp(d, 0.35, 2.2);
+      const bob = Math.sin(t * 1.4 + m.phase) * 2.4 * k;
       const gs = (14 + 30 * halo) * k;
-      c.globalAlpha = Math.min(1, halo) * fade; c.drawImage(glow, sx - gs, sy - gs * 1.2, gs * 2, gs * 2); c.globalAlpha = 1;
+      c.globalAlpha = Math.min(1, halo) * fade; c.drawImage(glow, sx - gs, sy + bob - gs * 1.2, gs * 2, gs * 2); c.globalAlpha = 1;
       const scale = k * (0.62 + 0.75 * ease(clamp(m.a, 0, 1)));
-      pin(c, sx, sy, scale, m.a > 0.55 ? '#8cc8ff' : '#2997ff', null, fade * (0.6 + 0.4 * Math.max(m.a, beat * 0.5)));
+      pin(c, sx, sy + bob, scale, m.a > 0.55 ? '#8cc8ff' : '#2997ff', null, fade * (0.6 + 0.4 * Math.max(m.a, beat * 0.5)));
     }
 
     // The trail's own stops, numbered, dropping in as it is built.
@@ -688,7 +725,7 @@ export function startTown(o: TownOptions): () => void {
         // The stop being found grows as the camera comes down to it: in the
         // phone it is the thing standing in the street.
         const kk = clamp(d, 0.6, 3.2) * (k === 1 ? 1 + 1.3 * f : 1);
-        const yo = reduced ? 0 : -40 * kk * (1 - back(u));
+        const yo = -40 * kk * (1 - back(u));
         const found = (k === 0 && w > 0.04) || (k === 1 && f > 0.55);
         c.globalAlpha = u * 0.85 * horizon(sy);
         c.drawImage(found ? glowAmber : glow, sx - 30 * kk, sy - 44 * kk + yo, 60 * kk, 60 * kk);
@@ -704,10 +741,12 @@ export function startTown(o: TownOptions): () => void {
       if (!(d > 0)) continue;
       const k = clamp(d, 0.35, 2.2);
       const life = lb.t / lb.life;
-      const q = quiet(sx, sy);
+      const by = sy - 7 * k * 3.6 - 10 - life * 16;
+      // Judged where the word is drawn, not at the pin's foot below it.
+      const q = quiet(sx, by - 12);
       if (q < 0.6) continue;
       const a = smooth(0, 0.08, life) * (1 - smooth(0.75, 1, life)) * horizon(sy) * free * q;
-      bubble(c, sx, sy - 7 * k * 3.6 - 10 - life * 16, lb.text, a);
+      bubble(c, sx, by, lb.text, a);
     }
 
     // ---- the words and the phone
@@ -748,27 +787,53 @@ export function startTown(o: TownOptions): () => void {
       if (fade !== String(fadeNow)) { fadeNow = Number(fade); base.style.opacity = live.style.opacity = over.style.opacity = fade; }
     }
 
-    if (!reduced) kick();
+    kick();
   }
 
   function kick() {
     if (!raf && running && visible && !document.hidden) { last = performance.now(); raf = requestAnimationFrame(frame); }
   }
 
-  function pointAt(e: PointerEvent, touch: boolean) {
-    if (o.pointer === false || reduced || sNow > 0.35) return;
+  /** The pin whose head is under a point on screen, if any. */
+  function pinAt(sx: number, sy: number) {
+    let best = -1, bd = 1e9;
+    for (let i = 0; i < markers.length; i++) {
+      if (hf[i] < 0.3) continue;
+      const d = Math.hypot(hx[i] - sx, hy[i] - sy);
+      if (d < 14 + 10 * hk[i] && d < bd) { bd = d; best = i; }
+    }
+    return best;
+  }
+
+  /** A stop touched: it lights, says something, and sends a pulse to every neighbour. */
+  function burst(i: number) {
+    const m = markers[i];
+    m.boost = 1; m.ring = 1; m.cool = 4;
+    for (const nb of m.nb) fire(i, nb, 1);
+    if (words.length && labels.length < 6) labels.push({ m: i, text: words[(Math.random() * words.length) | 0], t: 0, life: 2.6 });
+    kick();
+  }
+
+  let hovering = false;
+  function pointAt(e: PointerEvent, touch: boolean, press: boolean) {
+    if (o.pointer === false || sNow > 0.35) return;
     const r = host.getBoundingClientRect();
     const sx = e.clientX - r.left, sy = e.clientY - r.top;
-    if (sx < 0 || sy < 0 || sx > r.width || sy > r.height) return;
+    const inside = sx >= 0 && sy >= 0 && sx <= r.width && sy <= r.height;
+    // Over a link or a button the page's own control wins.
+    const onControl = Boolean((e.target as Element | null)?.closest?.('a, button, input, label, summary, select, textarea'));
+    const target = inside && !onControl ? pinAt(sx, sy) : -1;
+    if (hovering !== (target >= 0)) { hovering = target >= 0; host.style.cursor = hovering ? 'pointer' : ''; }
+    if (!inside) return;
     const gp = unproject(sx, sy);
     if (!gp) return;
     if (!ptr.on) { ptr.x = gp[0]; ptr.y = gp[1]; }
-    ptr.on = true; ptr.touch = touch; ptr.tx = gp[0]; ptr.ty = gp[1]; ptr.last = performance.now();
+    ptr.on = true; ptr.touch = touch; ptr.tx = gp[0]; ptr.ty = gp[1]; ptr.sx = sx; ptr.sy = sy; ptr.last = performance.now();
+    if (press && target >= 0) burst(target);
     kick();
   }
-  const onMove = (e: PointerEvent) => { if (e.pointerType !== 'touch') pointAt(e, false); };
-  const onDown = (e: PointerEvent) => { if (e.pointerType !== 'mouse') pointAt(e, true); };
-  const onScroll = () => { if (reduced) kick(); };
+  const onMove = (e: PointerEvent) => { if (e.pointerType !== 'touch') pointAt(e, false, false); };
+  const onDown = (e: PointerEvent) => pointAt(e, e.pointerType !== 'mouse', true);
   const onVisibility = () => kick();
 
   let resizeTimer = 0;
@@ -778,7 +843,6 @@ export function startTown(o: TownOptions): () => void {
       const r = host.getBoundingClientRect();
       if (Math.round(r.width) === W && Math.round(r.height) === H) return;
       build(); kick();
-      if (reduced) requestAnimationFrame(frame);
     }, 140);
   });
   ro.observe(host);
@@ -786,18 +850,15 @@ export function startTown(o: TownOptions): () => void {
   io.observe(story ? story.scroller : host);
   addEventListener('pointermove', onMove, { passive: true });
   addEventListener('pointerdown', onDown, { passive: true });
-  addEventListener('scroll', onScroll, { passive: true });
   document.addEventListener('visibilitychange', onVisibility);
 
   build();
   kick();
-  if (reduced) requestAnimationFrame(frame);
 
   return () => {
     running = false; cancelAnimationFrame(raf); ro.disconnect(); io.disconnect();
     removeEventListener('pointermove', onMove);
     removeEventListener('pointerdown', onDown);
-    removeEventListener('scroll', onScroll);
     document.removeEventListener('visibilitychange', onVisibility);
   };
 }

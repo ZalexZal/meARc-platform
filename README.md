@@ -1099,6 +1099,12 @@ The website was redesigned the same way: a clickable design first
   back, so nothing is cut off when the page moves on. The streets are drawn flat
   and tilted by CSS in 3D; the pins stand upright on a canvas of their own
   (`web/src/lib/town.ts`).
+- **The stops are a live network**, in the manner of a synapse animation: every
+  pin is joined to its neighbours head to head, across the whole town to the
+  horizon, and white pulses run along the lines from stop to stop. Pins near the
+  cursor (or a finger) wake, brighten and send pulses on. Click or tap a pin and
+  it bursts, a pulse to every neighbour and a word above it, with a pointing
+  hand over it first. The pins float a little, each on its own beat.
 - **Below it, still night**: four kinds of trail (the old page showed three),
   the builder's five steps, "Made for a school trip", questions, and a closing
   card with its own live network. A route line runs down the page and lights a
@@ -1113,8 +1119,10 @@ The website was redesigned the same way: a clickable design first
 - **Copy kept honest**: the "0.5 m anchoring accuracy" and "iOS is coming"
   claims are gone, and the app is "coming to Google Play".
 - No React and no new dependency. The town stops drawing off screen and in a
-  hidden tab; with reduced motion the camera never travels and every step is
-  shown finished.
+  hidden tab. **It moves for everyone**: the system's reduce-motion setting is
+  not read, by the owner's decision. With "Show animations in Windows" off,
+  browsers ask for reduced motion, and the hero stood completely still for every
+  such visitor.
 
 The builder was checked against a stand-in database in the browser (every call
 answered locally, nothing written to the real one), at computer and phone
