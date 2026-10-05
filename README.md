@@ -7,7 +7,7 @@ in augmented reality. The Android app is in
 [`AR-Trails`](https://github.com/ZalexZal/AR-Trails).
 
 **Live site:** [artrails.netlify.app](https://artrails.netlify.app) ·
-**App:** 0.6.1 (build 21) · **Database:** migrations 0001–0054 ·
+**App:** 0.6.2 (build 22) · **Database:** migrations 0001–0054 ·
 **Terms version:** 2026-09-29
 
 ## Contents
@@ -577,7 +577,7 @@ and 0.6 from 5 October.
 | 11 | 1 Oct | Loose ends, and a lock on every page | 0.4.2 (7) | |
 | 12 | 1–3 Oct | AR in the street, for real | 0.4.3 (8), 0.4.4 (9) | |
 | 13 | 3–5 Oct | Daylight: the new interface | **0.5.0 (10)** to 0.6.1 (21) | |
-| 14 | 5 Oct | One Walk: the website reworked | (website only) | |
+| 14 | 5 Oct | One Walk, and a map that never goes black | 0.6.2 (22) | |
 
 ### Version 1: The gate (26–28 August)
 
@@ -1080,7 +1080,7 @@ coach during capture.
 
 Commits: app, 3–5 October
 
-### Version 14: One Walk, the website reworked (5 October)
+### Version 14: One Walk, and a map that never goes black (5 October)
 
 The website was redesigned the same way: a clickable design first
 (https://claude.ai/artifact/GsZS39hRsHYQ1xzLbe8ham), approved, then built.
@@ -1120,7 +1120,18 @@ The builder was checked against a stand-in database in the browser (every call
 answered locally, nothing written to the real one), at computer and phone
 widths.
 
-Commits: website, 5 October
+**In the app (0.6.2, build 22)**, the map no longer goes black while it loads.
+Panning used to show black strips for half a second or more, and a tab switch
+or a zoom reloaded it. Tiles are now unpacked off the main thread from the
+phone's own copy, a tile still coming shows a blurred piece of a coarser one,
+the old tiles stay through a zoom, the map's own colour sits behind it all, and
+the ring just off screen is fetched ahead. Measured on the phone: a full screen
+in 0.13–0.33 s, never black. A load that stalled for good after a tab switch
+mid-download is fixed, and kept tiles are deleted after seven days, as the free
+Stadia plan requires. The Camera tab's first opening after launch is still
+black for 2–3.5 s while ARCore starts the camera.
+
+Commits: website and app, 5 October
 
 ## Database migrations
 
