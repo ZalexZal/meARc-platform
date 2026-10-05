@@ -52,6 +52,9 @@ const shapes = [
     svg: '<svg viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" aria-hidden="true"><path d="M16 6 26 11v11l-10 5-10-5V11l10-5Z" fill="currentColor" fill-opacity=".25"/><path d="M6 11l10 5 10-5M16 16v11"/></svg>' },
   { key: 'sign', label: t('ed.shape.sign'),
     svg: '<svg viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="4" width="24" height="14" rx="2" fill="currentColor" fill-opacity=".25"/><path d="M9 9h14M9 13h9M16 18v11"/></svg>' },
+  // The creator's own: a .glb they made or may share (0055).
+  { key: 'model', label: t('ed.shape.model'),
+    svg: '<svg viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" aria-hidden="true"><path d="M16 3.5 26.5 9.5v13L16 28.5 5.5 22.5v-13L16 3.5Z" fill="currentColor" fill-opacity=".12"/><path d="M5.5 9.5 16 15.5l10.5-6M16 15.5v13"/><path d="M11 20.5c1.2-1.6 2.6-2.4 4-2.4M21 12.5l1.5 1.5M22.5 12.5 21 14" stroke-linecap="round"/></svg>' },
 ];
 
 const strings = {
@@ -92,6 +95,13 @@ const strings = {
   ownerWord: t('ed.owner'), editorWord: t('ed.editor'), leaveConfirm: t('ed.leaveConfirm'),
   here: t('ed.here'), conflict: t('ed.conflict'), inviteHref: href('/editor-invite'),
   myTrailsHref: href('/my-trails'),
+  mdl: {
+    checking: t('mdl.checking'), ok: t('mdl.ok'), animated: t('mdl.animated'),
+    notGlb: t('mdl.notGlb'), tooBig: t('mdl.tooBig'), tooManyTriangles: t('mdl.tooManyTriangles'),
+    textureTooBig: t('mdl.textureTooBig'), compressed: t('mdl.compressed'), external: t('mdl.external'),
+    noMesh: t('mdl.noMesh'), current: t('mdl.current'), need: t('mdl.need'), needRights: t('mdl.needRights'),
+    needCredit: t('mdl.needCredit'), uploading: t('mdl.uploading'), imp: t('imp.model'),
+  },
   wiz: {
     next: t('wiz.next'), done: t('wiz.done'), saved: t('wiz.saved'), skipped: t('wiz.skipped'),
     of: t('wiz.of'), newStop: t('wiz.newStop'), stop: t('wiz.stop'), untitled: t('wiz.untitled'),
@@ -333,6 +343,79 @@ const strings = {
                   <span class="mb-1.5 block font-medium">{t('ed.signEn')}</span>
                   <input class="field" name="signEn" maxlength="80" />
                 </label>
+              </div>
+
+              <!-- The creator's own model. Checked in the browser before it is
+                   sent (lib/glb.ts), shown turning, sized and faced, and
+                   credited. Uploaded when the step is left, like the rest. -->
+              <div class="model-box mt-3 hidden" data-model-fields>
+                <p class="text-xs text-[var(--ink-dim)]">{t('mdl.hint')}</p>
+                <div class="model-grid">
+                  <div class="model-stage" data-model-stage>
+                    <p class="model-empty" data-model-empty>
+                      <svg width="28" height="28" viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round" aria-hidden="true"><path d="M16 3.5 26.5 9.5v13L16 28.5 5.5 22.5v-13L16 3.5Z"/><path d="M5.5 9.5 16 15.5l10.5-6M16 15.5v13"/></svg>
+                      <span>{t('mdl.choose')}</span>
+                    </p>
+                  </div>
+                  <div class="space-y-3">
+                    <label class="block text-sm">
+                      <span class="mb-1.5 block font-medium">{t('mdl.choose')}</span>
+                      <input class="field" type="file" accept=".glb,model/gltf-binary" data-model-file />
+                    </label>
+                    <p class="text-xs text-[var(--ink-dim)]" data-model-current hidden></p>
+                    <p class="text-xs" data-model-check role="status" aria-live="polite" hidden></p>
+                    <div class="grid grid-cols-2 gap-3">
+                      <label class="block text-sm">
+                        <span class="mb-1.5 block font-medium">{t('mdl.height')}</span>
+                        <input class="field data" type="number" min="0.2" max="10" step="0.1" data-model-height />
+                      </label>
+                      <label class="block text-sm">
+                        <span class="mb-1.5 block font-medium">{t('mdl.heading')}</span>
+                        <span class="flex items-center gap-2">
+                          <input class="field data" type="number" min="0" max="359" step="1" data-model-heading-num aria-label={t('mdl.heading')} />
+                          <span class="data text-xs text-[var(--ink-faint)]" data-model-compass>N</span>
+                        </span>
+                      </label>
+                    </div>
+                    <input class="w-full accent-[var(--signal)]" type="range" min="0" max="359" step="1" data-model-heading aria-label={t('mdl.heading')} />
+                    <p class="text-xs text-[var(--ink-faint)]">{t('mdl.heightHint')}</p>
+                  </div>
+                </div>
+
+                <fieldset class="mt-2 space-y-3">
+                  <legend class="mb-1.5 text-sm font-medium">{t('mdl.credit')}</legend>
+                  <div class="flex flex-wrap gap-2">
+                    <label class="kind-opt credit-opt"><input class="sr-only" type="radio" name="modelCredit" value="own" checked /><span class="kind-name">{t('mdl.own')}</span></label>
+                    <label class="kind-opt credit-opt"><input class="sr-only" type="radio" name="modelCredit" value="other" /><span class="kind-name">{t('mdl.other')}</span></label>
+                  </div>
+                  <div class="hidden gap-3 sm:grid-cols-3" data-model-other>
+                    <label class="block text-sm">
+                      <span class="mb-1.5 block font-medium">{t('mdl.author')}</span>
+                      <input class="field" maxlength="120" data-model-author />
+                    </label>
+                    <label class="block text-sm">
+                      <span class="mb-1.5 block font-medium">{t('mdl.licence')}</span>
+                      <select class="field" data-model-licence>
+                        <option value="CC0">CC0</option>
+                        <option value="CC BY 4.0">CC BY 4.0</option>
+                        <option value="CC BY-SA 4.0">CC BY-SA 4.0</option>
+                        <option value="other">{t('mdl.licenceOther')}</option>
+                      </select>
+                    </label>
+                    <label class="block text-sm">
+                      <span class="mb-1.5 block font-medium">{t('mdl.link')}</span>
+                      <input class="field" type="url" maxlength="300" placeholder="https://" data-model-link />
+                    </label>
+                    <label class="hidden text-sm sm:col-span-3" data-model-licence-other-row>
+                      <span class="mb-1.5 block font-medium">{t('mdl.licenceOther')}</span>
+                      <input class="field" maxlength="60" data-model-licence-other />
+                    </label>
+                  </div>
+                  <label class="flex items-start gap-3 text-sm">
+                    <input type="checkbox" class="mt-0.5 h-4 w-4 shrink-0" data-model-rights />
+                    <span>{t('mdl.rights')}</span>
+                  </label>
+                </fieldset>
               </div>
             </div>
 
@@ -606,6 +689,7 @@ const strings = {
   import { db } from '../lib/supabase';
   import { requireUser, reveal, param, escapeHtml, text, duration } from '../lib/session';
   import { levelOf, isPending, isListed, setLevel } from '../lib/publishing';
+  import { inspectGlb, type GlbInfo, type GlbProblem } from '../lib/glb';
 
   /**
    * MapLibre is loaded from a CDN rather than bundled, which is a decision and
@@ -1111,7 +1195,7 @@ const strings = {
     showKindFields();
     q('[data-marker-error]')!.classList.add('hidden');
     startSteps(m, fresh);
-    await Promise.all([loadHints(), loadMedia()]);
+    await Promise.all([loadHints(), loadMedia(), loadModel(m)]);
   }
 
   function drawList() {
@@ -1564,6 +1648,11 @@ const strings = {
     // Checked, and nothing to write. Stepping through a stop must not bump its
     // version each time: a co-editor with the same stop open would be told it
     // had changed when nobody changed it.
+    if (chosenShape() === 'model') {
+      const problem = modelProblem();
+      if (problem) { fail(problem, 'place'); return false; }
+    }
+
     if (!dirty) { button.disabled = false; text(labelEl, label); return true; }
 
     const content: Record<string, any> = {
@@ -1620,6 +1709,11 @@ const strings = {
     }
     formVersion = wrote[0].version;
 
+    if (shape === 'model') {
+      const problem = await saveModel(saving);
+      if (problem) { savingNow = false; fail(problem, 'place'); return false; }
+    }
+
     const moved = await client.rpc('move_marker', { p_marker: selected, p_lat: lat, p_lng: lng });
     if (moved.error) { savingNow = false; fail(moved.error.message, 'place'); return false; }
 
@@ -1668,6 +1762,8 @@ const strings = {
 
   q('[data-marker-delete]')?.addEventListener('click', async () => {
     if (!selected) return;
+    const { data: files } = await client.rpc('media_paths', { p_world: worldId, p_marker: selected });
+    if (files?.length) await client.storage.from('marker-media').remove(files);
     const { error } = await client.from('markers').delete().eq('id', selected);
     if (error) { alert(error.message); return; }
     await select(null);
@@ -2024,7 +2120,9 @@ const strings = {
     if (badge) badge.style.background = chosen ? hex : '';
   }
 
-  const SHAPES = ['pin', 'sphere', 'cone', 'cube', 'sign'];
+  const SHAPES = ['pin', 'sphere', 'cone', 'cube', 'sign', 'model'];
+  // A spreadsheet row cannot carry a file, so it cannot carry a model.
+  const IMPORTABLE = SHAPES.filter((k) => k !== 'model');
 
   /** The shape the form shows: 'default', empty or unknown all mean the pin. */
   function setShape(key: string | null | undefined) {
@@ -2038,7 +2136,201 @@ const strings = {
     return (form.querySelector('input[name="shape"]:checked') as HTMLInputElement | null)?.value ?? 'pin';
   }
 
+  // ------------------------------------------------------------- the model
+  // The stop's own 3D model (0055): the row that is saved, a new file waiting to
+  // go up with the step, and what the checks found in it.
+  let modelRow: any = null;
+  let modelFile: File | null = null;
+  let modelInfo: GlbInfo | null = null;
+  let modelUrl = '';
+  let viewer: HTMLElement | null = null;
+  const mq = <T extends HTMLElement = HTMLInputElement>(k: string) => q(`[data-model-${k}]`) as unknown as T;
+  const LICENCES = ['CC0', 'CC BY 4.0', 'CC BY-SA 4.0'];
+
+  function modelSay(message: string, bad: boolean) {
+    const el = mq<HTMLElement>('check');
+    el.hidden = !message;
+    el.style.color = bad ? 'var(--alert)' : 'var(--ink-dim)';
+    text(el, message);
+  }
+
+  function problemText(p: GlbProblem) {
+    const n = (x: number) => x.toLocaleString(S.lang === 'bg' ? 'bg-BG' : 'en-GB');
+    switch (p.kind) {
+      case 'tooBig': return S.mdl.tooBig.replace('{0}', megabytes(p.bytes));
+      case 'tooManyTriangles': return S.mdl.tooManyTriangles.replace('{0}', n(p.triangles));
+      case 'textureTooBig': return S.mdl.textureTooBig.replace('{0}', `${p.width}×${p.height}`);
+      case 'compressed': return S.mdl.compressed.replace('{0}', p.extension);
+      case 'external': return S.mdl.external;
+      case 'noMesh': return S.mdl.noMesh;
+      default: return S.mdl.notGlb;
+    }
+  }
+
+  function summary(bytes: number, triangles: number, animated: boolean) {
+    return S.mdl.ok.replace('{0}', megabytes(bytes))
+      .replace('{1}', triangles.toLocaleString(S.lang === 'bg' ? 'bg-BG' : 'en-GB'))
+      + (animated ? S.mdl.animated : '');
+  }
+
+  /** The preview: Google's model-viewer, loaded the first time a model is shown. */
+  async function showPreview(url: string) {
+    const empty = mq<HTMLElement>('empty');
+    if (!url) { viewer?.remove(); viewer = null; empty.hidden = false; return; }
+    await import('@google/model-viewer');
+    // A new element for each file: changing src on a live one trips an error
+    // inside model-viewer's AR part.
+    if (viewer && viewer.getAttribute('src') !== url) { viewer.remove(); viewer = null; }
+    if (!viewer) {
+      viewer = document.createElement('model-viewer');
+      for (const [k, v] of [['camera-controls', ''], ['autoplay', ''], ['shadow-intensity', '0.9'], ['loading', 'eager'],
+                            ['interaction-prompt', 'none'], ['camera-orbit', '0deg 72deg auto'],
+                            ['alt', S.lang === 'bg' ? 'Моделът на спирката' : 'The stop’s model']]) {
+        viewer.setAttribute(k, v);
+      }
+      mq<HTMLElement>('stage').append(viewer);
+    }
+    empty.hidden = true;
+    if (viewer.getAttribute('src') !== url) viewer.setAttribute('src', url);
+    turnPreview();
+  }
+
+  /** The preview is seen from the south: a model facing south shows its front. */
+  function turnPreview() {
+    const deg = ((Number(mq('heading').value) || 0) % 360 + 360) % 360;
+    viewer?.setAttribute('orientation', `0deg 0deg ${180 - deg}deg`);
+    text(mq<HTMLElement>('compass'), ['N', 'NE', 'E', 'SE', 'S', 'SW', 'W', 'NW'][Math.round(deg / 45) % 8]);
+  }
+
+  function creditOther() {
+    return (form.querySelector('input[name="modelCredit"]:checked') as HTMLInputElement | null)?.value === 'other';
+  }
+  function showCredit() {
+    const box = mq<HTMLElement>('other');
+    box.classList.toggle('hidden', !creditOther());
+    box.classList.toggle('grid', creditOther());
+    mq<HTMLElement>('licence-other-row').classList.toggle('hidden', (mq<HTMLSelectElement>('licence')).value !== 'other');
+  }
+  function licence() {
+    const v = mq<HTMLSelectElement>('licence').value;
+    return v === 'other' ? mq('licence-other').value.trim() : v;
+  }
+
+  async function loadModel(m: any) {
+    modelFile = null; modelInfo = null;
+    mq('file').value = '';
+    mq('rights').checked = false;
+    modelSay('', false);
+    const { data } = await client.from('marker_models').select('*').eq('marker_id', m.id).maybeSingle();
+    if (selected !== m.id) return;
+    modelRow = data ?? null;
+    mq('height').value = modelRow ? String(Math.round(modelRow.height_m * 100) / 100) : '';
+    mq('heading').value = mq('heading-num').value = String(modelRow?.heading_deg ?? 0);
+    const other = modelRow?.credit_source === 'other';
+    (form.querySelector(`input[name="modelCredit"][value="${other ? 'other' : 'own'}"]`) as HTMLInputElement).checked = true;
+    mq('author').value = modelRow?.credit_author ?? '';
+    mq('link').value = modelRow?.credit_link ?? '';
+    const lic = modelRow?.credit_licence ?? 'CC0';
+    mq<HTMLSelectElement>('licence').value = LICENCES.includes(lic) ? lic : 'other';
+    mq('licence-other').value = LICENCES.includes(lic) ? '' : lic;
+    showCredit();
+    const current = mq<HTMLElement>('current');
+    current.hidden = !modelRow;
+    if (modelRow) text(current, S.mdl.current.replace('{0}', summary(modelRow.bytes, modelRow.triangles, modelRow.animated)));
+    modelUrl = modelRow ? client.storage.from('marker-media').getPublicUrl(modelRow.path).data.publicUrl : '';
+    if (chosenShape() === 'model') showPreview(modelUrl);
+    else showPreview('');
+  }
+
+  function showModelFields() {
+    const on = chosenShape() === 'model';
+    mq<HTMLElement>('fields').classList.toggle('hidden', !on);
+    if (on) showPreview(modelUrl);
+  }
+
+  mq('file').addEventListener('change', async () => {
+    const input = mq('file');
+    const file = input.files?.[0];
+    if (!file) return;
+    modelSay(S.mdl.checking, false);
+    const found = inspectGlb(await file.arrayBuffer());
+    if (!found.ok) {
+      input.value = ''; modelFile = null; modelInfo = null;
+      modelSay(problemText(found.problem), true);
+      return;
+    }
+    modelFile = file; modelInfo = found.info;
+    modelSay(summary(file.size, found.info.triangles, found.info.animated), false);
+    // Its own size, if it was made at a size that makes sense in a street.
+    const h = found.info.height;
+    mq('height').value = String(h >= 0.2 && h <= 10 ? Math.round(h * 10) / 10 : 1);
+    if (modelUrl.startsWith('blob:')) URL.revokeObjectURL(modelUrl);
+    modelUrl = URL.createObjectURL(file);
+    showPreview(modelUrl);
+  });
+  mq('heading').addEventListener('input', () => { mq('heading-num').value = mq('heading').value; turnPreview(); });
+  mq('heading-num').addEventListener('input', () => { mq('heading').value = mq('heading-num').value; turnPreview(); });
+  form.querySelectorAll('input[name="modelCredit"]').forEach((r) => r.addEventListener('change', showCredit));
+  mq<HTMLSelectElement>('licence').addEventListener('change', showCredit);
+
+  /** What is still missing before the model can be saved, or nothing. */
+  function modelProblem(): string {
+    if (!modelRow && !modelFile) return S.mdl.need;
+    const h = Number(mq('height').value);
+    if (!(h >= 0.2 && h <= 10)) return S.lang === 'bg' ? 'Височината е между 0,2 и 10 m.' : 'The height is between 0.2 and 10 m.';
+    if (creditOther() && (!mq('author').value.trim() || !licence() || !/^https:\/\/\S+$/.test(mq('link').value.trim()))) return S.mdl.needCredit;
+    if (modelFile && !mq('rights').checked) return S.mdl.needRights;
+    return '';
+  }
+
+  /** Uploads a new file if there is one, then writes the row. Null when it worked. */
+  async function saveModel(markerId: string): Promise<string | null> {
+    const old: string | undefined = modelRow?.path;
+    let path = old;
+    if (modelFile) {
+      modelSay(S.mdl.uploading, false);
+      path = `${worldId}/${markerId}/model-${crypto.randomUUID()}.glb`;
+      // Typed here: a .glb picked on Windows comes with no type at all, and
+      // storage refuses application/octet-stream.
+      const body = new Blob([modelFile], { type: 'model/gltf-binary' });
+      const up = await client.storage.from('marker-media').upload(path, body, { contentType: 'model/gltf-binary', upsert: false });
+      if (up.error) { modelSay('', false); return up.error.message; }
+    }
+    const other = creditOther();
+    const row = {
+      marker_id: markerId,
+      path,
+      triangles: modelInfo?.triangles ?? modelRow.triangles,
+      animated: modelInfo?.animated ?? modelRow.animated,
+      height_m: Number(mq('height').value),
+      heading_deg: ((Math.round(Number(mq('heading').value)) || 0) % 360 + 360) % 360,
+      credit_source: other ? 'other' : 'own',
+      credit_author: other ? mq('author').value.trim() : null,
+      credit_licence: other ? licence() : null,
+      credit_link: other ? mq('link').value.trim() : null,
+    };
+    const { data, error } = await client.from('marker_models').upsert(row, { onConflict: 'marker_id' }).select().single();
+    if (error) {
+      if (modelFile && path && path !== old) await client.storage.from('marker-media').remove([path]);
+      modelSay('', false);
+      return error.message;
+    }
+    // The new file is in; the one it replaced goes.
+    if (modelFile && old && old !== path) await client.storage.from('marker-media').remove([old]);
+    modelRow = data;
+    modelFile = null; modelInfo = null;
+    mq('file').value = '';
+    mq('rights').checked = false;
+    modelSay('', false);
+    const current = mq<HTMLElement>('current');
+    current.hidden = false;
+    text(current, S.mdl.current.replace('{0}', summary(data.bytes, data.triangles, data.animated)));
+    loadUsage();
+    return null;
+  }
+
   function showSignFields() {
+    showModelFields();
     const sign = chosenShape() === 'sign';
     const box = q('[data-sign-fields]') as HTMLElement | null;
     box?.classList.toggle('hidden', !sign);
@@ -2179,7 +2471,8 @@ const strings = {
     if (!RULES.includes(rule)) problems.push(S.impBadOnWrong);
 
     const shape = (row.shape ?? '').trim().toLowerCase() || 'pin';
-    if (!SHAPES.includes(shape)) problems.push(S.impBadShape);
+    if (shape === 'model') problems.push(S.mdl.imp);
+    else if (!IMPORTABLE.includes(shape)) problems.push(S.impBadShape);
     if ((row.sign_bg ?? '').trim().length > 80 || (row.sign_en ?? '').trim().length > 80) {
       problems.push(S.impLongSign);
     }
@@ -2440,6 +2733,20 @@ const strings = {
   .kind-body { font-size: .8125rem; color: var(--ink-dim); }
 
   .add-box { padding: 1rem; border-radius: 18px; border: 1px dashed var(--line); }
+
+  /* The creator's own model: its preview beside its size and facing. */
+  .model-box { display: flex; flex-direction: column; gap: 1rem; padding: 1rem; border-radius: 18px; border: 1px solid var(--line); background: var(--ground); }
+  .model-box.hidden { display: none; }
+  .model-grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 1rem; align-items: start; }
+  @media (max-width: 640px) { .model-grid { grid-template-columns: minmax(0, 1fr); } }
+  .model-stage {
+    position: relative; aspect-ratio: 1; border-radius: 16px; overflow: hidden;
+    background: radial-gradient(circle at 50% 40%, var(--surface), var(--surface-2));
+    border: 1px solid var(--line-soft);
+  }
+  .model-stage :global(model-viewer) { position: absolute; inset: 0; width: 100%; height: 100%; --poster-color: transparent; }
+  .model-empty { position: absolute; inset: 0; display: grid; place-content: center; justify-items: center; gap: .5rem; color: var(--ink-faint); font-size: .8125rem; }
+  .credit-opt { flex-direction: row; align-items: center; padding: .625rem .875rem; }
 
   .ready { align-items: flex-start; padding: 2rem 0 1rem; }
   .ready h3 { font-size: 1.5rem; letter-spacing: -.02em; }

@@ -19,6 +19,7 @@ const strings = {
   working: t('rev.working'),
   failed: t('mine.failed'),
   editHref: href('/trail'),
+  models: t('rev.models'), modelOwn: t('rev.modelOwn'), preview: t('rev.preview'), file: t('rev.file'),
 
   repTitle: t('rep.title'),
   repLede: t('rep.lede'),
@@ -147,6 +148,10 @@ const strings = {
            href="${S.editHref}?id=${encodeURIComponent(w.id)}">${escapeHtml(S.open)}</a>
       </div>
 
+      <!-- Its own 3D models, if it has any: content and licence are checked
+           here, before the trail is shown to everybody. -->
+      <div class="mt-4 hidden" data-models="${w.id}"></div>
+
       <!-- The reason sits above both buttons rather than behind the refuse one.
            A reviewer types it before deciding, and hiding it until after the
            click is how a refusal ends up with no sentence attached. -->
@@ -164,6 +169,38 @@ const strings = {
       </div>
     </li>`;
   }
+
+  /** A trail's own models, each with its credit, a link to the file and a preview. */
+  async function drawModels(world: string) {
+    const box = q(`[data-models="${world}"]`) as HTMLElement | null;
+    const { data } = await client.rpc('trail_models', { p_world: world });
+    if (!box || !data?.length) return;
+    box.classList.remove('hidden');
+    box.innerHTML = `<p class="eyebrow">${escapeHtml(S.models)}</p><ul class="mt-2 space-y-2">` + data.map((m: any) => {
+      const url = client.storage.from('marker-media').getPublicUrl(m.path).data.publicUrl;
+      const credit = m.credit_source === 'own'
+        ? S.modelOwn
+        : `${escapeHtml(m.credit_author)} · ${escapeHtml(m.credit_licence)} · <a class="text-[var(--signal)] hover:underline" href="${escapeHtml(m.credit_link)}" target="_blank" rel="noopener">${escapeHtml(m.credit_link)}</a>`;
+      return `<li class="rounded-xl border border-[var(--line)] p-3 text-sm">
+        <p>${m.credit_source === 'own' ? escapeHtml(credit) : credit}</p>
+        <p class="data mt-1 text-xs text-[var(--ink-dim)]">${(m.bytes / 1048576).toFixed(1)} MB · ${m.height_m} m${m.animated ? ' · ▶' : ''}
+          · <a class="text-[var(--signal)] hover:underline" href="${escapeHtml(url)}" download>${escapeHtml(S.file)}</a></p>
+        <button type="button" class="btn btn-quiet btn-sm mt-2" data-model-preview="${escapeHtml(url)}">${escapeHtml(S.preview)}</button>
+      </li>`;
+    }).join('') + '</ul>';
+  }
+
+  // The preview is only loaded when a reviewer asks for one.
+  document.addEventListener('click', async (event) => {
+    const button = (event.target as Element).closest('[data-model-preview]') as HTMLElement | null;
+    if (!button) return;
+    await import('@google/model-viewer');
+    const viewer = document.createElement('model-viewer');
+    viewer.setAttribute('src', button.dataset.modelPreview!);
+    for (const k of ['camera-controls', 'autoplay']) viewer.setAttribute(k, '');
+    viewer.setAttribute('style', 'display:block;width:100%;height:280px;margin-top:.5rem;border-radius:12px;background:var(--surface-2)');
+    button.replaceWith(viewer);
+  });
 
   function report(r: any) {
     const kind = r.target === 'marker' ? S.repMarker : r.target === 'team' ? S.repTeam : S.repTrail;
@@ -237,6 +274,7 @@ const strings = {
 
     q('[data-rev-empty]')!.classList.toggle('hidden', rows.length > 0);
     q('[data-rev-list]')!.innerHTML = rows.map(row).join('');
+    rows.forEach((w: any) => drawModels(w.id));
 
     // --- the second queue
     const { data: reports } = await client.rpc('reports_queue', { p_state: 'open' });

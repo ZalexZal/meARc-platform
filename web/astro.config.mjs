@@ -44,7 +44,8 @@ export default defineConfig({
       directives: [
         "default-src 'self'",
         // The API and realtime (co-editing), and the editor's map tiles.
-        `connect-src 'self' ${SUPABASE} ${SUPABASE.replace(/^https:/, 'wss:')} https://tiles.openfreemap.org`,
+        // blob: is a creator's own 3D model, read in the builder before upload.
+        `connect-src 'self' blob: ${SUPABASE} ${SUPABASE.replace(/^https:/, 'wss:')} https://tiles.openfreemap.org`,
         // Uploads, QR codes (data:), map sprites (blob:), and pictures a
         // creator linked from anywhere.
         "img-src 'self' data: blob: https:",
