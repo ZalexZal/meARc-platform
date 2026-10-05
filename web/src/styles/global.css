@@ -799,6 +799,23 @@ input[type="file"].field::file-selector-button:hover { border-color: var(--ink-f
 }
 .js-reveal [data-reveal-group].is-in > * { opacity: 1; transform: none; }
 
+/* ----------------------------------------------------------------- the town
+
+   lib/town.ts puts four layers at the back of any positioned element: the
+   streets and what lies on them (two canvases it tilts in 3D), a haze where
+   the ground meets the sky, and the pins standing upright in front.           */
+
+.town { isolation: isolate; overflow: hidden; background-color: #080d10; }
+.town > .town-ground { position: absolute; left: 0; top: 0; transform-origin: 0 0; pointer-events: none; z-index: -5; }
+.town > .town-live { z-index: -4; }
+.town > .town-fog {
+  position: absolute; inset: 0; pointer-events: none; z-index: -3;
+  background:
+    linear-gradient(180deg, #080d10 0%, rgba(8, 13, 16, .85) 8%, rgba(8, 13, 16, .3) 19%, rgba(8, 13, 16, 0) 30%),
+    radial-gradient(ellipse 75% 20% at 62% 14%, rgba(41, 151, 255, .16), rgba(41, 151, 255, 0) 70%);
+}
+.town > .town-over { position: absolute; left: 0; top: 0; pointer-events: none; z-index: -2; }
+
 /* -------------------------------------------------------------- page band
 
    The night map at the top of a page: its title over a live corner of the
@@ -810,7 +827,6 @@ input[type="file"].field::file-selector-button:hover { border-color: var(--ink-f
   background: #080d10;
   isolation: isolate;
 }
-.band > canvas { position: absolute; inset: 0; z-index: -2; display: block; }
 .band::before {
   content: "";
   position: absolute;

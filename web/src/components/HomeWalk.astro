@@ -6,21 +6,21 @@ const { lang } = Astro.props;
 const t = useTranslations(lang);
 const href = localise(lang);
 
-// The three things a trail is, in the order they happen. The map behind them
-// acts each one out as it scrolls past.
+// The three things a trail is, in the order they happen. The town behind them
+// acts each one out while its words are on screen.
 const beats = [
-  { n: 1, id: 'how', label: t('home.b1.label'), title: t('home.b1.title'), body: t('home.b1.body') },
-  { n: 2, id: 'walk', label: t('home.b2.label'), title: t('home.b2.title'), body: t('home.b2.body') },
-  { n: 3, id: 'find', label: t('home.b3.label'), title: t('home.b3.title'), body: t('home.b3.body') },
+  { n: 1, label: t('home.b1.label'), title: t('home.b1.title'), body: t('home.b1.body') },
+  { n: 2, label: t('home.b2.label'), title: t('home.b2.title'), body: t('home.b2.body') },
+  { n: 3, label: t('home.b3.label'), title: t('home.b3.title'), body: t('home.b3.body') },
 ];
 ---
 
-<!-- One canvas, sticky for four and a half screens: free to play with at the
-     top, then scroll walks it through Build, Walk and Find. Everything here is
-     at night in both themes; the pulses only glow on a dark map. -->
-<div class="walk night" data-walk>
+<!-- One scene, held in place for the length of the walk. The hero's words, then
+     Build, Walk and Find, each shown while the town behind it acts it out, and
+     a moment of quiet at the end before the page moves on. Everything here is at
+     night in both themes: the pulses only glow on a dark town. -->
+<div class="walk night" data-walk data-labels={t('home.labels')}>
   <div class="stage" data-stage>
-    <canvas data-stage-canvas aria-hidden="true"></canvas>
     <div class="scrim" aria-hidden="true"></div>
 
     <!-- The app's one-line next-stop card, counting the metres down. -->
@@ -33,17 +33,11 @@ const beats = [
       </span>
     </div>
 
-    <!-- What the camera shows at the stop. Drawn, not photographed: a street
-         at dusk, the marker standing in front of the tower, its question. -->
-    <div class="phone" data-phone aria-hidden="true">
-      <div class="screen">
-        <div class="lamp-glow"></div>
-        <div class="bld b1"></div>
-        <div class="bld b2"></div>
-        <div class="tower"><div class="clock"></div></div>
-        <div class="road"></div>
-        <div class="ar-shadow"></div>
-        <div class="ar-pin"><span>2</span></div>
+    <!-- The phone held up at the stop: an empty frame, so what shows through it
+         is the town itself at street level, with the stop standing in it. -->
+    <div class="finder" data-finder aria-hidden="true">
+      <div class="finder-frame">
+        <span class="finder-cam"></span>
         <div class="ar-chip"><span class="num">2</span><span>{t('home.stop')}</span><span class="here">{t('home.here')}</span></div>
         <div class="ar-score">+10</div>
         <div class="ar-q">
@@ -53,97 +47,96 @@ const beats = [
         </div>
       </div>
     </div>
-  </div>
 
-  <section class="hero">
-    <div class="inner">
-      <div class="hero-copy">
-        <p class="live rise" style="animation-delay:80ms">
-          <span class="live-dot" aria-hidden="true"></span>
-          <span class="t-mouse">{t('home.live.mouse')}</span>
-          <span class="t-touch">{t('home.live.touch')}</span>
-        </p>
-        <h1 class="display-xl rise" style="animation-delay:160ms">{t('home.title')}</h1>
-        <p class="lede hero-lede rise" style="animation-delay:280ms">{t('home.lede')}</p>
-        <div class="cta-row rise" style="animation-delay:400ms">
-          <a class="btn btn-primary btn-lg" href={href('/my-trails?new=1')}>{t('home.build')}</a>
-          <a class="btn btn-quiet btn-lg" href="#how">{t('home.how')}</a>
-        </div>
-        <p class="soon rise" style="animation-delay:520ms">{t('home.soon')}</p>
-      </div>
-    </div>
-    <a class="cue" href="#how">
-      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M6 13l6 6 6-6" /></svg>
-      {t('home.scroll')}
-    </a>
-  </section>
-
-  {beats.map((beat) => (
-    <section class="beat" id={beat.id} aria-labelledby={`beat-${beat.n}`}>
+    <section class="panel panel-hero" data-panel>
       <div class="inner">
-        <div class="beat-card" data-reveal>
-          <p class="eyebrow beat-label"><span class="beat-n">{beat.n}</span>{beat.label}</p>
-          <h2 class="display-lg" id={`beat-${beat.n}`}>{beat.title}</h2>
-          <p class="lede beat-body">{beat.body}</p>
+        <div class="hero-copy">
+          <p class="live">
+            <span class="live-dot" aria-hidden="true"></span>
+            <span class="t-mouse">{t('home.live.mouse')}</span>
+            <span class="t-touch">{t('home.live.touch')}</span>
+          </p>
+          <h1 class="display-xl hero-title">{t('home.title')}</h1>
+          <p class="lede hero-lede">{t('home.lede')}</p>
+          <div class="cta-row">
+            <a class="btn btn-primary btn-lg" href={href('/my-trails?new=1')}>{t('home.build')}</a>
+            <a class="btn btn-quiet btn-lg" href="#how">{t('home.how')}</a>
+          </div>
+          <p class="soon">{t('home.soon')}</p>
         </div>
       </div>
+      <a class="cue" href="#how">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M6 13l6 6 6-6" /></svg>
+        {t('home.scroll')}
+      </a>
     </section>
-  ))}
 
-  <div class="tail" aria-hidden="true"></div>
+    {beats.map((beat) => (
+      <section class="panel panel-beat" data-panel aria-labelledby={`beat-${beat.n}`}>
+        <div class="inner">
+          <div class="beat-card">
+            <p class="eyebrow beat-label">
+              <span class="beat-steps" aria-hidden="true">
+                {beats.map((b) => <span class:list={['beat-step', { on: b.n <= beat.n }]}></span>)}
+              </span>
+              <span class="beat-n">{beat.n}</span>{beat.label}
+            </p>
+            <h2 class="display-lg" id={`beat-${beat.n}`}>{beat.title}</h2>
+            <p class="lede beat-body">{beat.body}</p>
+          </div>
+        </div>
+      </section>
+    ))}
+  </div>
+  <!-- "How it works" lands here: where Build is on screen. -->
+  <span class="how-at" id="how" aria-hidden="true"></span>
 </div>
 
 <script>
-  import { startNightMap } from '../lib/nightmap';
+  import { startTown } from '../lib/town';
 
+  const walk = document.querySelector<HTMLElement>('[data-walk]');
   const stage = document.querySelector<HTMLElement>('[data-stage]');
-  const canvas = document.querySelector<HTMLCanvasElement>('[data-stage-canvas]');
-  const scroller = document.querySelector<HTMLElement>('[data-walk]');
-  if (stage && canvas && scroller) {
-    startNightMap({
+  if (walk && stage) {
+    startTown({
       host: stage,
-      canvas,
-      walker: true,
-      textSide: 'left',
+      tilt: 54,
+      walkers: matchMedia('(max-width: 759px)').matches ? 3 : 5,
+      pointer: true,
+      labels: (walk.dataset.labels ?? '').split('|').filter(Boolean),
       story: {
-        scroller,
-        strip: document.querySelector<HTMLElement>('[data-strip]'),
-        stripDist: document.querySelector<HTMLElement>('[data-strip-dist]'),
-        phone: document.querySelector<HTMLElement>('[data-phone]'),
-        here: document.querySelector('.ar-chip .here')?.textContent ?? '',
+        scroller: walk,
+        panels: Array.from(stage.querySelectorAll<HTMLElement>('[data-panel]')),
+        strip: stage.querySelector<HTMLElement>('[data-strip]'),
+        stripDist: stage.querySelector<HTMLElement>('[data-strip-dist]'),
+        finder: stage.querySelector<HTMLElement>('[data-finder]'),
+        here: stage.querySelector('.ar-chip .here')?.textContent ?? '',
       },
     });
   }
 </script>
 
 <style>
-  /* The stage is one screen tall and sticks while the sections slide over it.
+  /* Held for 4.4 screens of scrolling: the hero, three steps and a quiet end.
      svh, not vh: on a phone the address bar coming and going must not resize
-     the map mid-walk. */
-  /* Pulled up under the header, so the header floats over the map from the
-     first frame instead of over the page behind it. */
-  .walk { --stage-h: max(560px, 100svh); position: relative; background: #080d10; margin-top: -64px; }
-  .stage {
-    position: sticky; top: 0; z-index: 0; overflow: hidden;
-    height: var(--stage-h); margin-bottom: calc(-1 * var(--stage-h));
-    background: #080d10;
-  }
-  .stage canvas { position: absolute; left: 0; top: 0; display: block; }
+     the scene mid-walk. Pulled up under the header, so the header floats over
+     the town from the first frame. */
+  .walk { --stage-h: max(560px, 100svh); position: relative; height: calc(var(--stage-h) * 4.4); margin-top: -64px; background: #080d10; }
+  .stage { position: sticky; top: 0; height: var(--stage-h); }
+  .how-at { position: absolute; left: 0; top: calc(var(--stage-h) * .7); width: 1px; height: 1px; }
   .scrim {
-    position: absolute; inset: 0; pointer-events: none;
+    position: absolute; inset: 0; pointer-events: none; z-index: -1;
     background:
-      linear-gradient(90deg, rgba(8,13,16,.94) 0%, rgba(8,13,16,.8) 27%, rgba(8,13,16,0) 56%),
-      linear-gradient(0deg, rgba(8,13,16,.75), rgba(8,13,16,0) 20%);
+      linear-gradient(90deg, rgba(8,13,16,.9) 0%, rgba(8,13,16,.7) 26%, rgba(8,13,16,0) 52%),
+      linear-gradient(0deg, rgba(8,13,16,.55), rgba(8,13,16,0) 16%);
   }
-  .hero, .beat, .tail { position: relative; z-index: 1; }
-  .hero, .beat { min-height: var(--stage-h); display: flex; align-items: center; }
-  /* The header sits above the first screen, so the hero is that much shorter
-     and its scroll cue stays on screen. */
-  .hero { padding-top: 64px; }
-  .tail { height: calc(var(--stage-h) * .5); }
-  .inner { width: 100%; max-width: 76rem; margin: 0 auto; padding: 0 1.5rem; }
 
-  .hero-copy { max-width: 41rem; padding: 5rem 0 3rem; }
+  /* Above the phone, whose shadow darkens everything under it. */
+  .panel { position: absolute; inset: 0; z-index: 3; display: flex; align-items: center; padding-top: 64px; }
+  .inner { width: 100%; max-width: 76rem; margin: 0 auto; padding: 0 1.5rem; }
+  .panel-beat { visibility: hidden; opacity: 0; }
+
+  .hero-copy { max-width: 40rem; }
   .live {
     display: inline-flex; align-items: center; gap: 10px; margin: 0 0 1.75rem;
     padding: 8px 14px 8px 12px; border-radius: 999px;
@@ -155,6 +148,7 @@ const beats = [
   @keyframes ping { 0% { box-shadow: 0 0 0 0 rgba(41,151,255,.6); } 100% { box-shadow: 0 0 0 10px rgba(41,151,255,0); } }
   .t-touch { display: none; }
   @media (hover: none) { .t-mouse { display: none; } .t-touch { display: inline; } }
+  .hero-title { text-shadow: 0 2px 30px rgba(8,13,16,.6); }
   .hero-lede { margin-top: 1.5rem; max-width: 33em; }
   .cta-row { display: flex; flex-wrap: wrap; gap: .75rem; margin-top: 2.25rem; }
   .soon { margin-top: 1.25rem; font-size: 13px; color: var(--ink-faint); }
@@ -166,22 +160,29 @@ const beats = [
   .cue:hover { color: var(--ink); }
   .cue svg { animation: nudge 2.2s ease-in-out infinite; }
   @keyframes nudge { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(4px); } }
-  .rise { opacity: 0; transform: translateY(16px); animation: rise .9s cubic-bezier(.2,.7,.2,1) forwards; }
-  @keyframes rise { to { opacity: 1; transform: none; } }
+  .hero-copy > * { animation: rise .9s cubic-bezier(.2,.7,.2,1) both; }
+  .hero-copy > :nth-child(2) { animation-delay: .1s; }
+  .hero-copy > :nth-child(3) { animation-delay: .22s; }
+  .hero-copy > :nth-child(4) { animation-delay: .34s; }
+  .hero-copy > :nth-child(5) { animation-delay: .46s; }
+  @keyframes rise { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: none; } }
 
   .beat-card { max-width: 27rem; }
   .beat-label { display: flex; align-items: center; color: var(--ink-dim); }
+  .beat-steps { display: inline-flex; gap: 4px; margin-right: 14px; }
+  .beat-step { width: 18px; height: 3px; border-radius: 3px; background: rgba(140,190,215,.25); }
+  .beat-step.on { background: #2997ff; }
   .beat-n {
-    display: inline-grid; place-items: center; width: 28px; height: 28px; margin-right: 12px;
-    border-radius: 50%; background: #2997ff; color: #04182e; font: 600 13px var(--font-mono); letter-spacing: 0;
+    display: inline-grid; place-items: center; width: 26px; height: 26px; margin-right: 10px;
+    border-radius: 50%; background: #2997ff; color: #04182e; font: 600 12px var(--font-mono); letter-spacing: 0;
   }
   .beat-card h2 { margin-top: 1.125rem; }
   .beat-body { margin-top: 1.125rem; }
 
   .strip {
-    position: absolute; left: 70%; bottom: 34px; transform: translate(-50%, 16px); opacity: 0;
+    position: absolute; left: 66%; bottom: 40px; transform: translate(-50%, 16px); opacity: 0; z-index: 2;
     display: flex; align-items: center; gap: 12px; height: 60px; min-width: 310px; padding: 0 18px 0 10px;
-    border-radius: 20px; background: rgba(16,26,31,.84); border: 1px solid rgba(140,190,215,.16);
+    border-radius: 20px; background: rgba(16,26,31,.86); border: 1px solid rgba(140,190,215,.18);
     -webkit-backdrop-filter: blur(16px); backdrop-filter: blur(16px);
     color: #e9f2f5; pointer-events: none; box-shadow: 0 18px 40px -18px rgba(0,0,0,.8);
   }
@@ -189,91 +190,70 @@ const beats = [
   .strip-name { font-weight: 600; font-size: 16px; flex: 1; white-space: nowrap; }
   .strip-meta { display: flex; align-items: center; gap: 6px; color: #8cc8ff; font: 500 14px var(--font-mono); white-space: nowrap; }
 
-  .phone {
-    position: absolute; left: 70%; top: 52%; width: 286px; height: 584px;
-    transform: translate(-50%, -50%) translateY(40px) scale(.92); opacity: 0; pointer-events: none;
-    border-radius: 46px; padding: 10px; background: #05080a;
-    box-shadow: 0 0 0 1px rgba(140,190,215,.22), 0 40px 90px -30px rgba(0,0,0,.9), 0 0 140px -30px rgba(41,151,255,.45);
+  /* The phone. Its screen is a hole: the dark around it is a shadow spread
+     over everything else, so the eye goes to what the camera sees. */
+  .finder {
+    position: absolute; left: 70%; top: 52%; width: 292px; height: 592px; z-index: 1;
+    transform: translate(-50%, -50%) scale(.9); opacity: 0; pointer-events: none; font-size: 13px; color: #e9f2f5;
   }
-  .screen {
-    position: relative; width: 100%; height: 100%; border-radius: 37px; overflow: hidden; font-size: 13px; color: #e9f2f5;
-    background: linear-gradient(180deg, #09131d 0%, #10202d 44%, #182b3b 61%, #0c141a 61.2%, #0c141a 100%);
+  .finder-frame {
+    position: absolute; inset: 0; border-radius: 48px; border: 11px solid #05080a;
+    box-shadow: 0 0 0 1px rgba(140,190,215,.3), 0 0 0 200vmax rgba(5,8,10,.62), 0 40px 90px -20px rgba(0,0,0,.9);
   }
-  .lamp-glow { position: absolute; left: -30px; top: 36%; width: 170px; height: 170px; background: radial-gradient(circle, rgba(240,168,104,.32), rgba(240,168,104,0) 70%); }
-  .bld {
-    position: absolute; bottom: 39%; border-top: 2px solid #13212b; background-color: #0b141b;
-    background-image: linear-gradient(90deg, #0b141b 55%, rgba(0,0,0,0) 55%), linear-gradient(0deg, #0b141b 50%, rgba(0,0,0,0) 50%), linear-gradient(rgba(240,190,120,.22), rgba(240,190,120,.22));
-    background-size: 13px 13px, 13px 15px, 100% 100%;
-  }
-  .b1 { left: -8%; width: 34%; height: 30%; }
-  .b2 { left: 64%; width: 46%; height: 34%; }
-  .tower { position: absolute; bottom: 39%; left: 33%; width: 30%; height: 47%; background: linear-gradient(90deg, #0d1820, #122230 60%, #0d1820); border-top: 3px solid #16293a; }
-  .tower::before { content: ""; position: absolute; left: 50%; top: -26px; margin-left: -14px; border-left: 14px solid transparent; border-right: 14px solid transparent; border-bottom: 26px solid #122230; }
-  .clock { position: absolute; left: 50%; top: 16px; width: 36px; height: 36px; margin-left: -18px; border-radius: 50%; border: 2px solid rgba(240,190,120,.75); background: rgba(240,190,120,.12); }
-  .clock::after { content: ""; position: absolute; left: 50%; top: 6px; width: 2px; height: 12px; margin-left: -1px; background: rgba(240,190,120,.9); transform-origin: bottom; transform: rotate(40deg); }
-  .road { position: absolute; left: 0; right: 0; bottom: 0; height: 39%; background: linear-gradient(180deg, #16222b, #0a1015); clip-path: polygon(42% 0, 58% 0, 100% 100%, 0 100%); }
-  .ar-pin {
-    position: absolute; left: 50%; top: 31%; width: 56px; height: 56px; margin-left: -28px;
-    border-radius: 50% 50% 50% 0; transform: rotate(-45deg);
-    background: radial-gradient(circle at 30% 30%, #a9d6ff, #2997ff 55%, #155fb5);
-    box-shadow: 0 0 0 3px rgba(255,255,255,.92), 0 0 52px rgba(41,151,255,.7);
-    animation: bob 3.2s ease-in-out infinite;
-  }
-  .ar-pin span { display: grid; place-items: center; width: 100%; height: 100%; transform: rotate(45deg); font: 600 20px var(--font-mono); color: #04182e; }
-  .ar-shadow { position: absolute; left: 50%; top: calc(31% + 96px); width: 46px; height: 10px; margin-left: -23px; border-radius: 50%; background: rgba(41,151,255,.4); filter: blur(4px); }
-  @keyframes bob { 0%, 100% { transform: rotate(-45deg) translate(0, 0); } 50% { transform: rotate(-45deg) translate(4px, -4px); } }
+  .finder-frame::after { content: ""; position: absolute; inset: 0; border-radius: 37px; box-shadow: inset 0 0 50px rgba(0,0,0,.55); pointer-events: none; }
+  .finder-cam { position: absolute; top: 8px; left: 50%; width: 76px; height: 22px; margin-left: -38px; border-radius: 12px; background: #05080a; }
   .ar-chip {
     position: absolute; top: 44px; left: 50%; transform: translateX(-50%); white-space: nowrap;
     display: flex; align-items: center; gap: .5em; padding: .45em .9em .45em .45em; border-radius: 999px;
-    background: rgba(16,26,31,.72); border: 1px solid rgba(140,190,215,.2);
+    background: rgba(16,26,31,.78); border: 1px solid rgba(140,190,215,.22);
     -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px); font-weight: 600;
   }
   .ar-chip .num { width: 1.7em; height: 1.7em; border-radius: 50%; display: grid; place-items: center; background: #2997ff; color: #04182e; font: 600 .9em var(--font-mono); }
   .ar-chip .here { color: #74d96b; font-weight: 500; }
   .ar-q {
     position: absolute; left: 10px; right: 10px; bottom: 10px; padding: 1.1em 1.1em 1.2em; border-radius: 28px;
-    background: rgba(12,19,24,.88); border: 1px solid rgba(140,190,215,.18);
+    background: rgba(12,19,24,.9); border: 1px solid rgba(140,190,215,.18);
     -webkit-backdrop-filter: blur(14px); backdrop-filter: blur(14px);
-    transform: translateY(115%); transition: transform .6s cubic-bezier(.2,.8,.2,1);
+    transform: translateY(115%); opacity: 0; transition: transform .6s cubic-bezier(.2,.8,.2,1), opacity .4s ease;
   }
-  .phone:global(.is-asked) .ar-q { transform: none; }
+  .finder:global(.is-asked) .ar-q { transform: none; opacity: 1; }
   .q-eyebrow { font: 500 .78em var(--font-mono); letter-spacing: .12em; text-transform: uppercase; color: #8cc8ff; }
   .q-text { font-weight: 600; font-size: 1.12em; line-height: 1.35; margin: .5em 0 .9em; }
   .q-opts { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: .5em; }
   .q-opts span { display: grid; place-items: center; height: 2.9em; border-radius: 999px; background: rgba(140,190,215,.12); font: 600 1em var(--font-mono); transition: background-color .3s, color .3s; }
-  .phone:global(.is-scored) .q-opts .ok { background: #2997ff; color: #04182e; }
+  .finder:global(.is-scored) .q-opts .ok { background: #2997ff; color: #04182e; }
   .ar-score {
     position: absolute; right: 16px; top: 92px; padding: .4em .8em; border-radius: 999px;
     background: #f0a868; color: #2a1604; font: 600 1.1em var(--font-mono);
     opacity: 0; transform: translateY(10px) scale(.8); transition: opacity .4s, transform .5s cubic-bezier(.3,1.6,.5,1);
   }
-  .phone:global(.is-scored) .ar-score { opacity: 1; transform: none; }
+  .finder:global(.is-scored) .ar-score { opacity: 1; transform: none; }
 
   @media (max-width: 759px) {
     .inner { padding: 0 1.25rem; }
-    .scrim { background: linear-gradient(180deg, rgba(8,13,16,.94) 0%, rgba(8,13,16,.6) 40%, rgba(8,13,16,0) 62%, rgba(8,13,16,.5) 100%); }
-    .hero { align-items: flex-start; }
-    .hero-copy { padding-top: 3rem; }
+    .scrim { background: linear-gradient(180deg, rgba(8,13,16,.9) 0%, rgba(8,13,16,.72) 55%, rgba(8,13,16,0) 78%); }
+    .panel-hero { align-items: flex-start; padding-top: calc(64px + 1.5rem); }
     .cue { display: none; }
-    .beat { align-items: flex-end; padding-bottom: 1.25rem; }
+    /* The words sit in a card at the bottom; the town acts in the space above. */
+    .panel-beat { align-items: flex-end; padding: 0 0 1rem; }
     .beat-card {
-      max-width: none; padding: 1.25rem; border-radius: 22px;
-      background: rgba(10,17,21,.84); border: 1px solid rgba(140,190,215,.14);
+      max-width: none; padding: 1.125rem 1.25rem 1.25rem; border-radius: 22px;
+      background: rgba(10,17,21,.88); border: 1px solid rgba(140,190,215,.16);
       -webkit-backdrop-filter: blur(14px); backdrop-filter: blur(14px);
     }
-    .strip { left: 50%; top: 84px; bottom: auto; min-width: 0; width: calc(100% - 40px); }
-    .phone { left: 50%; top: 36%; width: 200px; height: 410px; border-radius: 34px; padding: 7px; }
-    .screen { border-radius: 28px; font-size: 9.5px; }
-    .ar-pin { width: 40px; height: 40px; margin-left: -20px; }
-    .ar-pin span { font-size: 15px; }
-    .ar-shadow { top: calc(31% + 68px); }
+    .beat-card h2 { font-size: 1.75rem; margin-top: .75rem; }
+    .beat-body { font-size: 1rem; margin-top: .625rem; }
+    .strip { left: 50%; top: 76px; bottom: auto; min-width: 0; width: calc(100% - 40px); height: 54px; }
+    .finder { left: 50%; top: 34%; width: min(58vw, 230px); height: calc(min(58vw, 230px) * 2.02); font-size: 10px; }
+    .finder-frame { border-width: 8px; border-radius: 36px; }
+    .finder-frame::after { border-radius: 28px; }
+    .finder-cam { width: 56px; height: 16px; margin-left: -28px; top: 6px; }
     .ar-chip { top: 30px; }
-    .ar-score { top: 66px; right: 10px; }
-    .clock { width: 26px; height: 26px; margin-left: -13px; top: 10px; }
-    .tower::before { top: -18px; margin-left: -10px; border-left-width: 10px; border-right-width: 10px; border-bottom-width: 18px; }
+    .ar-score { top: 64px; right: 10px; }
+    .ar-q { left: 7px; right: 7px; bottom: 7px; border-radius: 20px; }
   }
   @media (prefers-reduced-motion: reduce) {
-    .rise { animation: none; opacity: 1; transform: none; }
-    .live-dot, .cue svg, .ar-pin { animation: none; }
+    .hero-copy > * { animation: none; }
+    .live-dot, .cue svg { animation: none; }
   }
 </style>

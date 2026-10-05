@@ -18,7 +18,6 @@ const seed = [...title].reduce((sum, ch) => (sum * 31 + ch.charCodeAt(0)) | 0, 7
 ---
 
 <section class="band night page-band" data-band data-seed={seed}>
-  <canvas data-band-canvas aria-hidden="true"></canvas>
   <div class="band-in">
     <div class="band-copy">
       {eyebrow && <p class="eyebrow band-eyebrow"><span class="band-dot" aria-hidden="true"></span>{eyebrow}</p>}
@@ -30,11 +29,14 @@ const seed = [...title].reduce((sum, ch) => (sum * 31 + ch.charCodeAt(0)) | 0, 7
 </section>
 
 <script>
-  import { startNightMap } from '../lib/nightmap';
+  import { startTown } from '../lib/town';
 
+  // The same town as the home page, leaning back, with a couple of people out.
   document.querySelectorAll<HTMLElement>('[data-band]').forEach((band) => {
-    const canvas = band.querySelector<HTMLCanvasElement>('[data-band-canvas]');
-    if (canvas) startNightMap({ host: band, canvas, seed: Number(band.dataset.seed) || 7, walker: false });
+    startTown({
+      host: band, seed: Number(band.dataset.seed) || 7, tilt: 50, walkers: 2, pointer: true,
+      anchor: [0.72, 0.72], anchorMobile: [0.5, 0.8],
+    });
   });
 </script>
 

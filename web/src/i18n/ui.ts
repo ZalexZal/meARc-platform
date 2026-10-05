@@ -103,6 +103,7 @@ export const ui = {
 
     'home.live.mouse': 'Жива карта · мини с мишката над нея',
     'home.live.touch': 'Жива карта · докосни я където искаш',
+    'home.labels': '+10|+5|Намерена|Въпрос · 10 т.|Подсказка · −2|Тук си',
     'home.title': 'Градът е игралното поле.',
     'home.lede': 'Създателите закачат истории, въпроси и загадки за истински места. Играчите отиват там, вдигат телефона и намират всяка от тях изправена на улицата.',
     'home.build': 'Създай маршрут',
@@ -766,6 +767,7 @@ export const ui = {
 
     'home.live.mouse': 'Live map · move your cursor over it',
     'home.live.touch': 'Live map · tap anywhere on it',
+    'home.labels': '+10|+5|Found|Question · 10 pts|Hint · −2|You’re here',
     'home.title': 'Your town is the game board.',
     'home.lede': 'Creators pin stories, questions and clues to real places. Players walk there, raise their phone and find each one standing in the street.',
     'home.build': 'Build a trail',

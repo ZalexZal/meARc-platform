@@ -1085,15 +1085,20 @@ Commits: app, 3–5 October
 The website was redesigned the same way: a clickable design first
 (https://claude.ai/artifact/GsZS39hRsHYQ1xzLbe8ham), approved, then built.
 
-- **The home page is a walk.** The hero is a live night map of a made-up town:
-  markers on its street corners, every one joined to its neighbours by a thin
-  line, pulses running along the lines. The cursor, or a tap on a phone, is the
-  walker: stops near it light up, rise into pins and pass the pulse on. Scrolling
-  then acts out the idea in three steps while the map stays put: **Build** (five
-  stops drop in and are linked), **Walk** (the dot walks the streets to the next
-  stop while the app's one-line card counts the metres down) and **Find** (the
-  map closes in and becomes the phone's camera, with the stop on a building, its
-  question and +10).
+- **The home page is a walk.** The hero is a live night town seen at an angle,
+  receding into haze: its stops stand on the street corners as pins, every one
+  joined to its neighbours by a thin line with pulses running along it, and
+  people walk its streets with light around them. When one reaches a stop it
+  lights up, sends pulses out and a word pops above it ("+10", "Question · 10
+  pts"). The cursor, or a tap on a phone, walks too. The scene then stays in
+  place while scrolling acts out the idea, each step's words on screen exactly
+  while it plays: **Build** (five stops drop in and are linked), **Walk** (a dot
+  walks the streets to the next stop while the app's one-line card counts the
+  metres down) and **Find** (the camera comes down to street level and a phone
+  frame closes round the stop, with its question and +10). It ends by pulling
+  back, so nothing is cut off when the page moves on. The streets are drawn flat
+  and tilted by CSS in 3D; the pins stand upright on a canvas of their own
+  (`web/src/lib/town.ts`).
 - **Below it, still night**: four kinds of trail (the old page showed three),
   the builder's five steps, "Made for a school trip", questions, and a closing
   card with its own live network. A route line runs down the page and lights a
@@ -1107,9 +1112,9 @@ The website was redesigned the same way: a clickable design first
   Question, Hints, Media, with Previous, Next, Skip and Done.
 - **Copy kept honest**: the "0.5 m anchoring accuracy" and "iOS is coming"
   claims are gone, and the app is "coming to Google Play".
-- The map is plain TypeScript on a canvas (`web/src/lib/nightmap.ts`), with no
-  React and no new dependency. It stops drawing off screen and in a hidden tab,
-  and with reduced motion every step is shown finished.
+- No React and no new dependency. The town stops drawing off screen and in a
+  hidden tab; with reduced motion the camera never travels and every step is
+  shown finished.
 
 The builder was checked against a stand-in database in the browser (every call
 answered locally, nothing written to the real one), at computer and phone

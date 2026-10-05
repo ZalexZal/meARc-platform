@@ -171,7 +171,6 @@ const faq = [
   <section class="sec last">
     <div class="inner">
       <div class="final" data-reveal data-final>
-        <canvas data-final-canvas aria-hidden="true"></canvas>
         <div class="final-copy">
           <h2 class="display-lg">{t('home.final.title')}</h2>
           <p class="lede">{t('home.final.body')}</p>
@@ -188,7 +187,7 @@ const faq = [
 <script>
   import { gsap } from 'gsap';
   import { ScrollTrigger } from 'gsap/ScrollTrigger';
-  import { startNightMap } from '../lib/nightmap';
+  import { startTown } from '../lib/town';
 
   gsap.registerPlugin(ScrollTrigger);
 
@@ -209,12 +208,17 @@ const faq = [
 
   // The closing card has a small live network of its own.
   const final = document.querySelector<HTMLElement>('[data-final]');
-  const finalCanvas = document.querySelector<HTMLCanvasElement>('[data-final-canvas]');
-  if (final && finalCanvas) startNightMap({ host: final, canvas: finalCanvas, seed: 29, walker: false });
+  if (final) startTown({ host: final, seed: 29, tilt: 50, walkers: 3, pointer: true, anchor: [0.5, 0.62], anchorMobile: [0.5, 0.66] });
 </script>
 
 <style>
   .rest { position: relative; background-color: #080d10; background-size: 960px 960px; }
+  /* The walk ends on plain night; the faint streets come up out of it rather
+     than starting at a line. */
+  .rest::before {
+    content: ""; position: absolute; left: 0; right: 0; top: 0; height: 16rem; pointer-events: none;
+    background: linear-gradient(180deg, #080d10, rgba(8,13,16,0));
+  }
   .inner { width: 100%; max-width: 76rem; margin: 0 auto; padding: 0 1.5rem; position: relative; }
   .sec { padding: 7.5rem 0; position: relative; }
   .sec.last { padding-top: 2rem; }
@@ -252,7 +256,15 @@ const faq = [
 
   .modes { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 1.125rem; margin-top: 3.5rem; }
   @media (max-width: 1099px) { .modes { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
-  @media (max-width: 640px) { .modes { grid-template-columns: 1fr; } }
+  @media (max-width: 640px) {
+    .modes {
+      display: flex; gap: .75rem; margin: 2rem -1.25rem 0; padding: 0 1.25rem .5rem;
+      overflow-x: auto; scroll-snap-type: x mandatory; scroll-padding: 0 1.25rem; scrollbar-width: none;
+    }
+    .modes::-webkit-scrollbar { display: none; }
+    .modes > .tile { flex: 0 0 78%; scroll-snap-align: start; padding: 1.25rem; }
+    .glyph { height: 64px; }
+  }
   .tile {
     padding: 1.75rem; border-radius: 24px;
     background: rgba(16,26,31,.66); border: 1px solid var(--line);
@@ -326,7 +338,6 @@ const faq = [
     position: relative; overflow: hidden; isolation: isolate; border-radius: 32px;
     border: 1px solid var(--line); padding: 7rem 2rem; text-align: center; min-height: 26rem;
   }
-  .final canvas { position: absolute; inset: 0; z-index: -2; display: block; }
   .final::before {
     content: ""; position: absolute; inset: 0; z-index: -1; pointer-events: none;
     background: radial-gradient(ellipse 55% 65% at 50% 50%, rgba(8,13,16,.92), rgba(8,13,16,.55) 70%, rgba(8,13,16,.2));
