@@ -7,7 +7,7 @@ in augmented reality. The Android app is in
 [`AR-Trails`](https://github.com/ZalexZal/AR-Trails).
 
 **Live site:** [artrails.netlify.app](https://artrails.netlify.app) ·
-**App:** 0.4.2 (build 7) · **Database:** migrations 0001–0054 ·
+**App:** 0.6.1 (build 21) · **Database:** migrations 0001–0054 ·
 **Terms version:** 2026-09-29
 
 ## Contents
@@ -144,72 +144,97 @@ proven on a real phone and what still waits for a field test.
   and need an account rather than a guest session.
 
 **Map tab**
-- Street map (Stadia Maps Outdoors at double resolution, with shops, churches and
-  banks named, because "past the bank, then left" is a direction). Tiles are
-  cached, so a street walked once works without signal.
-- Your position with its accuracy circle, and each stop as a pin in the colour
-  the creator chose.
-- The **next-stop strip**: the last stop you found, where you are, and the next
-  stop with its distance ("Stop 3 of 9" on ordered trails; nearest unfound on
-  unordered ones).
-- **Guide me there**: a banner and an arrow that point at a chosen stop from any
-  tab.
-- **Nearby alerts**: a card slides in when you come within 60 m of a stop you
-  haven't opened (it re-arms at 110 m).
-- The trail chip opens your trail list, and its flag reports the whole trail.
+- A street map across the whole screen (Stadia Maps Outdoors at double
+  resolution, with shops, churches and banks named, because "past the bank,
+  then left" is a direction). Tiles are cached, so a street walked once works
+  without signal.
+- At the top, the **trail pill**: the trail's name, its kind, how many stops are
+  found and, on a game, the team's points. It opens your trails. Under it, on a
+  game, the **team chip** with your team and its place, which opens the team.
+- Your position with its accuracy circle and the way you face. Each stop is a
+  pin in the creator's colour: the next one large and named, the ones found
+  ticked, the rest hollow, joined in the trail's order. The map keeps you in
+  the middle of what the pill and the card leave clear.
+- The **next-stop card** above the tab bar: the next stop ("Next · 3 of 9" on
+  ordered trails, the nearest unfound one on the others), how far and which
+  way, and the one thing to do now. That is **Take me there** (a dashed blue
+  line to the stop, kept on every tab), **Stop navigation**, **Open the stop**
+  once you are there, or **Choose another trail** when the trail is done.
+- Swipe the card up, or press **All stops**, for every stop on one sheet. Swipe
+  it down and it shrinks to one line (the stop, and how far or "You're here"),
+  giving the map back. Arriving at a stop opens it again.
+- **Nearby alerts**: a note slides down from the top when you come within 60 m
+  of a stop you haven't opened (it re-arms at 110 m).
 
 **Camera tab**
-- Every stop within 500 m stands in the street as a pin on a ring, 1.5 m above
-  the real ground (up to 20 at once, released past 650 m).
+- Every stop within 500 m stands in the street, 1.5 m above the real ground (up
+  to 20 at once, released past 650 m).
 - Buildings hide the stops behind them (Google's Streetscape Geometry, plus depth
   for close objects). If that data is missing nothing is hidden, because a
   missing mesh must never make a stop disappear.
-- A **radar** disc in the corner: north-up, every stop as a dot, an arrow for
-  the way you face.
-- A calibration chip in plain words (well calibrated / partly / not / can't
-  calibrate here).
+- A **chip** in the corner says what the camera knows in plain words ("Looking
+  at the buildings around you…", "I can't get my bearings here · Why?") and
+  shrinks to a dot once calibrated. **Why?** opens what to try. While it
+  calibrates, an outline of a phone shows how to sweep the camera.
+- A **pill at the edge** says which way to turn when the next stop is behind you
+  ("‹ Museum · 180 m").
+- A **radar** disc: north-up, every stop as a dot, a wedge for the way you face.
+  It opens the stops sheet.
+- The same next-stop card, dark over the camera, and shrinking the same way.
 - **Tapping the AR marker is what counts as finding a stop.**
 
 **A stop**
+- Opens as a sheet from the bottom, at half height with the map above it. Pull
+  it up for all of it, down to close it. Its **⋯** menu hides the stop, reports
+  it, or, on your own trail, moves it.
 - Its name, distance and description are visible from anywhere. Its contents
-  open only when you're standing at it. "Come closer to open this stop" explains
-  why, instead of leaving a blank panel.
-- Pieces: text, photos, audio, video. YouTube and Vimeo links open in the
-  browser.
-- The question, in one of three kinds:
+  open only when you're standing at it, and until then the sheet says why
+  instead of leaving a gap.
+- Its pieces are rows: photos (JPEG, PNG, WebP and HEIC), audio and video, each
+  opening on a page of its own. YouTube and Vimeo links open in the browser.
+- The question, on its own page, in one of three kinds:
   - **Exact**: typed, and compared with the accepted spellings.
   - **Choice**: one or more options may be correct. You choose, then press
     Check.
   - **Free**: typed, and marked later by the creator.
-- What it's worth, the wrong-answer rule in plain words ("Wrong answer: you
-  wait", "-5 points", "no second try"), and a countdown during a cooldown.
-- **Hints** as a ladder: each has a price, and each opens only after the ones
-  above it.
+- What it's worth and the wrong-answer rule in one line ("100 points · a wrong
+  answer locks it for 5 minutes"), and a ring that counts down a cooldown.
+- **Hints** as a ladder: each has a price, opens only after the ones above it,
+  and asks a second time before it spends your points.
 - An afterword the creator wrote, shown only after a correct answer.
 
-**Teams and progress**
+**Teams**
 - Create a team (you can be a team of one), or join one with its team code. The
   creator sets the team size (1–12).
-- The team card: the code at display size for reading out across a room, the
-  standings (refreshed every 15 s while open), who is on the team, and anything a
-  moderator did to your score, with the reason.
-- The progress screen: points, rank, how many stops found, and a **station map**
-  of the trail. It shows one line with the stops in order, "you are here", and
-  the stops not open yet on ordered trails.
+- The team sheet: the team, how many people, stops and points; the code in six
+  large boxes, with **Copy** and **Share**; the standings (refreshed every 15 s
+  while open); who is on the team; anything a moderator did to your score, with
+  the reason; and **Leave**, which asks twice.
 
-**You tab**
-- Profile, stats and **11 badges**: First trail, Guided walker, Flag runner, Free
-  roamer, Scholar, Flawless, Trailblazer (with levels), Team player, Captain,
-  Summit and Sharp eye. Badges belong to your account and survive a team or trail
-  being deleted.
+**Profile tab**
+- Who you are, and three counts: trails, stops and badges.
+- **11 badges**: First trail, Guided walker, Flag runner, Free roamer, Scholar,
+  Flawless, Trailblazer (with levels), Team player, Captain, Summit and Sharp
+  eye. Each opens a sheet with its rule and how far along you are. Badges belong
+  to your account and survive a team or trail being deleted.
+- What you are walking now: the trail and your team.
+- Settings: the theme (like the phone, light or dark, in a control you can tap
+  or slide), nearby alerts, hiding stops behind buildings, and Bulgarian or
+  English.
 - Account: a guest becomes an account without losing the walk. Also sign-in,
-  email confirmation (it continues by itself when you come back from the email),
-  changing email and password, blocked people, and deleting the account.
-- Settings: light/dark theme, Bulgarian/English, nearby alerts, replay the
-  practice trail, About, Data and sources.
-- **Send feedback**: a message to the person running AR Trail, with the app
-  version and phone model shown before it goes, and "you may reply by email"
-  for accounts that have one.
+  email confirmation (it continues by itself when you come back from the
+  email), changing email and password, hidden stops, blocked people, and
+  deleting the account.
+- Help: How it works, **Send feedback** (a message to the person running AR
+  Trail, with the app version and phone model shown before it goes, and "you
+  may reply by email" for accounts that have one), replaying the practice
+  trail, the terms, the privacy policy, Data and sources, and About.
+
+**Everywhere**
+- One blue for everything you can press, Inter in both alphabets, glass only for
+  the controls that float over the map, and solid sheets for anything you read.
+- Every sheet swipes down from wherever your thumb is, and Android's back closes
+  whatever is on top.
 
 **Safety**
 - **Report** any stop, trail or team name, with six reasons and one tap.
@@ -221,12 +246,13 @@ proven on a real phone and what still waits for a field test.
   "12 or younger" locks sign-up on that phone.
 
 **Creators, on the phone**
-- **Capture mode**: on a stop of your own trail, Move opens a bar in the camera.
+- **Capture mode**: on a stop of your own trail, **Move the stop** in the
+  sheet's ⋯ menu opens a bar in the camera.
   You can nudge the marker a metre at a time relative to where you face, or put
   it where you stand, then save. This fixes the metres of error a map click
   always carries.
-- **Add a stop here**: on a trail you own or edit, the camera places a new stop
-  where you stand, as a draft only you and your editors see, and opens it in the
+- **Stop here**: on a trail you own or edit, a pill in the camera places a new
+  stop where you stand, as a draft only you and your editors see, and opens it in the
   capture bar. Its words are written on the website, which publishes it.
 - **Shape**: the capture bar switches a stop between pin, sphere, cone, cube and
   sign, saved at once and swapped in the camera, so the choice is made looking at
@@ -524,11 +550,12 @@ netlify.toml            deploy settings
 
 ## Version history
 
-AR Trail was built in eight versions between 26 August and 29 September 2026.
+AR Trail was built in thirteen versions between 26 August and 5 October 2026.
 Each one ended with something working end to end. The numbers below are the
 project's own names for those stages. The **Android build** column is what the
 app itself reported: `versionName` 0.1.0 until 23 September, 0.2.0 from 25
-September, and 0.3.0 from 29 September.
+September, 0.3.0 from 29 September, 0.4 from 30 September, 0.5 from 3 October
+and 0.6 from 5 October.
 
 | Version | Dates (2026) | Name | Android build | Database |
 |---|---|---|---|---|
@@ -540,6 +567,11 @@ September, and 0.3.0 from 29 September.
 | 6 | 25 Sep | Stage 2: safe, fair, built together, ready for Play | **0.2.0 (3)**, first `.aab` | 0044–0048 |
 | 7 | 27 Sep | The parent account, and the law kept | 0.2.0 (3), rebuilt | 0049–0051 |
 | 8 | 29 Sep | Ready for the closed test: feedback, promises kept, tested on the phone | **0.3.0 (4)** | 0052–0053 |
+| 9 | 30 Sep | Shapes in the street | **0.4.0 (5)** | 0054 |
+| 10 | 30 Sep | A morning on the phone | 0.4.1 (6) | |
+| 11 | 1 Oct | Loose ends, and a lock on every page | 0.4.2 (7) | |
+| 12 | 1–3 Oct | AR in the street, for real | 0.4.3 (8), 0.4.4 (9) | |
+| 13 | 3–5 Oct | Daylight: the new interface | **0.5.0 (10)** to 0.6.1 (21) | |
 
 ### Version 1: The gate (26–28 August)
 
@@ -966,6 +998,82 @@ Decisions taken one by one with the operator, then done:
 
 Commits: website and app, 1 October
 
+### Version 12: AR in the street, for real (1–3 October)
+
+The camera had stopped placing stops at all. There were two causes, found one
+after the other:
+
+- **The ARCore API key had been deleted** in Google Cloud, so Google refused
+  every session and the chip only said "Cannot calibrate here". A new key,
+  restricted to this app and its signing certificate, now lives outside the
+  repository. The build puts it into ARCore's settings for the length of the
+  build, takes it out again, and refuses to build without a valid one. A
+  refused session is its own state: the chip says AR is switched off, and why.
+- **A clean-up on 21 September had deleted the Geospatial configuration** the
+  scene used, so ARCore had started with Geospatial off ever since. It is
+  restored under the same identity, and the build now refuses a scene whose
+  session would start without Geospatial.
+
+Then came the outdoor test on 2 October: every one of the five shapes stood
+where the map put it. Two faults came out of it, fixed in 0.4.4. The colours
+rendered black, because the scene's ambient light had never been baked and a
+phone does not compute it, so it is built at start-up and the sun rides on the
+camera. And the sphere was twice its size, because Unity's legacy meshes are
+2 m across. The rings under the shapes went, and the pin became one lathed
+teardrop.
+
+Commits: app, 1–3 October
+
+### Version 13: Daylight, the new interface (3–5 October)
+
+The interface was redesigned before it was rebuilt. A clickable prototype,
+"Daylight", was made, audited screen by screen and approved, and the app was
+then rebuilt to match it, with the old screens kept only as a list of what had
+to keep working.
+
+- **Three tabs**, Map, Camera and Profile, in a floating glass bar.
+- **One card instead of three things.** The previous/here/next strip, the
+  guidance banner and the row of buttons under them became the next-stop card,
+  which says where to go and does the one thing that matters. Swiped down, it
+  shrinks to one line.
+- **Sheets.** A stop, the list of stops, trails, the team, the code, a badge,
+  the language and the help pages rise from the bottom and swipe away.
+- **The stop sheet** has two heights and a ⋯ menu. Its photos, video, question
+  and hints are pages inside it.
+- **The camera** says in words what it knows, shows how to sweep the phone,
+  points to a stop behind you, and explains itself when it can't calibrate.
+- **Profile** replaces You: the counts, the badges, what you are walking,
+  grouped settings and help.
+- The Bulgarian copy speaks to the walker as "ти" throughout.
+
+Then came four passes on the phone over every screen and control, in both
+languages and both themes. What they found was fixed before the commit:
+
+- **Pills came out as flattened ovals**, because a 9-slice image shrinks its
+  corners along one axis only. Every pill now keeps half-circle ends at any
+  height.
+- **Sheets and pages closed only from their header.** They now swipe down from
+  anywhere, and a list hands a pull from its top to its sheet.
+- **Switches and the theme control only answered taps.** They now follow a
+  finger.
+- **WebP photos failed** with "Couldn't play that". They are decoded by Android
+  and kept as PNG.
+- **Text cut off with "…" was not drawn at all when its box was shorter than one
+  line**: the capture bar's title and every team name on the standings. The
+  preview tool now lists any such label.
+- **The team's points** did not change after an answer until a restart.
+- **With the keyboard up**, Cancel and Join needed two taps.
+- **The next-stop card dropped into the tab bar** when it was dragged.
+- **A stop without a title showed its database id** ("765d4520-…"). It reads
+  "Stop 1" now.
+- Pin names were cut by the screen's edge, the map hid nearby stops under the
+  card, and there were a dozen smaller things.
+
+Not yet tried on foot: the card opening by itself on arrival, and the camera's
+coach during capture.
+
+Commits: app, 3–5 October
+
 ## Database migrations
 
 Each file's header explains the problem it solves. In order:
@@ -1029,7 +1137,7 @@ Each file's header explains the problem it solves. In order:
 
 ## Status
 
-*As of 1 October 2026. The goal is a Google Play release; the date is not
+*As of 5 October 2026. The goal is a Google Play release; the date is not
 set.*
 
 **Proven.** Each of these has been checked on a Samsung Galaxy A54 (Android 16),
@@ -1043,6 +1151,10 @@ deleted afterwards:
 - A guest is upgraded to an account without losing the walk.
 - Multiple-choice and typed answers, cooldowns and a teammate's race are scored
   correctly.
+- Outdoors, every one of the five shapes stood where the map put it
+  (2 October).
+- The Daylight interface: every screen and control on the phone, in both
+  languages and both themes (3–5 October).
 - 46/46 seam checks between website and app.
 - On the live site, 31/31 stage-2 checks and 20/20 parent-account checks.
 - Every database migration is applied and tested.
@@ -1050,8 +1162,8 @@ deleted afterwards:
 **Built, waiting for a phone or an outdoor test:**
 - Version 6 and 7 on the phone: block, the fake-GPS refusal, capture mode, the
   parent-consent door and parent code, and email confirmation.
-- Version 9 outdoors: the five shapes standing on their spots, Add a stop here,
-  and switching a shape from the camera.
+- Outdoors: Stop here, switching a shape from the camera, and the next-stop
+  card opening by itself on arrival.
 - Two phones racing at one stop outdoors.
 
 **Waiting on the operator:**
