@@ -7,23 +7,32 @@ const t = useTranslations(lang);
 const href = localise(lang);
 
 /**
- * The stop editor, in tabs.
+ * The stop editor, in steps.
  *
- * It was one column of eighteen fields and it got worse with every field the
- * schema gained. The builder behind ctf.myedulink.eu splits the same job across
- * Basics / Place / Answer / Hints / Media, and it is easier to use for a plain
- * reason: at any moment you are answering one kind of question about the stop
- * rather than scrolling past four kinds to reach the fifth.
+ * It was one column of eighteen fields, then five tabs with one Save button,
+ * and in both a creator had to find the parts for themselves. Now the same five
+ * parts come in order - Basics, Place, Question, Hints, Media - with Previous
+ * and Next, each step saved as it is left. Question and Hints can be skipped,
+ * because a plain tour has neither.
  *
- * The map and the stop list stay outside the tabs. They are how you choose what
- * you are editing, so they cannot live inside one of the things being chosen.
+ * The map and the stop list stay outside the steps. They are how you choose
+ * what you are editing, so they cannot live inside one of the things chosen.
  */
-const tabs = [
-  { id: 'basics', label: t('tab.basics') },
-  { id: 'place',  label: t('tab.place') },
-  { id: 'answer', label: t('tab.answer') },
-  { id: 'hints',  label: t('tab.hints') },
-  { id: 'media',  label: t('tab.media') },
+const steps = [
+  { id: 'basics',   label: t('tab.basics'),   sub: t('wiz.basics.sub') },
+  { id: 'place',    label: t('tab.place'),    sub: t('wiz.place.sub') },
+  { id: 'question', label: t('tab.question'), sub: t('wiz.optional') },
+  { id: 'hints',    label: t('tab.hints'),    sub: t('wiz.optional') },
+  { id: 'media',    label: t('tab.media'),    sub: t('wiz.media.sub') },
+];
+
+// What a stop asks, as four choices rather than a dropdown: the choice decides
+// which half of the step is shown, so it should be seen whole.
+const kinds = [
+  { value: 'none',   label: t('ed.answerNone'),   body: t('wiz.kind.none') },
+  { value: 'exact',  label: t('ed.answerExact'),  body: t('wiz.kind.exact') },
+  { value: 'choice', label: t('ed.answerChoice'), body: t('wiz.kind.choice') },
+  { value: 'free',   label: t('ed.answerFree').split(' (')[0], body: t('wiz.kind.free') },
 ];
 
 /**
@@ -83,6 +92,12 @@ const strings = {
   ownerWord: t('ed.owner'), editorWord: t('ed.editor'), leaveConfirm: t('ed.leaveConfirm'),
   here: t('ed.here'), conflict: t('ed.conflict'), inviteHref: href('/editor-invite'),
   myTrailsHref: href('/my-trails'),
+  wiz: {
+    next: t('wiz.next'), done: t('wiz.done'), saved: t('wiz.saved'), skipped: t('wiz.skipped'),
+    of: t('wiz.of'), newStop: t('wiz.newStop'), stop: t('wiz.stop'), untitled: t('wiz.untitled'),
+    ready: t('wiz.ready'), skippedList: t('wiz.skippedList'),
+    names: [t('tab.basics'), t('tab.place'), t('tab.question'), t('tab.hints'), t('tab.media')],
+  },
 };
 ---
 
@@ -195,276 +210,335 @@ const strings = {
     <div>
       <p class="empty" data-no-selection>{t('ed.selectStop')}</p>
 
-      <form class="hidden" data-marker-form novalidate>
-        <!-- A segmented control rather than an underline. Five tabs on a laptop
-             read as a row of segments; the same five as underlined text read as
-             a sentence somebody has bolded a word in. -->
-        <div class="tabs" role="tablist">
-            {tabs.map((tab, i) => (
-              <button
-                type="button" role="tab" data-tab={tab.id}
-                aria-selected={i === 0 ? 'true' : 'false'}
-                class="tab"
-              >
-                {tab.label}
-                {tab.id === 'hints' && <span class="data ml-1 text-2xs" data-count-hints></span>}
-                {tab.id === 'media' && <span class="data ml-1 text-2xs" data-count-media></span>}
-              </button>
+      <!-- The stop, one question at a time. It was five tabs and a Save button;
+           a creator who had not opened the fourth tab never knew it was there.
+           Now the steps come in order, each saved as it is left, and the two
+           that a plain tour does not need can be skipped. -->
+      <form class="wiz hidden" data-marker-form novalidate>
+        <div class="wiz-top">
+          <div class="wiz-id">
+            <span class="wiz-pin data" data-wiz-pin>1</span>
+            <div class="min-w-0 flex-1">
+              <p class="eyebrow" data-wiz-kind>{t('wiz.newStop')}</p>
+              <h2 class="wiz-title" data-wiz-title></h2>
+            </div>
+            <span class="data wiz-count" data-wiz-count></span>
+          </div>
+
+          <ol class="stepper" aria-label={t('wiz.newStop')}>
+            {steps.map((st, i) => (
+              <li>
+                <button type="button" class="st" data-step={i}>
+                  <span class="st-bar" aria-hidden="true"></span>
+                  <span class="st-row">
+                    <span class="st-n" aria-hidden="true">
+                      <span class="st-num">{i + 1}</span>
+                      <svg class="st-check" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="m5 12 5 5 9-10" /></svg>
+                    </span>
+                    <span class="st-l">{st.label}</span>
+                    {st.id === 'hints' && <span class="data st-count" data-count-hints></span>}
+                    {st.id === 'media' && <span class="data st-count" data-count-media></span>}
+                  </span>
+                  <span class="st-sub" data-step-sub data-sub={st.sub}>{st.sub}</span>
+                </button>
+              </li>
             ))}
+          </ol>
         </div>
 
-        <div class="note note-lamp mt-4 hidden flex-wrap items-center justify-between gap-3 text-sm" data-remote-change role="status">
+        <div class="note note-lamp mx-5 mt-4 hidden flex-wrap items-center justify-between gap-3 text-sm sm:mx-6" data-remote-change role="status">
           <span>{t('ed.changed')}</span>
           <button type="button" class="btn btn-quiet btn-sm" data-remote-reload>{t('ed.reload')}</button>
         </div>
 
-        <div class="space-y-4 pt-6" data-panel="basics">
-          <div class="grid gap-3 sm:grid-cols-2">
-            <label class="block text-sm">
-              <span class="mb-1 block font-medium">{t('ed.titleBg')} *</span>
-              <input class="field" name="titleBg" maxlength="80" />
-            </label>
-            <label class="block text-sm">
-              <span class="mb-1 block font-medium">{t('ed.titleEn')}</span>
-              <input class="field" name="titleEn" maxlength="80" />
-            </label>
+        <div class="wiz-body">
+          <!-- 1 · The basics: words only. -->
+          <div class="pane" data-panel="basics">
+            <header class="pane-head">
+              <h3>{t('wiz.basics.title')}</h3>
+              <p>{t('wiz.basics.lede')}</p>
+            </header>
+            <div class="grid gap-3 sm:grid-cols-2">
+              <label class="block text-sm">
+                <span class="mb-1.5 block font-medium">{t('ed.titleBg')} *</span>
+                <input class="field" name="titleBg" maxlength="80" />
+              </label>
+              <label class="block text-sm">
+                <span class="mb-1.5 block font-medium">{t('ed.titleEn')}</span>
+                <input class="field" name="titleEn" maxlength="80" />
+              </label>
+            </div>
+            <div class="grid gap-3 sm:grid-cols-2">
+              <label class="block text-sm">
+                <span class="mb-1.5 block font-medium">{t('ed.bodyBg')}</span>
+                <textarea class="field" name="bodyBg" rows="6" maxlength="900"></textarea>
+              </label>
+              <label class="block text-sm">
+                <span class="mb-1.5 block font-medium">{t('ed.bodyEn')}</span>
+                <textarea class="field" name="bodyEn" rows="6" maxlength="900"></textarea>
+              </label>
+            </div>
+            <p class="text-xs text-[var(--ink-faint)]">* {t('ed.required')}</p>
           </div>
-          <div class="grid gap-3 sm:grid-cols-2">
-            <label class="block text-sm">
-              <span class="mb-1 block font-medium">{t('ed.bodyBg')}</span>
-              <textarea class="field" name="bodyBg" rows="5" maxlength="900"></textarea>
-            </label>
-            <label class="block text-sm">
-              <span class="mb-1 block font-medium">{t('ed.bodyEn')}</span>
-              <textarea class="field" name="bodyEn" rows="5" maxlength="900"></textarea>
-            </label>
-          </div>
-          <p class="text-xs text-[var(--ink-faint)]">{t('ed.required')}</p>
 
-          <div>
-            <span class="mb-1 block text-sm font-medium">{t('ed.colour')}</span>
+          <!-- 2 · The place: where it stands, and what stands there. Shape and
+               colour live here rather than with the words, because they are
+               what a walker sees on that spot. -->
+          <div class="pane hidden" data-panel="place">
+            <header class="pane-head">
+              <h3>{t('wiz.place.title')}</h3>
+              <p>{t('wiz.place.lede')}</p>
+            </header>
+            <p class="where">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 21s-7-7.4-7-12a7 7 0 1 1 14 0c0 4.6-7 12-7 12Z" /><circle cx="12" cy="9" r="2.5" /></svg>
+              <span>{t('wiz.place.drag')}</span>
+            </p>
+            <div class="grid grid-cols-2 gap-3 sm:grid-cols-3">
+              <label class="block text-sm">
+                <span class="mb-1.5 block font-medium">{t('ed.lat')} *</span>
+                <input class="field data" name="lat" inputmode="decimal" />
+              </label>
+              <label class="block text-sm">
+                <span class="mb-1.5 block font-medium">{t('ed.lng')} *</span>
+                <input class="field data" name="lng" inputmode="decimal" />
+              </label>
+              <label class="block text-sm">
+                <span class="mb-1.5 block font-medium">{t('ed.radius')}</span>
+                <input class="field data" name="radius" inputmode="numeric" />
+              </label>
+            </div>
+            <p class="-mt-2 text-xs text-[var(--ink-faint)]">{t('ed.radiusHint')}</p>
 
-            <div class="flex items-center gap-4">
-              <div class="min-w-0 flex-1">
-                <div class="hue" data-hue role="slider" tabindex="0"
-                     aria-label={t('ed.colour')} aria-valuemin="0" aria-valuemax="359">
-                  <span class="hue-handle" data-hue-handle hidden></span>
-                </div>
-                <p class="data mt-1.5 text-xs text-[var(--ink-faint)]" data-hue-value></p>
+            <div>
+              <span class="mb-1.5 block text-sm font-medium" id="shape-label">{t('ed.shape')}</span>
+              <div class="shape-picker" role="radiogroup" aria-labelledby="shape-label" data-shapes>
+                {shapes.map((s) => (
+                  <label class="shape-option">
+                    <input type="radio" name="shape" value={s.key} class="sr-only" />
+                    <Fragment set:html={s.svg} />
+                    <span class="text-xs">{s.label}</span>
+                  </label>
+                ))}
               </div>
+              <p class="mt-2 text-xs text-[var(--ink-faint)]">{t('ed.shapeHint')}</p>
 
-              <!-- The same dot on a pale street and a dark one, since that is
-                   the only question a creator is really asking. -->
-              <span class="hue-proof" style="background:#e9edee">
-                <span data-hue-proof-light></span>
-              </span>
-              <span class="hue-proof" style="background:#1b2226">
-                <span data-hue-proof-dark></span>
-              </span>
+              <!-- A sign's words, in both languages. Only for a sign: every
+                   other shape has nothing to write on. Empty shows the name. -->
+              <div class="mt-3 hidden gap-3 sm:grid-cols-2" data-sign-fields>
+                <label class="block text-sm">
+                  <span class="mb-1.5 block font-medium">{t('ed.signBg')}</span>
+                  <input class="field" name="signBg" maxlength="80" />
+                </label>
+                <label class="block text-sm">
+                  <span class="mb-1.5 block font-medium">{t('ed.signEn')}</span>
+                  <input class="field" name="signEn" maxlength="80" />
+                </label>
+              </div>
             </div>
 
-            <p class="mt-2 text-xs text-[var(--ink-faint)]">{t('ed.colourHint')}</p>
+            <div>
+              <span class="mb-1.5 block text-sm font-medium">{t('ed.colour')}</span>
+              <div class="flex items-center gap-4">
+                <div class="min-w-0 flex-1">
+                  <div class="hue" data-hue role="slider" tabindex="0"
+                       aria-label={t('ed.colour')} aria-valuemin="0" aria-valuemax="359">
+                    <span class="hue-handle" data-hue-handle hidden></span>
+                  </div>
+                  <p class="data mt-1.5 text-xs text-[var(--ink-faint)]" data-hue-value></p>
+                </div>
+                <!-- The same dot on a pale street and a dark one, since that
+                     is the only question a creator is really asking. -->
+                <span class="hue-proof" style="background:#e9edee"><span data-hue-proof-light></span></span>
+                <span class="hue-proof" style="background:#1b2226"><span data-hue-proof-dark></span></span>
+              </div>
+              <p class="mt-2 text-xs text-[var(--ink-faint)]">{t('ed.colourHint')}</p>
+            </div>
           </div>
 
-          <div>
-            <span class="mb-1 block text-sm font-medium" id="shape-label">{t('ed.shape')}</span>
-            <div class="shape-picker" role="radiogroup" aria-labelledby="shape-label" data-shapes>
-              {shapes.map((s) => (
-                <label class="shape-option">
-                  <input type="radio" name="shape" value={s.key} class="sr-only" />
-                  <Fragment set:html={s.svg} />
-                  <span class="text-xs">{s.label}</span>
+          <!-- 3 · The question. Optional: a tour needs none. -->
+          <div class="pane hidden" data-panel="question">
+            <header class="pane-head">
+              <h3>{t('wiz.question.title')} <span class="badge badge-quiet ml-1 align-middle">{t('wiz.optional')}</span></h3>
+              <p>{t('wiz.question.lede')}</p>
+            </header>
+
+            <div class="kinds" role="radiogroup" aria-label={t('ed.answerKind')}>
+              {kinds.map((k) => (
+                <label class="kind-opt">
+                  <input class="sr-only" type="radio" name="kind" value={k.value} />
+                  <span class="kind-name">{k.label}</span>
+                  <span class="kind-body">{k.body}</span>
                 </label>
               ))}
             </div>
-            <p class="mt-2 text-xs text-[var(--ink-faint)]">{t('ed.shapeHint')}</p>
 
-            <!-- A sign's words, in both languages. Only for a sign: every other
-                 shape has nothing to write on. Empty shows the stop's name. -->
-            <div class="mt-3 hidden gap-3 sm:grid-cols-2" data-sign-fields>
-              <label class="block text-sm">
-                <span class="mb-1 block font-medium">{t('ed.signBg')}</span>
-                <input class="field" name="signBg" maxlength="80" />
-              </label>
-              <label class="block text-sm">
-                <span class="mb-1 block font-medium">{t('ed.signEn')}</span>
-                <input class="field" name="signEn" maxlength="80" />
-              </label>
+            <div data-when-asked>
+              <p class="text-sm font-medium">{t('ed.question')}</p>
+              <div class="mt-2 grid gap-3 sm:grid-cols-2">
+                <textarea class="field" name="questionBg" rows="2" maxlength="400" placeholder="BG"></textarea>
+                <textarea class="field" name="questionEn" rows="2" maxlength="400" placeholder="EN"></textarea>
+              </div>
+              <p class="mt-1.5 text-xs text-[var(--ink-faint)]">{t('ed.questionHint')}</p>
             </div>
-          </div>
-        </div>
 
-        <div class="hidden space-y-4 pt-6" data-panel="place">
-          <div class="grid grid-cols-2 gap-3 sm:grid-cols-4">
-            <label class="block text-sm">
-              <span class="mb-1 block font-medium">{t('ed.lat')} *</span>
-              <input class="field data" name="lat" inputmode="decimal" />
-            </label>
-            <label class="block text-sm">
-              <span class="mb-1 block font-medium">{t('ed.lng')} *</span>
-              <input class="field data" name="lng" inputmode="decimal" />
-            </label>
-            <label class="block text-sm">
-              <span class="mb-1 block font-medium">{t('ed.radius')}</span>
-              <input class="field data" name="radius" inputmode="numeric" />
-            </label>
-          </div>
-          <p class="text-xs text-[var(--ink-faint)]">{t('ed.radiusHint')}</p>
-          <p class="text-xs text-[var(--ink-faint)]">{t('ed.stepHint')}</p>
-        </div>
-
-        <div class="hidden space-y-4 pt-6" data-panel="answer">
-          <div data-when-asked>
-            <p class="text-sm font-medium">{t('ed.question')}</p>
-            <div class="mt-2 grid gap-3 sm:grid-cols-2">
-              <textarea class="field" name="questionBg" rows="2" maxlength="400"
-                        placeholder="BG"></textarea>
-              <textarea class="field" name="questionEn" rows="2" maxlength="400"
-                        placeholder="EN"></textarea>
+            <div class="hidden" data-when-exact>
+              <label class="block text-sm">
+                <span class="mb-1.5 block font-medium">{t('ed.accepted')}</span>
+                <textarea class="field" name="accepted" rows="4"></textarea>
+              </label>
+              <p class="mt-1.5 text-xs text-[var(--ink-faint)]">{t('ed.acceptedHint')}</p>
             </div>
-            <p class="mt-1 text-xs text-[var(--ink-faint)]">{t('ed.questionHint')}</p>
-          </div>
 
-          <div class="grid gap-3 sm:grid-cols-2">
-            <label class="block text-sm">
-              <span class="mb-1 block font-medium">{t('ed.answerKind')}</span>
-              <select class="field" name="kind">
-                <option value="none">{t('ed.answerNone')}</option>
-                <option value="exact">{t('ed.answerExact')}</option>
-                <option value="choice">{t('ed.answerChoice')}</option>
-                <option value="free">{t('ed.answerFree')}</option>
-              </select>
-            </label>
+            <!-- The options themselves. Their absence is what made this
+                 question type unusable: a correct index with nothing to index. -->
+            <div class="hidden" data-when-choice>
+              <p class="mb-2 text-sm font-medium">{t('ed.choices')}</p>
+              <div class="space-y-2" data-choices></div>
+              <button class="btn btn-quiet btn-sm mt-2" type="button" data-add-choice>{t('ed.addChoice')}</button>
+              <p class="mt-2 text-xs text-[var(--ink-faint)]">{t('ed.choicesHint')}</p>
+            </div>
+
             <div class="grid grid-cols-2 gap-3" data-when-scored>
               <label class="block text-sm">
-                <span class="mb-1 block font-medium">{t('ed.pointsLabel')}</span>
+                <span class="mb-1.5 block font-medium">{t('ed.pointsLabel')}</span>
                 <input class="field data" name="points" inputmode="numeric" value="10" />
               </label>
               <label class="block text-sm">
-                <span class="mb-1 block font-medium">{t('ed.cooldown')}</span>
+                <span class="mb-1.5 block font-medium">{t('ed.cooldown')}</span>
                 <input class="field data" name="cooldown" inputmode="numeric" value="15" />
               </label>
             </div>
-          </div>
+            <p class="hidden -mt-2 text-xs text-[var(--ink-faint)]" data-cooldown-hint>{t('ed.cooldownHint')}</p>
 
-          <p class="hidden text-xs text-[var(--ink-faint)]" data-cooldown-hint>{t('ed.cooldownHint')}</p>
-
-          <div data-when-asked-rule>
-            <div class="grid gap-3 sm:grid-cols-2">
-              <label class="block text-sm">
-                <span class="mb-1 block font-medium">{t('ed.onWrong')}</span>
-                <select class="field" name="onWrong">
-                  <option value="retry">{t('ed.wrongRetry')}</option>
-                  <option value="lock">{t('ed.wrongLock')}</option>
-                  <option value="deduct">{t('ed.wrongDeduct')}</option>
-                  <option value="skip">{t('ed.wrongSkip')}</option>
-                </select>
-              </label>
-              <label class="block text-sm" data-when-deduct>
-                <span class="mb-1 block font-medium">{t('ed.deductPoints')}</span>
-                <input class="field data" name="deduct" inputmode="numeric" value="5" />
-              </label>
+            <div data-when-asked-rule>
+              <div class="grid gap-3 sm:grid-cols-2">
+                <label class="block text-sm">
+                  <span class="mb-1.5 block font-medium">{t('ed.onWrong')}</span>
+                  <select class="field" name="onWrong">
+                    <option value="retry">{t('ed.wrongRetry')}</option>
+                    <option value="lock">{t('ed.wrongLock')}</option>
+                    <option value="deduct">{t('ed.wrongDeduct')}</option>
+                    <option value="skip">{t('ed.wrongSkip')}</option>
+                  </select>
+                </label>
+                <label class="block text-sm" data-when-deduct>
+                  <span class="mb-1.5 block font-medium">{t('ed.deductPoints')}</span>
+                  <input class="field data" name="deduct" inputmode="numeric" value="5" />
+                </label>
+              </div>
+              <p class="mt-1.5 text-xs text-[var(--ink-faint)]">{t('ed.onWrongHint')}</p>
             </div>
-            <p class="mt-1 text-xs text-[var(--ink-faint)]">{t('ed.onWrongHint')}</p>
-          </div>
 
-          <div class="hidden" data-when-exact>
-            <label class="block text-sm">
-              <span class="mb-1 block font-medium">{t('ed.accepted')}</span>
-              <textarea class="field" name="accepted" rows="4"></textarea>
-            </label>
-            <p class="mt-1 text-xs text-[var(--ink-faint)]">{t('ed.acceptedHint')}</p>
-          </div>
-
-          <!-- The options themselves. Their absence is what made this question
-               type unusable: a correct index with nothing to index into. -->
-          <div class="hidden" data-when-choice>
-            <p class="mb-2 text-sm font-medium">{t('ed.choices')}</p>
-            <div class="space-y-2" data-choices></div>
-            <button class="btn btn-quiet btn-sm mt-2" type="button" data-add-choice>{t('ed.addChoice')}</button>
-            <p class="mt-2 text-xs text-[var(--ink-faint)]">{t('ed.choicesHint')}</p>
-          </div>
-
-          <div class="hidden space-y-3 border-t border-[var(--line-soft)] pt-4" data-when-answered>
-            <p class="text-sm font-medium">{t('ed.after')}</p>
-            <div class="grid gap-3 sm:grid-cols-2">
-              <textarea class="field" name="afterBg" rows="3" maxlength="600" placeholder="BG"></textarea>
-              <textarea class="field" name="afterEn" rows="3" maxlength="600" placeholder="EN"></textarea>
+            <div class="hidden space-y-3 border-t border-[var(--line-soft)] pt-4" data-when-answered>
+              <p class="text-sm font-medium">{t('ed.after')}</p>
+              <div class="grid gap-3 sm:grid-cols-2">
+                <textarea class="field" name="afterBg" rows="3" maxlength="600" placeholder="BG"></textarea>
+                <textarea class="field" name="afterEn" rows="3" maxlength="600" placeholder="EN"></textarea>
+              </div>
+              <p class="text-xs text-[var(--ink-faint)]">{t('ed.afterHint')}</p>
             </div>
-            <p class="text-xs text-[var(--ink-faint)]">{t('ed.afterHint')}</p>
           </div>
-        </div>
 
-        <div class="hidden space-y-4 pt-6" data-panel="hints">
-          <p class="text-sm text-[var(--ink-dim)]" data-hints-empty>{t('ed.noHints')}</p>
-          <ul class="space-y-2" data-hints></ul>
+          <!-- 4 · Hints. Optional. Each one is saved the moment it is added. -->
+          <div class="pane hidden" data-panel="hints">
+            <header class="pane-head">
+              <h3>{t('wiz.hints.title')} <span class="badge badge-quiet ml-1 align-middle">{t('wiz.optional')}</span></h3>
+              <p>{t('wiz.hints.lede')}</p>
+            </header>
+            <p class="text-sm text-[var(--ink-dim)]" data-hints-empty>{t('ed.noHints')}</p>
+            <ul class="space-y-2" data-hints></ul>
 
-          <div class="card space-y-3 p-4">
-            <div class="grid gap-3 sm:grid-cols-2">
-              <label class="block text-sm">
-                <span class="mb-1 block font-medium">{t('ed.hintText')} · BG</span>
-                <input class="field" data-hint-bg maxlength="200" />
-              </label>
-              <label class="block text-sm">
-                <span class="mb-1 block font-medium">{t('ed.hintText')} · EN</span>
-                <input class="field" data-hint-en maxlength="200" />
-              </label>
-            </div>
-            <label class="block text-sm">
-              <span class="mb-1 block font-medium">{t('ed.hintCost')}</span>
-              <input class="field data" data-hint-cost inputmode="numeric" value="0" />
-            </label>
-            <button class="btn btn-quiet w-full" type="button" data-add-hint>{t('ed.addHint')}</button>
-          </div>
-          <p class="text-xs text-[var(--ink-faint)]">{t('ed.hintsHint')}</p>
-        </div>
-
-        <div class="hidden space-y-4 pt-6" data-panel="media">
-          <p class="text-sm text-[var(--ink-dim)]" data-media-empty>{t('ed.noMedia')}</p>
-          <ul class="space-y-2" data-media></ul>
-
-          <!-- Two across until there is real room for three: the browser writes
-               "No file chosen" beside the button and owns that text, so the
-               only way to stop it truncating to "N...sen" is to give it width. -->
-          <div class="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
-            <div class="card p-4">
-              <p class="eyebrow">{t('ed.addPhoto')}</p>
-              <input class="field mt-2" type="file" accept="image/*" data-file-image />
-            </div>
-            <div class="card p-4">
-              <p class="eyebrow">{t('ed.addAudio')}</p>
-              <input class="field mt-2" type="file" accept="audio/*" data-file-audio />
-            </div>
-            <div class="card p-4">
-              <p class="eyebrow">{t('ed.addVideo')}</p>
-              <div class="mt-2 flex gap-2">
-                <input class="field" data-video-url placeholder={t('ed.videoUrl')} />
-                <button class="btn btn-quiet btn-sm shrink-0" type="button" data-add-video>+</button>
+            <div class="add-box space-y-3">
+              <div class="grid gap-3 sm:grid-cols-2">
+                <label class="block text-sm">
+                  <span class="mb-1.5 block font-medium">{t('ed.hintText')} · BG</span>
+                  <input class="field" data-hint-bg maxlength="200" />
+                </label>
+                <label class="block text-sm">
+                  <span class="mb-1.5 block font-medium">{t('ed.hintText')} · EN</span>
+                  <input class="field" data-hint-en maxlength="200" />
+                </label>
+              </div>
+              <div class="flex flex-wrap items-end gap-3">
+                <label class="block w-32 text-sm">
+                  <span class="mb-1.5 block font-medium">{t('ed.hintCost')}</span>
+                  <input class="field data" data-hint-cost inputmode="numeric" value="0" />
+                </label>
+                <button class="btn btn-quiet" type="button" data-add-hint>{t('ed.addHint')}</button>
               </div>
             </div>
-          </div>
-          <p class="text-xs text-[var(--ink-faint)]">{t('ed.mediaHint')}</p>
-
-          <!-- A trail's share of the storage. Drawn before anyone chooses a
-               file, because "that did not fit" after a two-minute upload on a
-               phone is the wrong moment to find out. -->
-          <div class="mt-1" data-media-usage hidden>
-            <div class="meter"><span style="width:0%" data-media-fill></span></div>
-            <p class="data mt-1.5 text-xs text-[var(--ink-faint)]" data-media-used></p>
+            <p class="text-xs text-[var(--ink-faint)]">{t('ed.hintsHint')}</p>
           </div>
 
-          <p class="hidden text-sm text-[var(--signal)]" data-upload-status></p>
+          <!-- 5 · Media. Uploaded the moment a file is chosen. -->
+          <div class="pane hidden" data-panel="media">
+            <header class="pane-head">
+              <h3>{t('wiz.media.title')}</h3>
+              <p>{t('wiz.media.lede')}</p>
+            </header>
+            <p class="text-sm text-[var(--ink-dim)]" data-media-empty>{t('ed.noMedia')}</p>
+            <ul class="space-y-2" data-media></ul>
+
+            <!-- Two across until there is real room for three: the browser
+                 writes "No file chosen" beside the button and owns that text. -->
+            <div class="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+              <div class="add-box">
+                <p class="eyebrow">{t('ed.addPhoto')}</p>
+                <input class="field mt-2" type="file" accept="image/*" data-file-image />
+              </div>
+              <div class="add-box">
+                <p class="eyebrow">{t('ed.addAudio')}</p>
+                <input class="field mt-2" type="file" accept="audio/*" data-file-audio />
+              </div>
+              <div class="add-box">
+                <p class="eyebrow">{t('ed.addVideo')}</p>
+                <div class="mt-2 flex gap-2">
+                  <input class="field" data-video-url placeholder={t('ed.videoUrl')} />
+                  <button class="btn btn-quiet btn-icon shrink-0" type="button" data-add-video aria-label={t('ed.addVideo')}>+</button>
+                </div>
+              </div>
+            </div>
+
+            <!-- A trail's share of the storage, drawn before anyone chooses a
+                 file: "that did not fit" after a long upload is too late. -->
+            <div class="mt-1" data-media-usage hidden>
+              <div class="meter"><span style="width:0%" data-media-fill></span></div>
+              <p class="data mt-1.5 text-xs text-[var(--ink-faint)]" data-media-used></p>
+            </div>
+
+            <p class="hidden text-sm text-[var(--signal)]" data-upload-status></p>
+          </div>
+
+          <!-- After Done: what to do next, and a way back in. -->
+          <div class="pane ready hidden" data-panel="ready">
+            <span class="ready-check" aria-hidden="true">
+              <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="m5 12 5 5 9-10" /></svg>
+            </span>
+            <h3 data-ready-title></h3>
+            <p class="text-[var(--ink-dim)]">{t('wiz.readyBody')}</p>
+            <p class="text-xs text-[var(--ink-faint)]" data-ready-skipped></p>
+            <div class="flex flex-wrap gap-2">
+              <button class="btn btn-quiet" type="button" data-ready-again>{t('wiz.again')}</button>
+            </div>
+          </div>
         </div>
 
-        <!-- Outside the tabs. A save button on one tab and not another is how
-             half a form gets lost. -->
-        <p class="mt-6 hidden rounded-lg border border-[var(--alert)] bg-[var(--alert-wash)] px-3 py-2 text-sm text-[var(--alert)]"
-           data-marker-error role="alert"></p>
+        <p class="wiz-error hidden" data-marker-error role="alert"></p>
 
-        <div class="mt-6 flex gap-2 border-t border-[var(--line-soft)] pt-5">
-          <button class="btn btn-primary flex-1" type="submit" data-marker-save>{t('ed.save')}</button>
-          <button class="btn btn-quiet" type="button" data-marker-delete
-                  style="border-color:var(--alert);color:var(--alert)">{t('ed.delete')}</button>
+        <div class="wiz-foot" data-wiz-foot>
+          <button class="btn btn-quiet" type="button" data-wiz-prev>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 5 8 12l7 7" /></svg>
+            <span class="hide-xs">{t('wiz.prev')}</span>
+          </button>
+          <button class="wiz-skip hidden" type="button" data-wiz-skip>{t('wiz.skip')}</button>
+          <span class="wiz-flash" data-wiz-flash role="status" aria-live="polite"></span>
+          <button class="btn btn-primary wiz-next" type="submit" data-marker-save>
+            <span data-next-label>{t('wiz.next')}</span>
+            <svg data-next-arrow viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 5 7 7-7 7" /></svg>
+          </button>
+        </div>
+        <div class="wiz-danger">
+          <button class="btn btn-danger-quiet btn-sm" type="button" data-marker-delete>{t('ed.delete')}</button>
         </div>
       </form>
     </div>
@@ -698,15 +772,6 @@ const strings = {
   q('[data-editor-loading]')?.remove();
   reveal();
 
-  qa('[data-tab]').forEach((button) => {
-    button.addEventListener('click', () => {
-      const id = (button as HTMLElement).dataset.tab!;
-      qa('[data-tab]').forEach((b) => b.setAttribute('aria-selected', String(b === button)));
-      qa('[data-panel]').forEach((p) =>
-        p.classList.toggle('hidden', (p as HTMLElement).dataset.panel !== id));
-    });
-  });
-
   const maplibregl = await loadMapLibre();
   const map = new maplibregl.Map({
     container: q('[data-map]') as HTMLElement,
@@ -789,17 +854,23 @@ const strings = {
       choices[Number((el as HTMLElement).dataset.choiceCorrect)].correct = (el as HTMLInputElement).checked;
     }));
     box.querySelectorAll('[data-choice-del]').forEach((el) => el.addEventListener('click', () => {
+      dirty = true;
       choices.splice(Number((el as HTMLElement).dataset.choiceDel), 1);
       drawChoices();
     }));
   }
 
-  field('kind').addEventListener('change', showKindFields);
+  // The kind is four radios, and a list of radios has no listener of its own,
+  // so the form listens for them.
+  const onKind = (fn: () => void) => form.addEventListener('change', (e) => {
+    if ((e.target as HTMLInputElement)?.name === 'kind') fn();
+  });
+  onKind(showKindFields);
 
   // The default follows the kind. A free-text answer is read by a person, so
   // a wait only punishes spelling; the box said 15 for it anyway, and the
   // server was sent 15 unless the creator noticed and changed it.
-  field('kind').addEventListener('change', () => {
+  onKind(() => {
     const kind = (field('kind') as HTMLSelectElement).value;
     const wait = field('cooldown') as HTMLInputElement;
     if (kind === 'free' && wait.value === '15') wait.value = '0';
@@ -808,11 +879,204 @@ const strings = {
   // The deduction box appears and disappears with the rule beside it.
   field('onWrong').addEventListener('change', showKindFields);
   q('[data-add-choice]')?.addEventListener('click', () => {
+    dirty = true;
     choices.push({ bg: '', en: '', correct: false });
     drawChoices();
   });
 
-  async function select(id: string | null) {
+  // ---------------------------------------------------------------- the steps
+  // Whether the form holds anything the database does not. Hints and media are
+  // written the moment they are added, so their own inputs do not count.
+  let dirty = false;
+  const markDirty = (e: Event) => {
+    const el = e.target as HTMLElement;
+    if (el.closest('[data-panel="hints"], [data-panel="media"], [data-import]')) return;
+    dirty = true;
+  };
+  form.addEventListener('input', markDirty);
+  form.addEventListener('change', markDirty);
+
+  const STEPS = ['basics', 'place', 'question', 'hints', 'media'] as const;
+  const OPTIONAL = new Set([2, 3]);
+  let step = 0;
+  let ready = false;
+  let visited = new Set<number>([0]);
+  let doneSteps = new Set<number>();
+  let skippedSteps = new Set<number>();
+  let flashTimer = 0;
+  const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  const stopNumber = (id: string | null) => {
+    const i = markers.findIndex((m) => m.id === id);
+    return i < 0 ? 1 : (markers[i].step ?? i + 1);
+  };
+
+  function flash(message: string) {
+    const el = q('[data-wiz-flash]') as HTMLElement;
+    text(el, message);
+    el.classList.add('is-on');
+    clearTimeout(flashTimer);
+    flashTimer = window.setTimeout(() => el.classList.remove('is-on'), 1800);
+  }
+
+  function paintTitle() {
+    const own = S.lang === 'en' ? val('titleEn') : val('titleBg');
+    text(q('[data-wiz-title]'), own || val('titleBg') || val('titleEn') || S.wiz.untitled);
+  }
+  form.addEventListener('input', (e) => {
+    const name = (e.target as HTMLInputElement)?.name;
+    if (name === 'titleBg' || name === 'titleEn') paintTitle();
+  });
+
+  function paintSteps() {
+    qa('[data-step]').forEach((b) => {
+      const button = b as HTMLButtonElement;
+      const i = Number(button.dataset.step);
+      const cur = !ready && i === step;
+      button.classList.toggle('is-current', cur);
+      button.classList.toggle('is-done', doneSteps.has(i));
+      button.classList.toggle('is-skipped', skippedSteps.has(i) && !cur);
+      button.disabled = !visited.has(i);
+      if (cur) button.setAttribute('aria-current', 'step'); else button.removeAttribute('aria-current');
+      const sub = button.querySelector('[data-step-sub]') as HTMLElement;
+      text(sub, skippedSteps.has(i) && !cur ? S.wiz.skipped : sub.dataset.sub ?? '');
+    });
+    text(q('[data-wiz-count]'), S.wiz.of.replace('{0}', String(ready ? STEPS.length : step + 1)));
+    (q('[data-wiz-prev]') as HTMLButtonElement).disabled = step === 0;
+    q('[data-wiz-skip]')!.classList.toggle('hidden', !OPTIONAL.has(step));
+    const last = step === STEPS.length - 1;
+    text(q('[data-next-label]'), last ? S.wiz.done : S.wiz.next);
+    q('[data-next-arrow]')!.toggleAttribute('hidden', last);
+    q('[data-wiz-foot]')!.classList.toggle('hidden', ready);
+  }
+
+  function show(panel: string) {
+    qa('[data-panel]').forEach((p) => p.classList.toggle('hidden', (p as HTMLElement).dataset.panel !== panel));
+  }
+
+  /** Keeps the top of the form in view; on a phone it sits below the map. */
+  function bringFormIntoView(always: boolean) {
+    const top = form.getBoundingClientRect().top;
+    if (top < 72 || (always && top > innerHeight * 0.6)) {
+      scrollTo({ top: scrollY + top - 80, behavior: reduceMotion ? 'auto' : 'smooth' });
+    }
+  }
+
+  function goTo(i: number) {
+    ready = false;
+    step = Math.max(0, Math.min(STEPS.length - 1, i));
+    visited.add(step);
+    show(STEPS[step]);
+    paintSteps();
+    q('[data-marker-error]')!.classList.add('hidden');
+    bringFormIntoView(false);
+  }
+
+  function showReady() {
+    ready = true;
+    show('ready');
+    text(q('[data-ready-title]'), S.wiz.ready.replace('{0}', String(stopNumber(selected))));
+    const names = [...skippedSteps].sort().map((i) => S.wiz.names[i]);
+    text(q('[data-ready-skipped]'), names.length ? S.wiz.skippedList.replace('{0}', names.join(', ')) : '');
+    paintSteps();
+  }
+
+  /**
+   * A stop just placed on the map starts at Basics and opens its steps one by
+   * one. A stop that already exists can be entered at any step.
+   */
+  function startSteps(m: any, fresh: boolean) {
+    // A stop just placed is still a draft: its first Next has to publish it.
+    dirty = fresh || m.status !== 'published';
+    visited = new Set(fresh ? [0] : [0, 1, 2, 3, 4]);
+    doneSteps = new Set<number>();
+    skippedSteps = new Set<number>();
+    if (!fresh) {
+      if (m.content?.bg?.title) doneSteps.add(0);
+      doneSteps.add(1);
+      if ((m.answer_kind ?? 'none') !== 'none') doneSteps.add(2);
+      if (Number(m.hint_count)) doneSteps.add(3);
+      if (Number(m.media_count)) doneSteps.add(4);
+    }
+    text(q('[data-wiz-kind]'), fresh ? S.wiz.newStop : S.wiz.stop.replace('{0}', String(stopNumber(m.id))));
+    text(q('[data-wiz-pin]'), String(stopNumber(m.id)));
+    paintTitle();
+    goTo(0);
+    bringFormIntoView(true);
+    if (fresh) (field('titleBg') as HTMLInputElement).focus({ preventScroll: true });
+  }
+
+  async function next() {
+    if (!selected) return;
+    if (!(await save())) return;
+    doneSteps.add(step);
+    skippedSteps.delete(step);
+    flash(S.wiz.saved);
+    if (step === STEPS.length - 1) showReady(); else goTo(step + 1);
+  }
+
+  form.addEventListener('submit', (event) => { event.preventDefault(); next(); });
+
+  q('[data-wiz-prev]')?.addEventListener('click', async () => {
+    if (await save(true)) flash(S.wiz.saved);
+    goTo(step - 1);
+  });
+
+  // Skipping puts the step back the way it was saved: a question half-chosen
+  // and then skipped is not a question.
+  q('[data-wiz-skip]')?.addEventListener('click', () => {
+    const m = markers.find((x) => x.id === selected);
+    if (step === 2 && m) fillAnswer(m);
+    if (step === 3) {
+      (q('[data-hint-bg]') as HTMLInputElement).value = '';
+      (q('[data-hint-en]') as HTMLInputElement).value = '';
+    }
+    if (!doneSteps.has(step)) skippedSteps.add(step);
+    flash(S.wiz.skipped);
+    goTo(step + 1);
+  });
+
+  qa('[data-step]').forEach((b) => b.addEventListener('click', async () => {
+    const i = Number((b as HTMLElement).dataset.step);
+    if (i === step && !ready) return;
+    // Forward is a promise that this step is finished, so it is checked like
+    // Next. Back is not: whatever is half-written stays in the form.
+    if (i > step && !ready) {
+      if (!(await save())) return;
+      doneSteps.add(step);
+      skippedSteps.delete(step);
+    } else if (!ready && (await save(true))) {
+      flash(S.wiz.saved);
+    }
+    goTo(i);
+  }));
+
+  q('[data-ready-again]')?.addEventListener('click', () => goTo(0));
+
+  /** The question step's fields, from the stop as it was last saved. */
+  function fillAnswer(m: any) {
+    (field('kind') as HTMLSelectElement).value = m.answer_kind ?? 'none';
+    (field('points') as HTMLInputElement).value = String(m.points ?? 10);
+    (field('cooldown') as HTMLInputElement).value = String(m.cooldown_seconds ?? 15);
+    (field('onWrong') as HTMLSelectElement).value = m.on_wrong ?? 'retry';
+    (field('deduct') as HTMLInputElement).value = String(m.deduct_points ?? 5);
+    (field('accepted') as HTMLTextAreaElement).value = (m.accepted ?? []).join('\n');
+    (field('questionBg') as HTMLTextAreaElement).value = m.content?.bg?.question ?? '';
+    (field('questionEn') as HTMLTextAreaElement).value = m.content?.en?.question ?? '';
+    (field('afterBg') as HTMLTextAreaElement).value = m.after_text?.bg ?? '';
+    (field('afterEn') as HTMLTextAreaElement).value = m.after_text?.en ?? '';
+
+    const bgOpts = m.content?.bg?.choices ?? [];
+    const enOpts = m.content?.en?.choices ?? [];
+    const correct: number[] = m.correct_choices ?? [];
+    choices = bgOpts.map((label: string, i: number) => ({
+      bg: label ?? '', en: enOpts[i] ?? '', correct: correct.includes(i),
+    }));
+    drawChoices();
+    showKindFields();
+  }
+
+  async function select(id: string | null, fresh = false) {
     selected = id;
     pins.forEach((pin, pid) => {
       pin.getElement().style.filter = pid === id ? 'drop-shadow(0 0 7px var(--signal))' : '';
@@ -843,27 +1107,11 @@ const strings = {
     (field('signBg') as HTMLInputElement).value = m.content?.bg?.sign ?? '';
     (field('signEn') as HTMLInputElement).value = m.content?.en?.sign ?? '';
     setShape(m.style_key);
-    (field('kind') as HTMLSelectElement).value = m.answer_kind ?? 'none';
-    (field('points') as HTMLInputElement).value = String(m.points ?? 10);
-    (field('cooldown') as HTMLInputElement).value = String(m.cooldown_seconds ?? 15);
-    (field('onWrong') as HTMLSelectElement).value = m.on_wrong ?? 'retry';
-    (field('deduct') as HTMLInputElement).value = String(m.deduct_points ?? 5);
-    (field('accepted') as HTMLTextAreaElement).value = (m.accepted ?? []).join('\n');
-    (field('questionBg') as HTMLTextAreaElement).value = m.content?.bg?.question ?? '';
-    (field('questionEn') as HTMLTextAreaElement).value = m.content?.en?.question ?? '';
-    (field('afterBg') as HTMLTextAreaElement).value = m.after_text?.bg ?? '';
-    (field('afterEn') as HTMLTextAreaElement).value = m.after_text?.en ?? '';
-
-    const bgOpts = m.content?.bg?.choices ?? [];
-    const enOpts = m.content?.en?.choices ?? [];
-    const correct: number[] = m.correct_choices ?? [];
-    choices = bgOpts.map((label: string, i: number) => ({
-      bg: label ?? '', en: enOpts[i] ?? '', correct: correct.includes(i),
-    }));
-    drawChoices();
+    fillAnswer(m);
 
     showKindFields();
     q('[data-marker-error]')!.classList.add('hidden');
+    startSteps(m, fresh);
     await Promise.all([loadHints(), loadMedia()]);
   }
 
@@ -1060,7 +1308,7 @@ const strings = {
     if (error) { alert(error.message); return; }
     await load();
     const id = Array.isArray(data) ? data[0]?.id : (data as any)?.id;
-    if (id) await select(id);
+    if (id) await select(id, true);
   });
 
   // ------------------------------------------------------------------ hints
@@ -1071,6 +1319,8 @@ const strings = {
     const rows = data ?? [];
 
     text(q('[data-count-hints]'), rows.length ? String(rows.length) : '');
+    if (rows.length) { doneSteps.add(3); skippedSteps.delete(3); } else doneSteps.delete(3);
+    paintSteps();
     q('[data-hints-empty]')!.classList.toggle('hidden', rows.length > 0);
     q('[data-hints]')!.innerHTML = rows.map((h: any) => `
       <li class="card flex items-start justify-between gap-3 p-3">
@@ -1149,6 +1399,8 @@ const strings = {
     const rows = data ?? [];
 
     text(q('[data-count-media]'), rows.length ? String(rows.length) : '');
+    if (rows.length) doneSteps.add(4); else doneSteps.delete(4);
+    paintSteps();
     q('[data-media-empty]')!.classList.toggle('hidden', rows.length > 0);
     q('[data-media]')!.innerHTML = rows.map((m: any) => {
       const url = m.kind === 'link'
@@ -1248,40 +1500,46 @@ const strings = {
   });
 
   // ------------------------------------------------------------------ saving
-  form.addEventListener('submit', async (event) => {
-    event.preventDefault();
-    if (!selected) return;
+  // Every step that is left is saved, and Next checks it first. One routine for
+  // the whole stop: the steps are a way of showing the form, not five forms.
+  // quiet: a step left by Previous or the step bar, where a half-written
+  // question is not an error yet - it stays in the form and is checked at Next.
+  async function save(quiet = false): Promise<boolean> {
+    if (!selected) return false;
 
     const err = q('[data-marker-error]') as HTMLElement;
     err.classList.add('hidden');
     const button = q('[data-marker-save]') as HTMLButtonElement;
-    const label = button.textContent;
+    const labelEl = q('[data-next-label]') as HTMLElement;
+    const label = labelEl.textContent;
 
-    // Sends them to the tab holding the problem, or the message names a field
+    // Sends them to the step holding the problem, or the message names a field
     // they cannot see.
-    const fail = (message: string, tab?: string) => {
-      button.disabled = false; button.textContent = label;
+    const fail = (message: string, panel?: string) => {
+      button.disabled = false; text(labelEl, label);
+      if (quiet) return;
+      // The step first, then the message: moving to a step clears old ones.
+      if (panel) goTo(STEPS.indexOf(panel as typeof STEPS[number]));
       err.textContent = message; err.classList.remove('hidden');
-      if (tab) (q(`[data-tab="${tab}"]`) as HTMLButtonElement)?.click();
     };
 
     button.disabled = true;
-    button.textContent = S.saving;
+    text(labelEl, S.saving);
 
     const lat = num('lat'), lng = num('lng');
     if (lat === null || lng === null || Number.isNaN(lat) || Number.isNaN(lng)) {
       fail(S.lang === 'bg' ? 'Координатите трябва да са числа.' : 'Coordinates must be numbers.', 'place');
-      return;
+      return false;
     }
     if (lat < -90 || lat > 90 || lng < -180 || lng > 180) {
       fail(S.lang === 'bg' ? 'Координатите са извън обхват.' : 'Coordinates are out of range.', 'place');
-      return;
+      return false;
     }
 
     const titleBg = val('titleBg');
     if (!titleBg) {
       fail(S.lang === 'bg' ? 'Дай заглавие на български.' : 'Give the stop a Bulgarian title.', 'basics');
-      return;
+      return false;
     }
 
     const kind = (field('kind') as HTMLSelectElement).value;
@@ -1291,18 +1549,23 @@ const strings = {
     // A question with no words. It saved, points and all, and the app - which
     // has nothing to show - left the question off the stop without a word.
     if (kind !== 'none' && !val('questionBg') && !val('questionEn')) {
-      fail(S.lang === 'bg' ? 'Напиши въпроса.' : 'Write the question.', 'answer');
-      return;
+      fail(S.lang === 'bg' ? 'Напиши въпроса.' : 'Write the question.', 'question');
+      return false;
     }
     if (kind === 'choice' && (kept.length < 2 || correct.length === 0)) {
       fail(S.lang === 'bg' ? 'Трябват поне два отговора и поне един верен.'
-                           : 'A choice needs at least two options and one ticked as right.', 'answer');
-      return;
+                           : 'A choice needs at least two options and one ticked as right.', 'question');
+      return false;
     }
     if (kind === 'exact' && !val('accepted')) {
-      fail(S.lang === 'bg' ? 'Напиши поне един приет отговор.' : 'Write at least one accepted answer.', 'answer');
-      return;
+      fail(S.lang === 'bg' ? 'Напиши поне един приет отговор.' : 'Write at least one accepted answer.', 'question');
+      return false;
     }
+
+    // Checked, and nothing to write. Stepping through a stop must not bump its
+    // version each time: a co-editor with the same stop open would be told it
+    // had changed when nobody changed it.
+    if (!dirty) { button.disabled = false; text(labelEl, label); return true; }
 
     const content: Record<string, any> = {
       bg: { title: titleBg, ...(val('bodyBg') && { body: val('bodyBg') }) },
@@ -1349,17 +1612,17 @@ const strings = {
       .eq('id', saving)
       .eq('version', formVersion ?? -1)
       .select('version');
-    if (upErr) { savingNow = false; fail(upErr.message); return; }
+    if (upErr) { savingNow = false; fail(upErr.message); return false; }
     if (!wrote || wrote.length === 0) {
       savingNow = false;
       showRemoteChange(true);
       fail(S.conflict);
-      return;
+      return false;
     }
     formVersion = wrote[0].version;
 
     const moved = await client.rpc('move_marker', { p_marker: selected, p_lat: lat, p_lng: lng });
-    if (moved.error) { savingNow = false; fail(moved.error.message, 'place'); return; }
+    if (moved.error) { savingNow = false; fail(moved.error.message, 'place'); return false; }
 
     if (kind === 'none') {
       await client.rpc('clear_marker_answer', { p_marker: selected });
@@ -1384,17 +1647,18 @@ const strings = {
         p_deduct_points: num('deduct') ?? 0,
         p_after_text: after,
       });
-      if (aErr) { savingNow = false; fail(aErr.message, 'answer'); return; }
+      if (aErr) { savingNow = false; fail(aErr.message, 'question'); return false; }
     }
 
     button.disabled = false;
-    button.textContent = S.saved;
-    setTimeout(() => { button.textContent = label; }, 1400);
+    text(labelEl, label);
     await load();
     // move_marker bumped the version again; take whatever the row says now.
     formVersion = markers.find((m) => m.id === saving)?.version ?? formVersion;
     savingNow = false;
-  });
+    dirty = false;
+    return true;
+  }
 
   q('[data-remote-reload]')?.addEventListener('click', async () => {
     const id = selected;
@@ -1757,6 +2021,8 @@ const strings = {
     (q('[data-shapes]') as HTMLElement)?.style.setProperty('--shape-tint', chosen ? hex : 'currentColor');
 
     text(q('[data-hue-value]'), chosen ? hueToHex(hue!) : S.colourNone);
+    const badge = q('[data-wiz-pin]') as HTMLElement | null;
+    if (badge) badge.style.background = chosen ? hex : '';
   }
 
   const SHAPES = ['pin', 'sphere', 'cone', 'cube', 'sign'];
@@ -1788,6 +2054,7 @@ const strings = {
     const across = Math.min(Math.max(event.clientX - box.left, 0), box.width);
 
     hue = Math.round((across / Math.max(box.width, 1)) * 359);
+    dirty = true;
     paintHue();
   }
 
@@ -1811,6 +2078,7 @@ const strings = {
 
     event.preventDefault();
     hue = ((hue ?? 0) + step + 360) % 360;
+    dirty = true;
     paintHue();
   });
 
@@ -2091,3 +2359,122 @@ const strings = {
     await load();
   });
 </script>
+
+<style>
+  /* ------------------------------------------------------------ the steps */
+  .wiz {
+    /* clip, not hidden: hidden would make the form its own scroller and the
+       Next bar could never stick to the bottom of the screen. */
+    display: flex; flex-direction: column; position: relative; overflow: clip;
+    border: 1px solid var(--line); border-radius: 26px; background: var(--surface);
+  }
+  .wiz.hidden { display: none; }
+  .wiz-top { padding: 1.375rem 1.5rem 0; }
+  .wiz-id { display: flex; align-items: center; gap: .875rem; }
+  .wiz-pin {
+    flex: none; width: 44px; height: 44px; border-radius: 14px; display: grid; place-items: center;
+    background: var(--signal); color: #fff; font-size: 1rem; font-weight: 600;
+    transition: background-color .3s ease;
+  }
+  .wiz-title { margin-top: 3px; font-size: 1.25rem; line-height: 1.2; letter-spacing: -.02em; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .wiz-count { flex: none; font-size: .8125rem; color: var(--ink-faint); }
+
+  .stepper { list-style: none; margin: 1.25rem 0 0; padding: 0; display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 6px; }
+  .st {
+    width: 100%; display: flex; flex-direction: column; gap: 8px; padding: 8px 6px 10px; text-align: left;
+    border-radius: 14px; cursor: pointer; transition: background-color .2s ease;
+  }
+  .st:hover:not(:disabled) { background: var(--surface-2); }
+  .st:disabled { cursor: default; }
+  .st-bar { display: block; height: 4px; border-radius: 4px; background: var(--line); position: relative; overflow: hidden; }
+  .st-bar::after {
+    content: ""; position: absolute; inset: 0; background: var(--signal);
+    transform: scaleX(0); transform-origin: left; transition: transform .45s cubic-bezier(.2,.8,.2,1);
+  }
+  .st.is-done .st-bar::after, .st.is-current .st-bar::after { transform: scaleX(1); }
+  .st.is-skipped .st-bar { background: repeating-linear-gradient(90deg, var(--line) 0 6px, transparent 6px 10px); }
+  .st-row { display: flex; align-items: center; gap: 7px; min-width: 0; }
+  .st-n {
+    flex: none; width: 22px; height: 22px; border-radius: 50%; display: grid; place-items: center;
+    border: 1.5px solid var(--line); font: 600 11px var(--font-mono); color: var(--ink-faint);
+  }
+  .st-check { display: none; }
+  .st.is-done .st-num { display: none; }
+  .st.is-done .st-check { display: block; }
+  .st.is-done .st-n { border-color: var(--signal); color: var(--signal); }
+  .st.is-current .st-n { border-color: var(--signal); background: var(--signal); color: var(--signal-ink); }
+  .st-l { font-size: .84375rem; font-weight: 600; color: var(--ink-dim); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .st.is-current .st-l { color: var(--ink); }
+  .st:disabled .st-l { color: var(--ink-faint); font-weight: 500; }
+  .st-count { font-size: 11px; color: var(--ink-faint); }
+  .st-sub { padding-left: 29px; font-size: .71875rem; color: var(--ink-faint); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  @media (max-width: 640px) {
+    .wiz-top { padding: 1.125rem 1.125rem 0; }
+    .st-sub { display: none; }
+    .st-row { flex-direction: column; align-items: flex-start; gap: 5px; }
+    .st-l { font-size: .75rem; }
+  }
+
+  .wiz-body { flex: 1; padding: 1.5rem; }
+  @media (max-width: 640px) { .wiz-body { padding: 1.25rem 1.125rem; } }
+  .pane { display: flex; flex-direction: column; gap: 1.25rem; animation: pane-in .42s cubic-bezier(.2,.8,.2,1); }
+  .pane.hidden { display: none; }
+  @keyframes pane-in { from { opacity: 0; transform: translateX(16px); } to { opacity: 1; transform: none; } }
+  .pane-head h3 { font-size: 1.375rem; line-height: 1.2; letter-spacing: -.02em; }
+  .pane-head p { margin-top: .375rem; font-size: .96875rem; color: var(--ink-dim); }
+  .where {
+    display: flex; align-items: center; gap: .75rem; padding: .875rem 1rem; border-radius: 16px;
+    background: var(--signal-wash); color: var(--ink); font-size: .9375rem; font-weight: 500;
+  }
+  .where svg { flex: none; color: var(--signal); }
+
+  .kinds { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: .5rem; }
+  @media (max-width: 760px) { .kinds { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+  .kind-opt {
+    display: flex; flex-direction: column; gap: .2rem; padding: .875rem; cursor: pointer;
+    border: 1px solid var(--line); border-radius: 16px; transition: border-color .2s ease, background-color .2s ease;
+  }
+  .kind-opt:hover { border-color: var(--ink-faint); }
+  .kind-opt:has(input:checked) { border-color: var(--signal); background: var(--signal-wash); }
+  .kind-opt:has(input:focus-visible) { outline: 2px solid var(--signal); outline-offset: 2px; }
+  .kind-name { font-weight: 600; font-size: .90625rem; }
+  .kind-body { font-size: .8125rem; color: var(--ink-dim); }
+
+  .add-box { padding: 1rem; border-radius: 18px; border: 1px dashed var(--line); }
+
+  .ready { align-items: flex-start; padding: 2rem 0 1rem; }
+  .ready h3 { font-size: 1.5rem; letter-spacing: -.02em; }
+  .ready-check {
+    width: 64px; height: 64px; border-radius: 20px; display: grid; place-items: center;
+    background: color-mix(in srgb, var(--tier-1) 16%, transparent); color: var(--tier-1);
+    animation: ready-pop .5s cubic-bezier(.3,1.6,.5,1);
+  }
+  @keyframes ready-pop { from { transform: scale(.5); opacity: 0; } to { transform: none; opacity: 1; } }
+
+  .wiz-error {
+    margin: 0 1.5rem 1rem; padding: .625rem .875rem; border-radius: 14px;
+    background: var(--alert-wash); color: var(--alert); font-size: .875rem; font-weight: 500;
+  }
+  .wiz-foot {
+    display: flex; align-items: center; gap: .5rem; padding: 1rem 1.25rem 1.125rem 1.5rem;
+    border-top: 1px solid var(--line-soft); background: var(--surface);
+    position: sticky; bottom: 0; z-index: 2;
+  }
+  .wiz-foot.hidden { display: none; }
+  .wiz-skip {
+    min-height: 46px; padding: 0 1rem; border-radius: 999px; cursor: pointer;
+    font-size: .9375rem; font-weight: 600; color: var(--ink-dim);
+  }
+  .wiz-skip:hover { color: var(--ink); background: var(--surface-2); }
+  .wiz-skip.hidden { display: none; }
+  .wiz-flash {
+    margin-left: auto; font-size: .84375rem; font-weight: 600; color: var(--tier-1);
+    opacity: 0; transform: translateY(4px); transition: opacity .25s ease, transform .25s ease;
+  }
+  .wiz-flash:global(.is-on) { opacity: 1; transform: none; }
+  .wiz-next { min-width: 8.5rem; }
+  .wiz-danger { display: flex; justify-content: flex-end; padding: 0 1.25rem 1rem; background: var(--surface); }
+  .hide-xs { display: inline; }
+  @media (max-width: 420px) { .hide-xs { display: none; } .wiz-next { min-width: 0; flex: 1; } }
+  @media (prefers-reduced-motion: reduce) { .pane, .ready-check { animation: none; } .st-bar::after, .wiz-flash { transition: none; } }
+</style>

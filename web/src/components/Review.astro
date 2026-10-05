@@ -1,5 +1,6 @@
 ---
 import { useTranslations, localise, type Lang } from '../i18n/ui';
+import PageBand from './PageBand.astro';
 
 interface Props { lang: Lang; }
 const { lang } = Astro.props;
@@ -52,12 +53,9 @@ const strings = {
 };
 ---
 
-<section class="mx-auto max-w-4xl px-4 py-16 sm:px-6" hidden data-guarded>
-  <header class="max-w-2xl">
-    <p class="eyebrow">{t('rev.eyebrow')}</p>
-    <h1 class="mt-3 text-3xl sm:text-4xl">{t('rev.title')}</h1>
-    <p class="mt-3 text-[var(--ink-dim)]">{t('rev.lede')}</p>
-  </header>
+<PageBand eyebrow={t('rev.eyebrow')} title={t('rev.title')} lede={t('rev.lede')} />
+
+<section class="mx-auto max-w-4xl px-4 pb-20 sm:px-6" hidden data-guarded>
 
   <!-- Four states. "Not a reviewer" is one of them and is drawn rather than
        redirected: bouncing somebody off a page they navigated to on purpose

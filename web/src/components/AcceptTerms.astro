@@ -1,5 +1,6 @@
 ---
 import { useTranslations, localise, type Lang } from '../i18n/ui';
+import AuthShell from './AuthShell.astro';
 
 interface Props { lang: Lang; }
 const { lang } = Astro.props;
@@ -16,6 +17,7 @@ const strings = {
 <!-- Asked once per version of the terms, of anybody signed in on the website.
      requireUser sends people here; this is the only signed-in page that does
      not itself ask. -->
+<AuthShell>
 <section class="mx-auto flex max-w-md flex-col px-4 py-20 sm:px-6" hidden data-guarded>
   <h1 class="text-3xl">{t('terms.gate.title')}</h1>
   <p class="mt-4 text-[var(--ink-dim)]">{t('terms.gate.lede')}</p>
@@ -59,6 +61,7 @@ const strings = {
     <p class="mt-2 text-sm text-[var(--ink-dim)]" data-gate-parent-body></p>
   </div>
 </section>
+</AuthShell>
 
 <script type="application/json" data-gate-strings set:html={JSON.stringify(strings)}></script>
 

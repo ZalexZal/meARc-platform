@@ -52,7 +52,7 @@
 
   --ink: #0a1418;
   --ink-dim: #4a626e;
-  --ink-faint: #7b93a0;
+  --ink-faint: #577080;
 
   /* Darkened from the app's #45C4B0, which is a night colour and fails against
      white. Same hue, enough contrast to read as body-adjacent text. */
@@ -92,7 +92,7 @@
 
     --ink: #e9f2f5;
     --ink-dim: #93aab5;
-    --ink-faint: #617984;
+    --ink-faint: #7d95a0;
 
     --signal: #2997ff;
     --signal-bright: #4aa8ff;
@@ -128,7 +128,7 @@
 
   --ink: #e9f2f5;
   --ink-dim: #93aab5;
-  --ink-faint: #617984;
+  --ink-faint: #7d95a0;
 
   --signal: #2997ff;
   --signal-bright: #4aa8ff;
@@ -148,6 +148,42 @@
   --grid: rgba(140, 200, 215, 0.05);
   --shadow-soft: 0 1px 2px rgba(0, 0, 0, .5), 0 8px 24px -12px rgba(0, 0, 0, .7);
   --shadow-lift: 0 2px 4px rgba(0, 0, 0, .5), 0 18px 44px -18px rgba(0, 0, 0, .8);
+}
+
+/* The night map, whatever the theme. The home page, the band at the top of a
+   page, the sign-in pages and the footer are drawn at night in both themes: the
+   map's pulses only glow on a dark ground, and the site is recognisable by it.
+   Tokens only - the element decides its own background. */
+.night {
+  color-scheme: dark;
+
+  --ground: #080d10;
+  --ground-deep: #05090b;
+  --surface: rgba(16, 26, 31, .72);
+  --surface-2: rgba(140, 190, 215, .1);
+  --line: rgba(140, 190, 215, .2);
+  --line-soft: rgba(140, 190, 215, .12);
+
+  --ink: #e9f2f5;
+  --ink-dim: #a3b8c2;
+  --ink-faint: #7d95a0;
+
+  --signal: #2997ff;
+  --signal-bright: #4aa8ff;
+  --signal-ink: #04182e;
+  --signal-wash: rgba(41, 151, 255, 0.14);
+
+  --lamp: #f0a868;
+  --lamp-wash: rgba(240, 168, 104, 0.12);
+
+  --alert: #ff7a6b;
+  --alert-wash: rgba(255, 122, 107, 0.12);
+
+  --grid: rgba(140, 200, 215, 0.05);
+  --shadow-soft: none;
+  --shadow-lift: 0 30px 80px -30px rgba(0, 0, 0, .8);
+
+  color: var(--ink);
 }
 
 @theme inline {
@@ -290,8 +326,12 @@ img, svg, video { max-width: 100%; height: auto; display: block; }
 .card {
   background: var(--surface);
   border: 1px solid var(--line);
-  border-radius: 14px;
-  box-shadow: var(--shadow-soft);
+  border-radius: 22px;
+}
+/* At night a card is glass over the map, so the streets show through it. */
+.night .card {
+  -webkit-backdrop-filter: blur(16px) saturate(140%);
+  backdrop-filter: blur(16px) saturate(140%);
 }
 
 /* ------------------------------------------------------------------ buttons
@@ -313,9 +353,9 @@ img, svg, video { max-width: 100%; height: auto; display: block; }
   gap: .5rem;
   flex-shrink: 0;
   /* 44px is the floor for a thumb, and it is a floor rather than a target. */
-  min-height: 44px;
-  padding: 0 1.25rem;
-  border-radius: 10px;
+  min-height: 46px;
+  padding: 0 1.375rem;
+  border-radius: 999px;
   border: 1px solid transparent;
   font-family: var(--font-body);
   font-size: var(--text-sm);
@@ -328,7 +368,7 @@ img, svg, video { max-width: 100%; height: auto; display: block; }
               color .18s ease, transform .18s ease;
 }
 
-.btn:active { transform: translateY(1px); }
+.btn:active { transform: scale(.96); }
 
 /* Disabled is a state, not a removal. It stays legible and stops responding,
    because a control that vanishes while you are looking at it reads as a bug. */
@@ -400,7 +440,7 @@ img, svg, video { max-width: 100%; height: auto; display: block; }
 
 /* Sizes. Below 44px only where the control sits in a row of its own and a thumb
    is not the expected input - a reviewer at a laptop, mostly. */
-.btn-sm { min-height: 38px; padding: 0 .875rem; font-size: var(--text-xs); }
+.btn-sm { min-height: 40px; padding: 0 1rem; font-size: var(--text-xs); }
 .btn-lg { min-height: 52px; padding: 0 1.75rem; font-size: var(--text-base); }
 
 .btn-icon { padding: 0; width: 44px; }
@@ -412,11 +452,11 @@ img, svg, video { max-width: 100%; height: auto; display: block; }
 
 .field {
   width: 100%;
-  min-height: 44px;
-  padding: .625rem .875rem;
+  min-height: 46px;
+  padding: .6875rem .9375rem;
   background: var(--surface);
   border: 1px solid var(--line);
-  border-radius: 10px;
+  border-radius: 14px;
   color: var(--ink);
   font-family: var(--font-body);
   font-size: var(--text-base);
@@ -531,7 +571,7 @@ input[type="file"].field::file-selector-button:hover { border-color: var(--ink-f
 .note {
   border: 1px solid var(--line);
   background: var(--surface);
-  border-radius: 12px;
+  border-radius: 16px;
   padding: .75rem 1rem;
   font-size: var(--text-sm);
 }
@@ -540,7 +580,7 @@ input[type="file"].field::file-selector-button:hover { border-color: var(--ink-f
 
 .empty {
   border: 1px dashed var(--line);
-  border-radius: 14px;
+  border-radius: 22px;
   padding: 2rem;
   text-align: center;
   color: var(--ink-dim);
@@ -585,16 +625,16 @@ input[type="file"].field::file-selector-button:hover { border-color: var(--ink-f
   gap: .25rem;
   padding: .25rem;
   background: var(--surface-2);
-  border-radius: 12px;
+  border-radius: 999px;
   overflow-x: auto;
   overscroll-behavior-x: contain;
 }
 .tab {
   flex: 1 1 auto;
   min-height: 38px;
-  padding: 0 .875rem;
+  padding: 0 1rem;
   border: 0;
-  border-radius: 9px;
+  border-radius: 999px;
   background: transparent;
   color: var(--ink-dim);
   font-family: var(--font-body);
@@ -738,7 +778,65 @@ input[type="file"].field::file-selector-button:hover { border-color: var(--ink-f
   .reveal { opacity: 1 !important; transform: none !important; }
 }
 
-.reveal { opacity: 0; transform: translateY(18px); }
-.reveal-in { opacity: 1; transform: none; }
+/* --------------------------------------------------------------- reveals
 
+   Things arrive as they scroll in. Hidden only once the script that reveals
+   them has said it is running (html.js-reveal), so a page whose script did not
+   load is a complete page, not a column of invisible sections.               */
+
+.js-reveal [data-reveal] {
+  opacity: 0;
+  transform: translateY(18px);
+  transition: opacity .8s cubic-bezier(.2, .7, .2, 1), transform .8s cubic-bezier(.2, .7, .2, 1);
+}
+.js-reveal [data-reveal].is-in { opacity: 1; transform: none; }
+
+/* A group whose children arrive one after another, each with its own delay. */
+.js-reveal [data-reveal-group] > * {
+  opacity: 0;
+  transform: translateY(14px);
+  transition: opacity .6s ease, transform .6s cubic-bezier(.2, .7, .2, 1);
+}
+.js-reveal [data-reveal-group].is-in > * { opacity: 1; transform: none; }
+
+/* -------------------------------------------------------------- page band
+
+   The night map at the top of a page: its title over a live corner of the
+   town. The map is the canvas; the scrim keeps the words readable over it.   */
+
+.band {
+  position: relative;
+  overflow: hidden;
+  background: #080d10;
+  isolation: isolate;
+}
+.band > canvas { position: absolute; inset: 0; z-index: -2; display: block; }
+.band::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background:
+    linear-gradient(90deg, rgba(8, 13, 16, .94) 0%, rgba(8, 13, 16, .74) 34%, rgba(8, 13, 16, .2) 72%, rgba(8, 13, 16, .35) 100%),
+    linear-gradient(0deg, rgba(8, 13, 16, .6), rgba(8, 13, 16, 0) 40%);
+}
+@media (max-width: 760px) {
+  .band::before {
+    background: linear-gradient(180deg, rgba(8, 13, 16, .55), rgba(8, 13, 16, .88) 70%, rgba(8, 13, 16, .94));
+  }
+}
+
+/* Headline sizes, set once. Unbounded is wide, so it steps down early. */
+.display-xl { font-size: clamp(2.5rem, 5.6vw, 5rem); line-height: 1.02; letter-spacing: -.03em; }
+.display-lg { font-size: clamp(2rem, 3.4vw, 3.125rem); line-height: 1.05; letter-spacing: -.025em; }
+.display-md { font-size: clamp(1.75rem, 2.6vw, 2.375rem); line-height: 1.08; letter-spacing: -.02em; }
+
+.lede { font-size: clamp(1.0625rem, 1.3vw, 1.25rem); line-height: 1.55; color: var(--ink-dim); text-wrap: pretty; }
+
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .js-reveal [data-reveal],
+  .js-reveal [data-reveal-group] > * { opacity: 1; transform: none; transition: none; }
 }

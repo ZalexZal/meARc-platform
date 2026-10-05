@@ -1,0 +1,59 @@
+---
+/**
+ * The top of every page that is not the home page: its title over a live
+ * corner of the night map. One band, so every page starts the way the home
+ * page does and the site reads as one place.
+ */
+interface Props {
+  eyebrow?: string;
+  title: string;
+  lede?: string;
+  /** Extra attributes for the heading, for pages whose script rewrites it. */
+  h1?: Record<string, string>;
+}
+const { eyebrow, title, lede, h1 = {} } = Astro.props;
+
+// Each page gets its own corner of the town, the same one every visit.
+const seed = [...title].reduce((sum, ch) => (sum * 31 + ch.charCodeAt(0)) | 0, 7);
+---
+
+<section class="band night page-band" data-band data-seed={seed}>
+  <canvas data-band-canvas aria-hidden="true"></canvas>
+  <div class="band-in">
+    <div class="band-copy">
+      {eyebrow && <p class="eyebrow band-eyebrow"><span class="band-dot" aria-hidden="true"></span>{eyebrow}</p>}
+      <h1 class="display-lg" {...h1}>{title}</h1>
+      {lede && <p class="lede band-lede">{lede}</p>}
+    </div>
+    <slot />
+  </div>
+</section>
+
+<script>
+  import { startNightMap } from '../lib/nightmap';
+
+  document.querySelectorAll<HTMLElement>('[data-band]').forEach((band) => {
+    const canvas = band.querySelector<HTMLCanvasElement>('[data-band-canvas]');
+    if (canvas) startNightMap({ host: band, canvas, seed: Number(band.dataset.seed) || 7, walker: false });
+  });
+</script>
+
+<style>
+  /* Pulled up under the header, like the home page's map, so the header floats
+     over the night from the first frame. */
+  .page-band { margin-top: -64px; }
+  .band-in {
+    position: relative; max-width: 76rem; margin: 0 auto;
+    padding: calc(64px + 4.5rem) 1.5rem 4rem;
+    display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 1.5rem;
+    min-height: 21rem;
+  }
+  @media (max-width: 640px) { .band-in { padding: calc(64px + 3rem) 1.25rem 2.75rem; min-height: 0; } }
+  .band-copy { max-width: 42rem; animation: band-rise .8s cubic-bezier(.2,.7,.2,1) both; }
+  .band-eyebrow { display: flex; align-items: center; gap: .625rem; color: var(--ink-dim); }
+  .band-dot { width: 7px; height: 7px; border-radius: 50%; background: #2997ff; box-shadow: 0 0 0 4px rgba(41,151,255,.18); }
+  .band-copy h1 { margin-top: .875rem; }
+  .band-lede { margin-top: 1rem; max-width: 36em; }
+  @keyframes band-rise { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: none; } }
+  @media (prefers-reduced-motion: reduce) { .band-copy { animation: none; } }
+</style>

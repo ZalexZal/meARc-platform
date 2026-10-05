@@ -8,32 +8,39 @@ const href = localise(lang);
 const year = new Date().getFullYear();
 ---
 
-<footer class="mt-24 border-t border-[var(--line-soft)] bg-[var(--ground-deep)]">
-  <div class="mx-auto grid max-w-6xl gap-10 px-4 py-14 sm:px-6 md:grid-cols-[1.5fr_1fr_1fr]">
+<!-- At night on every page, so the site ends where the home page begins: on
+     the map. -->
+<footer class="night site-footer" data-map-texture>
+  <div class="mx-auto grid max-w-6xl gap-10 px-4 py-16 sm:px-6 md:grid-cols-[1.5fr_1fr_1fr]">
     <div>
-      <div class="flex items-center gap-2.5">
-        <svg width="22" height="22" viewBox="0 0 26 26" fill="none" aria-hidden="true">
-          <ellipse cx="13" cy="20.5" rx="7.5" ry="3" stroke="var(--ink-faint)" stroke-width="1.2" />
+      <a href={href('/')} class="flex w-fit items-center gap-2.5">
+        <svg width="24" height="24" viewBox="0 0 26 26" fill="none" aria-hidden="true">
+          <ellipse cx="13" cy="20.5" rx="7.5" ry="3" stroke="currentColor" stroke-opacity=".45" stroke-width="1.2" />
           <path d="M13 3.5c-3.3 0-6 2.6-6 5.9 0 4.4 6 9.6 6 9.6s6-5.2 6-9.6c0-3.3-2.7-5.9-6-5.9Z" fill="var(--signal)" />
           <circle cx="13" cy="9.3" r="2.1" fill="var(--signal-ink)" />
         </svg>
-        <span class="font-[family-name:var(--font-display)] text-sm font-semibold">AR&nbsp;Trail</span>
-      </div>
-      <p class="mt-3 max-w-xs text-sm text-[var(--ink-dim)]">{t('footer.tagline')}</p>
+        <span class="font-[family-name:var(--font-display)] text-[15px] font-semibold">AR&nbsp;Trail</span>
+      </a>
+      <p class="mt-4 max-w-xs text-sm text-[var(--ink-dim)]">{t('footer.tagline')}</p>
+      <p class="mt-5 inline-flex items-center gap-2 rounded-full border border-dashed border-[var(--line)] px-3.5 py-2 text-xs text-[var(--ink-dim)]">
+        <span class="h-1.5 w-1.5 rounded-full bg-[var(--signal)]" aria-hidden="true"></span>
+        {t('home.soon')}
+      </p>
     </div>
 
     <nav aria-label={t('footer.product')}>
       <h2 class="eyebrow">{t('footer.product')}</h2>
-      <ul class="mt-3 space-y-2 text-sm">
+      <ul class="mt-4 space-y-2.5 text-sm">
         <li><a class="text-[var(--ink-dim)] hover:text-[var(--ink)]" href={href('/#how')}>{t('nav.how')}</a></li>
         <li><a class="text-[var(--ink-dim)] hover:text-[var(--ink)]" href={href('/trails')}>{t('nav.games')}</a></li>
-        <li><a class="text-[var(--ink-dim)] hover:text-[var(--ink)]" href={href('/#faq')}>{t('nav.faq')}</a></li>
+        <li><a class="text-[var(--ink-dim)] hover:text-[var(--ink)]" href={href('/play')}>{t('nav.play')}</a></li>
+        <li><a class="text-[var(--ink-dim)] hover:text-[var(--ink)]" href={href('/my-trails')}>{t('nav.mine')}</a></li>
       </ul>
     </nav>
 
     <nav aria-label={t('footer.legal')}>
       <h2 class="eyebrow">{t('footer.legal')}</h2>
-      <ul class="mt-3 space-y-2 text-sm">
+      <ul class="mt-4 space-y-2.5 text-sm">
         <li><a class="text-[var(--ink-dim)] hover:text-[var(--ink)]" href={href('/terms')}>{t('footer.terms')}</a></li>
         <li><a class="text-[var(--ink-dim)] hover:text-[var(--ink)]" href={href('/privacy')}>{t('footer.privacy')}</a></li>
         <li><a class="text-[var(--ink-dim)] hover:text-[var(--ink)]" href={href('/parent')}>{t('par.title')}</a></li>
@@ -43,8 +50,29 @@ const year = new Date().getFullYear();
   </div>
 
   <div class="border-t border-[var(--line-soft)]">
-    <p class="mx-auto max-w-6xl px-4 py-5 text-2xs text-[var(--ink-faint)] sm:px-6">
+    <p class="mx-auto max-w-6xl px-4 py-6 text-2xs text-[var(--ink-faint)] sm:px-6">
       © {year} AR Trail. {t('footer.rights')}
     </p>
   </div>
 </footer>
+
+<script>
+  import { mapTexture } from '../lib/nightmap';
+
+  // The same streets as the map above, faint, repeating without a seam behind
+  // every long stretch of night. Drawn once per page, in the browser.
+  const tile = mapTexture();
+  if (tile) {
+    document.querySelectorAll<HTMLElement>('[data-map-texture]').forEach((el) => {
+      el.style.backgroundImage = `url(${tile})`;
+    });
+  }
+</script>
+
+<style>
+  .site-footer {
+    background-color: #080d10;
+    background-size: 960px 960px;
+    border-top: 1px solid var(--line-soft);
+  }
+</style>

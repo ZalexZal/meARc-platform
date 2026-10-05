@@ -1,5 +1,6 @@
 ---
 import { useTranslations, localise, type Lang } from '../i18n/ui';
+import PageBand from './PageBand.astro';
 import { TERMS_VERSION } from '../lib/terms';
 
 interface Props { lang: Lang; }
@@ -27,9 +28,9 @@ const strings = {
      link a child's request sent them, or comes on their own to add a child.
      Everything below the explanation needs a session opened by an emailed
      link: that is the proof the inbox is theirs (0048). -->
-<article class="mx-auto max-w-2xl px-4 py-16 sm:px-6">
-  <h1 class="text-3xl sm:text-4xl">{t('par.title')}</h1>
-  <p class="mt-4 text-[var(--ink-dim)]">{t('par.lede')}</p>
+<PageBand eyebrow={lang === 'bg' ? 'Родители' : 'Parents'} title={t('par.title')} lede={t('par.lede')} />
+
+<article class="mx-auto max-w-2xl px-4 pb-20 sm:px-6">
 
   <details class="card mt-8 p-5">
     <summary class="cursor-pointer font-medium">{t('cons.what')}</summary>

@@ -260,25 +260,30 @@ proven on a real phone and what still waits for a field test.
 
 ### For a creator (the website)
 
-- **Create a trail**: name, mode, team size, and whether an ordered trail reveals
-  stops one at a time (the ones ahead are then not sent to phones at all).
-- **The editor**:
+- **Create a trail** from **My trails**, the one way in: the New trail tile asks
+  for a name and a mode and opens the builder. Team size, and whether an ordered
+  trail reveals stops one at a time (the ones ahead are then not sent to phones
+  at all), are set in the builder.
+- **The builder**:
   - A map where you click to place a stop and drag to move it (two fingers on a
     phone).
-  - Five tabs per stop:
-    - **Basics**: title and text in Bulgarian and English, the colour, and the
-      **shape** the stop takes in the camera: pin, sphere, cone, cube, or a
-      **sign** with up to 80 characters of words on it in each language.
-    - **Place**: coordinates and an arrival radius, with a warning when radii
-      overlap.
-    - **Answer**: kind, options, accepted spellings, points, the wrong-answer
-      rule and the afterword. The rule is one of **retry**, **lock** (a cooldown,
-      15 s by default), **deduct** (points off what the stop is worth) or
-      **skip** (one try, then the stop is over).
-    - **Hints**: a priced ladder.
+  - Each stop is filled in **five guided steps**, with Previous and Next. Each
+    step is saved as it is left, and Next checks it first. A stop just placed
+    opens at the first step; a stop that exists can be entered at any step from
+    the step bar.
+    - **Basics**: title and text in Bulgarian and English.
+    - **Place**: coordinates and an arrival radius (with a warning when radii
+      overlap), the **shape** the stop takes in the camera (pin, sphere, cone,
+      cube, or a **sign** with up to 80 characters of words on it in each
+      language) and its colour, on a hue slider drawn at the exact lightness the
+      phone will use.
+    - **Question** (can be skipped): none, an exact answer, multiple choice or
+      free text; options, accepted spellings, points, the wrong-answer rule and
+      the afterword. The rule is one of **retry**, **lock** (a cooldown, 15 s by
+      default), **deduct** (points off what the stop is worth) or **skip** (one
+      try, then the stop is over).
+    - **Hints** (can be skipped): a priced ladder.
     - **Media**: uploads up to 50 MB each and 200 MB per trail. Links also work.
-  - A hue slider for each stop's colour, drawn at the exact lightness the phone
-    will use.
   - Drag to reorder stops.
 - **A trail from a spreadsheet**: one row per stop (CSV or pasted straight from
   Excel), checked row by row in your language before anything is imported, with a
@@ -463,12 +468,12 @@ publishes `markers` and their tables for co-editing.
 
 | Page | What it is |
 |---|---|
-| `/` | Home: what AR Trail is, the four modes, questions and answers |
+| `/` | Home: a live night map in the hero, then Build, Walk and Find acted out as you scroll, the four modes, the five builder steps, safety, questions |
 | `/trails` | Public trails: distance, map link, QR, open in the app |
 | `/play` | How to play, in order, with the two-codes warning |
 | `/signup`, `/signin`, `/reset`, `/confirmed`, `/accept-terms` | Accounts: age question, terms tick, password reset, email links, new-terms gate |
 | `/account` | Profile, badges, name/email/password, blocked people, export, delete, parent request |
-| `/create`, `/my-trails`, `/trail?id=…` | Make a trail, your trails with the visibility ladder and removal notices, the editor |
+| `/my-trails`, `/trail?id=…` | Your trails with a New trail tile, the visibility ladder and removal notices; the builder. `/create` redirects to My trails |
 | `/editor-invite` | Accept an invitation to co-edit |
 | `/board?id=…` | Leaderboard; for the owner: teams, codes, warnings, moderator levers, End game |
 | `/review` | Reviewer: listing queue, reports inbox, free-text answers |
@@ -550,7 +555,7 @@ netlify.toml            deploy settings
 
 ## Version history
 
-AR Trail was built in thirteen versions between 26 August and 5 October 2026.
+AR Trail was built in fourteen versions between 26 August and 5 October 2026.
 Each one ended with something working end to end. The numbers below are the
 project's own names for those stages. The **Android build** column is what the
 app itself reported: `versionName` 0.1.0 until 23 September, 0.2.0 from 25
@@ -572,6 +577,7 @@ and 0.6 from 5 October.
 | 11 | 1 Oct | Loose ends, and a lock on every page | 0.4.2 (7) | |
 | 12 | 1–3 Oct | AR in the street, for real | 0.4.3 (8), 0.4.4 (9) | |
 | 13 | 3–5 Oct | Daylight: the new interface | **0.5.0 (10)** to 0.6.1 (21) | |
+| 14 | 5 Oct | One Walk: the website reworked | (website only) | |
 
 ### Version 1: The gate (26–28 August)
 
@@ -1073,6 +1079,43 @@ Not yet tried on foot: the card opening by itself on arrival, and the camera's
 coach during capture.
 
 Commits: app, 3–5 October
+
+### Version 14: One Walk, the website reworked (5 October)
+
+The website was redesigned the same way: a clickable design first
+(https://claude.ai/artifact/GsZS39hRsHYQ1xzLbe8ham), approved, then built.
+
+- **The home page is a walk.** The hero is a live night map of a made-up town:
+  markers on its street corners, every one joined to its neighbours by a thin
+  line, pulses running along the lines. The cursor, or a tap on a phone, is the
+  walker: stops near it light up, rise into pins and pass the pulse on. Scrolling
+  then acts out the idea in three steps while the map stays put: **Build** (five
+  stops drop in and are linked), **Walk** (the dot walks the streets to the next
+  stop while the app's one-line card counts the metres down) and **Find** (the
+  map closes in and becomes the phone's camera, with the stop on a building, its
+  question and +10).
+- **Below it, still night**: four kinds of trail (the old page showed three),
+  the builder's five steps, "Made for a school trip", questions, and a closing
+  card with its own live network. A route line runs down the page and lights a
+  marker at each section.
+- **Every other page** opens on the same night map with its title over it, and
+  signing in, signing up and the other one-question pages stand on it. Buttons
+  are pills, cards and fields are rounder, and the header turns dark over the map.
+- **One way in for a creator.** "Build a trail" left the header; My trails has a
+  New trail tile that asks for the name and mode right there.
+- **The builder is guided** (see *For a creator* above): Basics, Place,
+  Question, Hints, Media, with Previous, Next, Skip and Done.
+- **Copy kept honest**: the "0.5 m anchoring accuracy" and "iOS is coming"
+  claims are gone, and the app is "coming to Google Play".
+- The map is plain TypeScript on a canvas (`web/src/lib/nightmap.ts`), with no
+  React and no new dependency. It stops drawing off screen and in a hidden tab,
+  and with reduced motion every step is shown finished.
+
+The builder was checked against a stand-in database in the browser (every call
+answered locally, nothing written to the real one), at computer and phone
+widths.
+
+Commits: website, 5 October
 
 ## Database migrations
 

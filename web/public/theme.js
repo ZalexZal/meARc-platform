@@ -9,3 +9,13 @@ try {
     document.documentElement.setAttribute('data-theme', saved);
   }
 } catch (e) {}
+
+// Sections that slide in as they scroll are hidden only once this says a script
+// is running. If the page's own script never arrives to reveal them, they are
+// shown anyway after a moment, rather than staying invisible.
+document.documentElement.classList.add('js-reveal');
+setTimeout(function () {
+  if (!document.documentElement.classList.contains('reveal-ready')) {
+    document.documentElement.classList.remove('js-reveal');
+  }
+}, 2500);

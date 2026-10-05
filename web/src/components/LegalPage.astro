@@ -1,5 +1,6 @@
 ---
 import { type Lang } from '../i18n/ui';
+import PageBand from './PageBand.astro';
 import { TERMS_VERSION } from '../lib/terms';
 
 interface Props { lang: Lang; kind: 'terms' | 'privacy'; }
@@ -105,8 +106,9 @@ const content: Record<'terms' | 'privacy', Record<Lang, { title: string; draft: 
 const page = content[kind][lang];
 ---
 
-<article class="mx-auto max-w-2xl px-4 py-20 sm:px-6">
-  <h1 class="text-3xl sm:text-4xl">{page.title}</h1>
+<PageBand eyebrow={lang === 'bg' ? 'Правни' : 'Legal'} title={page.title} />
+
+<article class="mx-auto max-w-2xl px-4 pb-20 pt-10 sm:px-6">
 
   <p class="mt-5 rounded-lg border border-[var(--lamp)] bg-[var(--lamp-wash)] px-4 py-3 text-sm text-[var(--lamp)]">
     {page.draft}

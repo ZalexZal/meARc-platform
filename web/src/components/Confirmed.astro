@@ -1,5 +1,6 @@
 ---
 import { useTranslations, localise, type Lang } from '../i18n/ui';
+import AuthShell from './AuthShell.astro';
 
 interface Props { lang: Lang; }
 const { lang } = Astro.props;
@@ -10,6 +11,7 @@ const href = localise(lang);
 <!-- Where an email confirmation link lands. Supabase puts the session in the
      address; the client reads it on load. What is left is to finish anything
      the sign-up could not do without a session, and to say where to go. -->
+<AuthShell>
 <section class="mx-auto max-w-lg px-4 py-24 text-center sm:px-6">
   <p class="text-[var(--ink-dim)]" data-conf-wait>{t('games.loading')}</p>
 
@@ -32,6 +34,7 @@ const href = localise(lang);
     <a class="btn btn-quiet mt-8" href={href('/signin')}>{t('auth.submitIn')}</a>
   </div>
 </section>
+</AuthShell>
 
 <script>
   import { db, finishPending } from '../lib/supabase';

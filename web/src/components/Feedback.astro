@@ -1,5 +1,6 @@
 ---
 import { useTranslations, type Lang } from '../i18n/ui';
+import PageBand from './PageBand.astro';
 
 interface Props { lang: Lang; }
 const { lang } = Astro.props;
@@ -18,10 +19,9 @@ const strings = {
 <!-- Send feedback from the website. The app has the same thing under You. It
      goes to the reviewer's queue on /review, with the page it came from and the
      browser, and nowhere else. -->
-<section class="mx-auto max-w-xl px-4 py-16 sm:px-6" hidden data-guarded>
-  <p class="eyebrow">{t('fb.eyebrow')}</p>
-  <h1 class="mt-3 text-3xl sm:text-4xl">{t('fb.title')}</h1>
-  <p class="mt-3 text-[var(--ink-dim)]">{t('fb.lede')}</p>
+<PageBand eyebrow={t('fb.eyebrow')} title={t('fb.title')} lede={t('fb.lede')} />
+
+<section class="mx-auto max-w-xl px-4 pb-20 pt-2 sm:px-6" hidden data-guarded>
 
   <form class="card mt-8 space-y-5 p-6 sm:p-8" data-fb-form novalidate>
     <div>

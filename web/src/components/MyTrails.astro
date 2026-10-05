@@ -1,5 +1,6 @@
 ---
 import { useTranslations, localise, type Lang } from '../i18n/ui';
+import PageBand from './PageBand.astro';
 
 interface Props { lang: Lang; }
 const { lang } = Astro.props;
@@ -36,6 +37,8 @@ const strings = {
   reviewNote: t('mine.reviewNote'),
   review: t('mine.review'),
   editHref: href('/trail'),
+  creating: t('new.creating'),
+  signinHref: href('/signin'),
   boardHref: href('/board'),
   lang,
   rmTitle: t('rm.title'), rmTrail: t('rm.trail'), rmStop: t('rm.stop'), rmReasons: t('rm.reasons'),
@@ -46,46 +49,80 @@ const strings = {
     spam: t('rep.reason.spam'), other: t('rep.reason.other'),
   },
 };
+
+// Grouped by what they are: a game keeps score and a walk does not, which is
+// the first thing a creator is actually choosing between.
+const modes = [
+  { value: 'ctf', label: t('new.mode.ctf'), body: t('new.mode.ctf.body') },
+  { value: 'freefall', label: t('new.mode.freefall'), body: t('new.mode.freefall.body') },
+  { value: 'guide', label: t('new.mode.guide'), body: t('new.mode.guide.body') },
+  { value: 'educational', label: t('new.mode.educational'), body: t('new.mode.educational.body') },
+];
 ---
 
-<section class="mx-auto max-w-5xl px-4 py-16 sm:px-6" hidden data-guarded>
-  <header class="flex flex-wrap items-end justify-between gap-4">
-    <div class="max-w-2xl">
-      <p class="eyebrow">{t('mine.eyebrow')}</p>
-      <h1 class="mt-3 text-3xl sm:text-4xl">{t('mine.title')}</h1>
-      <p class="mt-3 text-[var(--ink-dim)]">{t('mine.lede')}</p>
-    </div>
-    <div class="flex shrink-0 gap-2">
-      <!-- Only for a reviewer. is_admin() decides, and the link is revealed by
-           the script rather than rendered conditionally, because this page is
-           static and the answer is per-session. -->
-      <a class="btn btn-quiet hidden" href={href('/review')} data-review-link>{t('mine.review')}</a>
-      <a class="btn btn-primary" href={href('/create')}>{t('mine.new')}</a>
-    </div>
-  </header>
+<PageBand eyebrow={t('mine.eyebrow')} title={t('mine.title')} lede={t('mine.lede')}>
+  <!-- Only for a reviewer. is_admin() decides, and the link is revealed by the
+       script rather than rendered conditionally, because this page is static
+       and the answer is per-session. -->
+  <a class="btn btn-quiet hidden" href={href('/review')} data-review-link>{t('mine.review')}</a>
+</PageBand>
 
+<section class="mx-auto max-w-6xl px-4 pb-20 pt-10 sm:px-6" hidden data-guarded>
   <!-- What a reviewer took down, and why: the statement of reasons the Digital
        Services Act asks for (art. 17). Shown until the creator says they have
        read it, and kept in their data download after. -->
-  <div class="mt-10 hidden space-y-3" data-notices role="status"></div>
+  <div class="mb-10 hidden space-y-3" data-notices role="status"></div>
 
-  <!-- Three states, all of them drawn. A list that can only render rows shows a
-       blank rectangle for the two cases that happen most on a young account:
-       nothing made yet, and no connection. -->
-  <div class="mt-12 hidden" data-mine-empty>
-    <div class="card max-w-lg p-8">
-      <h2 class="text-lg">{t('mine.empty')}</h2>
-      <p class="mt-2 text-sm text-[var(--ink-dim)]">{t('mine.emptyBody')}</p>
-    </div>
-  </div>
-
-  <div class="mt-12 hidden" data-mine-failed>
+  <div class="hidden" data-mine-failed>
     <div class="card max-w-lg border-[var(--alert)] p-8">
       <p class="text-sm text-[var(--alert)]">{t('mine.failed')}</p>
     </div>
   </div>
 
-  <ul class="mt-12 grid gap-5 sm:grid-cols-2" data-mine></ul>
+  <!-- The one way in for a new trail. It used to be a page of its own behind a
+       header button; the name and the mode are two questions, so they are asked
+       here, where the trails already are, and the answer opens the builder. -->
+  <div class="mine-grid" data-mine-grid>
+    <div class="new-slot" data-new-slot>
+      <button type="button" class="new-tile" data-new-open aria-expanded="false" aria-controls="new-trail">
+        <span class="new-plus" aria-hidden="true">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M12 5v14M5 12h14" /></svg>
+        </span>
+        <span class="new-title">{t('mine.newTile')}</span>
+        <span class="new-body">{t('mine.newBody')}</span>
+      </button>
+
+      <form class="new-form" id="new-trail" hidden data-create novalidate>
+        <div class="new-form-head">
+          <h2 class="text-xl">{t('mine.newTile')}</h2>
+          <button type="button" class="btn btn-ghost btn-sm" data-new-close>{t('mine.cancel')}</button>
+        </div>
+        <div>
+          <label class="field-name" for="new-name">{t('new.name')}</label>
+          <input class="field" id="new-name" name="name" type="text" required maxlength="80"
+                 placeholder={t('new.namePlaceholder')} data-new-name />
+        </div>
+        <fieldset>
+          <legend class="field-name">{t('new.mode')}</legend>
+          <div class="mode-grid">
+            {modes.map((m) => (
+              <label class="mode-opt">
+                <input class="sr-only" type="radio" name="mode" value={m.value} checked={m.value === 'ctf'} />
+                <span class="mode-name">{m.label}</span>
+                <span class="mode-body">{m.body}</span>
+              </label>
+            ))}
+          </div>
+        </fieldset>
+        <p class="note note-alert hidden" data-create-error role="alert"></p>
+        <div class="flex flex-wrap items-center gap-3">
+          <button class="btn btn-primary btn-lg" type="submit" data-create-submit>{t('mine.createGo')}</button>
+        </div>
+      </form>
+    </div>
+
+    <ul class="contents" data-mine></ul>
+  </div>
 </section>
 
 <p class="mx-auto max-w-5xl px-4 py-24 text-center text-[var(--ink-dim)]" data-mine-loading>
@@ -96,7 +133,7 @@ const strings = {
 
 <script>
   import { db } from '../lib/supabase';
-  import { requireUser, reveal, escapeHtml, text, count } from '../lib/session';
+  import { requireUser, reveal, escapeHtml, text, count, who } from '../lib/session';
   import { levelOf, isPending, isListed, setLevel } from '../lib/publishing';
 
   const S = JSON.parse(document.querySelector('[data-mine-strings]')!.textContent || '{}');
@@ -241,16 +278,78 @@ const strings = {
       return;
     }
 
+    // No trails yet is not a separate page state any more: the New trail tile
+    // is always first, and on an empty account it is the whole grid.
     worlds = data ?? [];
-    if (worlds.length === 0) {
-      q('[data-mine-empty]')!.classList.remove('hidden');
-      return;
-    }
-
     q('[data-mine]')!.innerHTML = worlds.map(card).join('');
   }
 
   await load();
+
+  // ------------------------------------------------------------- a new trail
+  const slot = q('[data-new-slot]') as HTMLElement;
+  const opener = q('[data-new-open]') as HTMLButtonElement;
+  const form = q('[data-create]') as HTMLFormElement;
+  const nameField = q('[data-new-name]') as HTMLInputElement;
+  const errorBox = q('[data-create-error]') as HTMLElement;
+  const submit = q('[data-create-submit]') as HTMLButtonElement;
+  // A trail needs a real account. A guest is sent to sign in first and comes
+  // straight back here with the form open, rather than filling it in to be
+  // refused at the end.
+  const { anonymous } = await who();
+
+  function openForm(open: boolean) {
+    if (open && anonymous) {
+      const back = encodeURIComponent(location.pathname + '?new=1');
+      location.href = `${S.signinHref}?next=${back}`;
+      return;
+    }
+    slot.classList.toggle('is-open', open);
+    opener.hidden = open;
+    form.hidden = !open;
+    opener.setAttribute('aria-expanded', String(open));
+    if (open) nameField.focus(); else opener.focus();
+  }
+  opener.addEventListener('click', () => openForm(true));
+  q('[data-new-close]')?.addEventListener('click', () => openForm(false));
+  form.addEventListener('keydown', (e) => { if (e.key === 'Escape') openForm(false); });
+
+  // Arrived from "Build a trail" on the home page: the form is already open.
+  if (new URLSearchParams(location.search).get('new') === '1') {
+    openForm(true);
+    history.replaceState(null, '', location.pathname);
+  }
+
+  form.addEventListener('submit', async (event) => {
+    event.preventDefault();
+    errorBox.classList.add('hidden');
+    const data = new FormData(form);
+    const name = String(data.get('name') ?? '').trim();
+    const mode = String(data.get('mode') ?? 'guide');
+    if (!name) {
+      errorBox.textContent = S.lang === 'bg' ? 'Дай име на маршрута.' : 'Give the trail a name.';
+      errorBox.classList.remove('hidden');
+      nameField.focus();
+      return;
+    }
+    const label = submit.textContent;
+    submit.disabled = true;
+    text(submit, S.creating);
+    const { data: world, error } = await client.rpc('create_world', { p_name: name, p_mode: mode, p_language: S.lang });
+    if (error) {
+      submit.disabled = false;
+      text(submit, label);
+      errorBox.textContent = /parent needs to agree/i.test(error.message)
+        ? (S.lang === 'bg' ? 'Родител или настойник трябва първо да се съгласи.' : 'A parent or guardian has to agree first.')
+        : error.message;
+      errorBox.classList.remove('hidden');
+      return;
+    }
+    // Straight into the builder: somebody who just named a trail wants to
+    // place its first stop, not read a confirmation.
+    const id = Array.isArray(world) ? world[0]?.id : (world as any)?.id;
+    location.href = `${S.editHref}?id=${encodeURIComponent(id)}`;
+  });
 
   // The reviewer's own door, shown only to a reviewer. A non-admin gets false
   // rather than an error, so this is safe to call for everybody.
@@ -332,3 +431,44 @@ const strings = {
   });
 </script>
 
+<style>
+  /* Two across: a trail card carries a row of three visibility choices that
+     needs the width. */
+  .mine-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1.25rem; }
+  @media (max-width: 760px) { .mine-grid { grid-template-columns: minmax(0, 1fr); } }
+  .new-slot.is-open { grid-column: 1 / -1; }
+  .new-tile {
+    width: 100%; height: 100%; min-height: 15rem; padding: 1.5rem; text-align: left; cursor: pointer;
+    display: flex; flex-direction: column; justify-content: center; align-items: flex-start; gap: .875rem;
+    border: 1.5px dashed var(--line); border-radius: 22px;
+    background: color-mix(in srgb, var(--signal-wash) 55%, transparent); color: var(--ink);
+    transition: border-color .2s ease, background-color .2s ease, transform .16s ease;
+  }
+  .new-tile:hover { border-color: var(--signal); background: var(--signal-wash); }
+  .new-tile:active { transform: scale(.98); }
+  .new-plus { width: 52px; height: 52px; border-radius: 16px; display: grid; place-items: center; background: var(--signal); color: var(--signal-ink); }
+  .new-title { font-family: var(--font-display); font-weight: 600; font-size: 1.1875rem; letter-spacing: -.015em; }
+  .new-body { color: var(--ink-dim); font-size: .9375rem; max-width: 26rem; }
+  .new-form {
+    display: flex; flex-direction: column; gap: 1.25rem; padding: 1.5rem;
+    border-radius: 22px; border: 1.5px solid var(--signal); background: var(--surface);
+    box-shadow: 0 0 0 4px var(--signal-wash);
+    animation: new-in .35s cubic-bezier(.2,.8,.2,1);
+  }
+  .new-form[hidden] { display: none; }
+  @keyframes new-in { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+  .new-form-head { display: flex; align-items: center; justify-content: space-between; gap: 1rem; }
+  .mode-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: .625rem; }
+  @media (max-width: 900px) { .mode-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+  @media (max-width: 480px) { .mode-grid { grid-template-columns: minmax(0, 1fr); } }
+  .mode-opt {
+    display: flex; flex-direction: column; gap: .25rem; padding: .875rem 1rem; cursor: pointer;
+    border: 1px solid var(--line); border-radius: 16px; transition: border-color .2s ease, background-color .2s ease;
+  }
+  .mode-opt:hover { border-color: var(--ink-faint); }
+  .mode-opt:has(input:checked) { border-color: var(--signal); background: var(--signal-wash); }
+  .mode-opt:has(input:focus-visible) { outline: 2px solid var(--signal); outline-offset: 2px; }
+  .mode-name { font-weight: 600; font-size: .9375rem; }
+  .mode-body { font-size: .8125rem; color: var(--ink-dim); line-height: 1.45; }
+  @media (prefers-reduced-motion: reduce) { .new-form { animation: none; } }
+</style>

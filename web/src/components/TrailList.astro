@@ -1,5 +1,6 @@
 ---
 import { useTranslations, type Lang } from '../i18n/ui';
+import PageBand from './PageBand.astro';
 
 interface Props { lang: Lang; }
 const { lang } = Astro.props;
@@ -12,16 +13,13 @@ const modeNames = lang === 'bg'
   : { guide: 'Guided', freefall: 'Freefall', ctf: 'Competition', educational: 'Educational' };
 ---
 
-<section class="mx-auto max-w-6xl px-4 py-20 sm:px-6">
-  <header class="flex max-w-6xl flex-wrap items-end justify-between gap-6">
-    <div class="max-w-2xl">
-      <p class="eyebrow">{t('games.eyebrow')}</p>
-      <h1 class="mt-3 text-3xl sm:text-4xl">{t('games.title')}</h1>
-    </div>
-    <!-- Asked for, never taken: the browser only asks where you are when this
-         is pressed, and the position never leaves the page. -->
-    <button type="button" class="btn btn-quiet hidden" data-trails-near>{t('games.nearMe')}</button>
-  </header>
+<PageBand eyebrow={t('games.eyebrow')} title={t('games.title')}>
+  <!-- Asked for, never taken: the browser only asks where you are when this
+       is pressed, and the position never leaves the page. -->
+  <button type="button" class="btn btn-quiet hidden" data-trails-near>{t('games.nearMe')}</button>
+</PageBand>
+
+<section class="mx-auto max-w-6xl px-4 pb-20 pt-6 sm:px-6">
 
   <p class="mt-4 hidden text-sm text-[var(--ink-dim)]" data-trails-where></p>
 

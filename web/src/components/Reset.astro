@@ -1,5 +1,6 @@
 ---
 import { useTranslations, localise, type Lang } from '../i18n/ui';
+import AuthShell from './AuthShell.astro';
 
 interface Props { lang: Lang; }
 const { lang } = Astro.props;
@@ -15,6 +16,7 @@ const strings = {
 <!-- Two pages in one. Without a recovery session it asks for the email and
      sends the link; the link comes back here with one, and it asks for the
      new password. -->
+<AuthShell>
 <section class="mx-auto flex max-w-md flex-col px-4 py-20 sm:px-6">
   <h1 class="text-3xl">{t('reset.title')}</h1>
 
@@ -37,6 +39,7 @@ const strings = {
     <p class="hidden text-sm" data-reset-done role="status"></p>
   </form>
 </section>
+</AuthShell>
 
 <script type="application/json" data-reset-strings set:html={JSON.stringify(strings)}></script>
 

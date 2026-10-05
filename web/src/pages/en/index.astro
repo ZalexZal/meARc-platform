@@ -1,19 +1,11 @@
 ---
 import Base from '../../layouts/Base.astro';
-import Hero from '../../components/Hero.astro';
-import RouteScroll from '../../components/RouteScroll.astro';
-import Modes from '../../components/Modes.astro';
-import Faq from '../../components/Faq.astro';
-import CallToAction from '../../components/CallToAction.astro';
+import Home from '../../components/Home.astro';
 import { langFromUrl } from '../../i18n/ui';
 
 const lang = langFromUrl(Astro.url);
 ---
 
 <Base>
-  <Hero lang={lang} />
-  <RouteScroll lang={lang} />
-  <Modes lang={lang} />
-  <Faq lang={lang} />
-  <CallToAction lang={lang} />
+  <Home lang={lang} />
 </Base>

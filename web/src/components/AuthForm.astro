@@ -1,5 +1,6 @@
 ---
 import { useTranslations, localise, type Lang } from '../i18n/ui';
+import AuthShell from './AuthShell.astro';
 
 interface Props { lang: Lang; mode: 'signin' | 'signup'; }
 const { lang, mode } = Astro.props;
@@ -8,6 +9,7 @@ const href = localise(lang);
 const up = mode === 'signup';
 ---
 
+<AuthShell>
 <section class="mx-auto flex max-w-md flex-col px-4 py-20 sm:px-6">
   <h1 class="text-3xl">{up ? t('auth.signup.title') : t('auth.signin.title')}</h1>
 
@@ -122,6 +124,7 @@ const up = mode === 'signup';
     <p class="mt-2 text-sm text-[var(--ink-dim)]" data-auth-parent-body></p>
   </div>
 </section>
+</AuthShell>
 
 <script>
   import { signUp, signIn, acceptTerms, askParent, resendConfirmation, redeemParentCode,

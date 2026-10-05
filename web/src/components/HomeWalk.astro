@@ -1,0 +1,279 @@
+---
+import { useTranslations, localise, type Lang } from '../i18n/ui';
+
+interface Props { lang: Lang; }
+const { lang } = Astro.props;
+const t = useTranslations(lang);
+const href = localise(lang);
+
+// The three things a trail is, in the order they happen. The map behind them
+// acts each one out as it scrolls past.
+const beats = [
+  { n: 1, id: 'how', label: t('home.b1.label'), title: t('home.b1.title'), body: t('home.b1.body') },
+  { n: 2, id: 'walk', label: t('home.b2.label'), title: t('home.b2.title'), body: t('home.b2.body') },
+  { n: 3, id: 'find', label: t('home.b3.label'), title: t('home.b3.title'), body: t('home.b3.body') },
+];
+---
+
+<!-- One canvas, sticky for four and a half screens: free to play with at the
+     top, then scroll walks it through Build, Walk and Find. Everything here is
+     at night in both themes; the pulses only glow on a dark map. -->
+<div class="walk night" data-walk>
+  <div class="stage" data-stage>
+    <canvas data-stage-canvas aria-hidden="true"></canvas>
+    <div class="scrim" aria-hidden="true"></div>
+
+    <!-- The app's one-line next-stop card, counting the metres down. -->
+    <div class="strip" data-strip aria-hidden="true">
+      <span class="badge-n">2</span>
+      <span class="strip-name">{t('home.stop')}</span>
+      <span class="strip-meta">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 17 17 7M9 7h8v8" /></svg>
+        <span data-strip-dist>240 m</span>
+      </span>
+    </div>
+
+    <!-- What the camera shows at the stop. Drawn, not photographed: a street
+         at dusk, the marker standing in front of the tower, its question. -->
+    <div class="phone" data-phone aria-hidden="true">
+      <div class="screen">
+        <div class="lamp-glow"></div>
+        <div class="bld b1"></div>
+        <div class="bld b2"></div>
+        <div class="tower"><div class="clock"></div></div>
+        <div class="road"></div>
+        <div class="ar-shadow"></div>
+        <div class="ar-pin"><span>2</span></div>
+        <div class="ar-chip"><span class="num">2</span><span>{t('home.stop')}</span><span class="here">{t('home.here')}</span></div>
+        <div class="ar-score">+10</div>
+        <div class="ar-q">
+          <p class="q-eyebrow">{t('home.q.eyebrow')}</p>
+          <p class="q-text">{t('home.q.text')}</p>
+          <div class="q-opts"><span>2</span><span>3</span><span class="ok">4</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <section class="hero">
+    <div class="inner">
+      <div class="hero-copy">
+        <p class="live rise" style="animation-delay:80ms">
+          <span class="live-dot" aria-hidden="true"></span>
+          <span class="t-mouse">{t('home.live.mouse')}</span>
+          <span class="t-touch">{t('home.live.touch')}</span>
+        </p>
+        <h1 class="display-xl rise" style="animation-delay:160ms">{t('home.title')}</h1>
+        <p class="lede hero-lede rise" style="animation-delay:280ms">{t('home.lede')}</p>
+        <div class="cta-row rise" style="animation-delay:400ms">
+          <a class="btn btn-primary btn-lg" href={href('/my-trails?new=1')}>{t('home.build')}</a>
+          <a class="btn btn-quiet btn-lg" href="#how">{t('home.how')}</a>
+        </div>
+        <p class="soon rise" style="animation-delay:520ms">{t('home.soon')}</p>
+      </div>
+    </div>
+    <a class="cue" href="#how">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M6 13l6 6 6-6" /></svg>
+      {t('home.scroll')}
+    </a>
+  </section>
+
+  {beats.map((beat) => (
+    <section class="beat" id={beat.id} aria-labelledby={`beat-${beat.n}`}>
+      <div class="inner">
+        <div class="beat-card" data-reveal>
+          <p class="eyebrow beat-label"><span class="beat-n">{beat.n}</span>{beat.label}</p>
+          <h2 class="display-lg" id={`beat-${beat.n}`}>{beat.title}</h2>
+          <p class="lede beat-body">{beat.body}</p>
+        </div>
+      </div>
+    </section>
+  ))}
+
+  <div class="tail" aria-hidden="true"></div>
+</div>
+
+<script>
+  import { startNightMap } from '../lib/nightmap';
+
+  const stage = document.querySelector<HTMLElement>('[data-stage]');
+  const canvas = document.querySelector<HTMLCanvasElement>('[data-stage-canvas]');
+  const scroller = document.querySelector<HTMLElement>('[data-walk]');
+  if (stage && canvas && scroller) {
+    startNightMap({
+      host: stage,
+      canvas,
+      walker: true,
+      textSide: 'left',
+      story: {
+        scroller,
+        strip: document.querySelector<HTMLElement>('[data-strip]'),
+        stripDist: document.querySelector<HTMLElement>('[data-strip-dist]'),
+        phone: document.querySelector<HTMLElement>('[data-phone]'),
+        here: document.querySelector('.ar-chip .here')?.textContent ?? '',
+      },
+    });
+  }
+</script>
+
+<style>
+  /* The stage is one screen tall and sticks while the sections slide over it.
+     svh, not vh: on a phone the address bar coming and going must not resize
+     the map mid-walk. */
+  /* Pulled up under the header, so the header floats over the map from the
+     first frame instead of over the page behind it. */
+  .walk { --stage-h: max(560px, 100svh); position: relative; background: #080d10; margin-top: -64px; }
+  .stage {
+    position: sticky; top: 0; z-index: 0; overflow: hidden;
+    height: var(--stage-h); margin-bottom: calc(-1 * var(--stage-h));
+    background: #080d10;
+  }
+  .stage canvas { position: absolute; left: 0; top: 0; display: block; }
+  .scrim {
+    position: absolute; inset: 0; pointer-events: none;
+    background:
+      linear-gradient(90deg, rgba(8,13,16,.94) 0%, rgba(8,13,16,.8) 27%, rgba(8,13,16,0) 56%),
+      linear-gradient(0deg, rgba(8,13,16,.75), rgba(8,13,16,0) 20%);
+  }
+  .hero, .beat, .tail { position: relative; z-index: 1; }
+  .hero, .beat { min-height: var(--stage-h); display: flex; align-items: center; }
+  /* The header sits above the first screen, so the hero is that much shorter
+     and its scroll cue stays on screen. */
+  .hero { padding-top: 64px; }
+  .tail { height: calc(var(--stage-h) * .5); }
+  .inner { width: 100%; max-width: 76rem; margin: 0 auto; padding: 0 1.5rem; }
+
+  .hero-copy { max-width: 41rem; padding: 5rem 0 3rem; }
+  .live {
+    display: inline-flex; align-items: center; gap: 10px; margin: 0 0 1.75rem;
+    padding: 8px 14px 8px 12px; border-radius: 999px;
+    border: 1px solid var(--line); background: rgba(16,26,31,.6);
+    -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px);
+    font-size: 13px; color: var(--ink-dim);
+  }
+  .live-dot { width: 8px; height: 8px; border-radius: 50%; background: #2997ff; animation: ping 2s ease-out infinite; }
+  @keyframes ping { 0% { box-shadow: 0 0 0 0 rgba(41,151,255,.6); } 100% { box-shadow: 0 0 0 10px rgba(41,151,255,0); } }
+  .t-touch { display: none; }
+  @media (hover: none) { .t-mouse { display: none; } .t-touch { display: inline; } }
+  .hero-lede { margin-top: 1.5rem; max-width: 33em; }
+  .cta-row { display: flex; flex-wrap: wrap; gap: .75rem; margin-top: 2.25rem; }
+  .soon { margin-top: 1.25rem; font-size: 13px; color: var(--ink-faint); }
+  .cue {
+    position: absolute; left: max(1.5rem, calc((100% - 76rem) / 2 + 1.5rem)); bottom: 2rem;
+    display: flex; align-items: center; gap: 10px; color: var(--ink-faint);
+    font: 500 12px var(--font-mono); letter-spacing: .12em; text-transform: uppercase;
+  }
+  .cue:hover { color: var(--ink); }
+  .cue svg { animation: nudge 2.2s ease-in-out infinite; }
+  @keyframes nudge { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(4px); } }
+  .rise { opacity: 0; transform: translateY(16px); animation: rise .9s cubic-bezier(.2,.7,.2,1) forwards; }
+  @keyframes rise { to { opacity: 1; transform: none; } }
+
+  .beat-card { max-width: 27rem; }
+  .beat-label { display: flex; align-items: center; color: var(--ink-dim); }
+  .beat-n {
+    display: inline-grid; place-items: center; width: 28px; height: 28px; margin-right: 12px;
+    border-radius: 50%; background: #2997ff; color: #04182e; font: 600 13px var(--font-mono); letter-spacing: 0;
+  }
+  .beat-card h2 { margin-top: 1.125rem; }
+  .beat-body { margin-top: 1.125rem; }
+
+  .strip {
+    position: absolute; left: 70%; bottom: 34px; transform: translate(-50%, 16px); opacity: 0;
+    display: flex; align-items: center; gap: 12px; height: 60px; min-width: 310px; padding: 0 18px 0 10px;
+    border-radius: 20px; background: rgba(16,26,31,.84); border: 1px solid rgba(140,190,215,.16);
+    -webkit-backdrop-filter: blur(16px); backdrop-filter: blur(16px);
+    color: #e9f2f5; pointer-events: none; box-shadow: 0 18px 40px -18px rgba(0,0,0,.8);
+  }
+  .badge-n { width: 40px; height: 40px; border-radius: 12px; display: grid; place-items: center; background: #2997ff; color: #04182e; font: 600 15px var(--font-mono); }
+  .strip-name { font-weight: 600; font-size: 16px; flex: 1; white-space: nowrap; }
+  .strip-meta { display: flex; align-items: center; gap: 6px; color: #8cc8ff; font: 500 14px var(--font-mono); white-space: nowrap; }
+
+  .phone {
+    position: absolute; left: 70%; top: 52%; width: 286px; height: 584px;
+    transform: translate(-50%, -50%) translateY(40px) scale(.92); opacity: 0; pointer-events: none;
+    border-radius: 46px; padding: 10px; background: #05080a;
+    box-shadow: 0 0 0 1px rgba(140,190,215,.22), 0 40px 90px -30px rgba(0,0,0,.9), 0 0 140px -30px rgba(41,151,255,.45);
+  }
+  .screen {
+    position: relative; width: 100%; height: 100%; border-radius: 37px; overflow: hidden; font-size: 13px; color: #e9f2f5;
+    background: linear-gradient(180deg, #09131d 0%, #10202d 44%, #182b3b 61%, #0c141a 61.2%, #0c141a 100%);
+  }
+  .lamp-glow { position: absolute; left: -30px; top: 36%; width: 170px; height: 170px; background: radial-gradient(circle, rgba(240,168,104,.32), rgba(240,168,104,0) 70%); }
+  .bld {
+    position: absolute; bottom: 39%; border-top: 2px solid #13212b; background-color: #0b141b;
+    background-image: linear-gradient(90deg, #0b141b 55%, rgba(0,0,0,0) 55%), linear-gradient(0deg, #0b141b 50%, rgba(0,0,0,0) 50%), linear-gradient(rgba(240,190,120,.22), rgba(240,190,120,.22));
+    background-size: 13px 13px, 13px 15px, 100% 100%;
+  }
+  .b1 { left: -8%; width: 34%; height: 30%; }
+  .b2 { left: 64%; width: 46%; height: 34%; }
+  .tower { position: absolute; bottom: 39%; left: 33%; width: 30%; height: 47%; background: linear-gradient(90deg, #0d1820, #122230 60%, #0d1820); border-top: 3px solid #16293a; }
+  .tower::before { content: ""; position: absolute; left: 50%; top: -26px; margin-left: -14px; border-left: 14px solid transparent; border-right: 14px solid transparent; border-bottom: 26px solid #122230; }
+  .clock { position: absolute; left: 50%; top: 16px; width: 36px; height: 36px; margin-left: -18px; border-radius: 50%; border: 2px solid rgba(240,190,120,.75); background: rgba(240,190,120,.12); }
+  .clock::after { content: ""; position: absolute; left: 50%; top: 6px; width: 2px; height: 12px; margin-left: -1px; background: rgba(240,190,120,.9); transform-origin: bottom; transform: rotate(40deg); }
+  .road { position: absolute; left: 0; right: 0; bottom: 0; height: 39%; background: linear-gradient(180deg, #16222b, #0a1015); clip-path: polygon(42% 0, 58% 0, 100% 100%, 0 100%); }
+  .ar-pin {
+    position: absolute; left: 50%; top: 31%; width: 56px; height: 56px; margin-left: -28px;
+    border-radius: 50% 50% 50% 0; transform: rotate(-45deg);
+    background: radial-gradient(circle at 30% 30%, #a9d6ff, #2997ff 55%, #155fb5);
+    box-shadow: 0 0 0 3px rgba(255,255,255,.92), 0 0 52px rgba(41,151,255,.7);
+    animation: bob 3.2s ease-in-out infinite;
+  }
+  .ar-pin span { display: grid; place-items: center; width: 100%; height: 100%; transform: rotate(45deg); font: 600 20px var(--font-mono); color: #04182e; }
+  .ar-shadow { position: absolute; left: 50%; top: calc(31% + 96px); width: 46px; height: 10px; margin-left: -23px; border-radius: 50%; background: rgba(41,151,255,.4); filter: blur(4px); }
+  @keyframes bob { 0%, 100% { transform: rotate(-45deg) translate(0, 0); } 50% { transform: rotate(-45deg) translate(4px, -4px); } }
+  .ar-chip {
+    position: absolute; top: 44px; left: 50%; transform: translateX(-50%); white-space: nowrap;
+    display: flex; align-items: center; gap: .5em; padding: .45em .9em .45em .45em; border-radius: 999px;
+    background: rgba(16,26,31,.72); border: 1px solid rgba(140,190,215,.2);
+    -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px); font-weight: 600;
+  }
+  .ar-chip .num { width: 1.7em; height: 1.7em; border-radius: 50%; display: grid; place-items: center; background: #2997ff; color: #04182e; font: 600 .9em var(--font-mono); }
+  .ar-chip .here { color: #74d96b; font-weight: 500; }
+  .ar-q {
+    position: absolute; left: 10px; right: 10px; bottom: 10px; padding: 1.1em 1.1em 1.2em; border-radius: 28px;
+    background: rgba(12,19,24,.88); border: 1px solid rgba(140,190,215,.18);
+    -webkit-backdrop-filter: blur(14px); backdrop-filter: blur(14px);
+    transform: translateY(115%); transition: transform .6s cubic-bezier(.2,.8,.2,1);
+  }
+  .phone:global(.is-asked) .ar-q { transform: none; }
+  .q-eyebrow { font: 500 .78em var(--font-mono); letter-spacing: .12em; text-transform: uppercase; color: #8cc8ff; }
+  .q-text { font-weight: 600; font-size: 1.12em; line-height: 1.35; margin: .5em 0 .9em; }
+  .q-opts { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: .5em; }
+  .q-opts span { display: grid; place-items: center; height: 2.9em; border-radius: 999px; background: rgba(140,190,215,.12); font: 600 1em var(--font-mono); transition: background-color .3s, color .3s; }
+  .phone:global(.is-scored) .q-opts .ok { background: #2997ff; color: #04182e; }
+  .ar-score {
+    position: absolute; right: 16px; top: 92px; padding: .4em .8em; border-radius: 999px;
+    background: #f0a868; color: #2a1604; font: 600 1.1em var(--font-mono);
+    opacity: 0; transform: translateY(10px) scale(.8); transition: opacity .4s, transform .5s cubic-bezier(.3,1.6,.5,1);
+  }
+  .phone:global(.is-scored) .ar-score { opacity: 1; transform: none; }
+
+  @media (max-width: 759px) {
+    .inner { padding: 0 1.25rem; }
+    .scrim { background: linear-gradient(180deg, rgba(8,13,16,.94) 0%, rgba(8,13,16,.6) 40%, rgba(8,13,16,0) 62%, rgba(8,13,16,.5) 100%); }
+    .hero { align-items: flex-start; }
+    .hero-copy { padding-top: 3rem; }
+    .cue { display: none; }
+    .beat { align-items: flex-end; padding-bottom: 1.25rem; }
+    .beat-card {
+      max-width: none; padding: 1.25rem; border-radius: 22px;
+      background: rgba(10,17,21,.84); border: 1px solid rgba(140,190,215,.14);
+      -webkit-backdrop-filter: blur(14px); backdrop-filter: blur(14px);
+    }
+    .strip { left: 50%; top: 84px; bottom: auto; min-width: 0; width: calc(100% - 40px); }
+    .phone { left: 50%; top: 36%; width: 200px; height: 410px; border-radius: 34px; padding: 7px; }
+    .screen { border-radius: 28px; font-size: 9.5px; }
+    .ar-pin { width: 40px; height: 40px; margin-left: -20px; }
+    .ar-pin span { font-size: 15px; }
+    .ar-shadow { top: calc(31% + 68px); }
+    .ar-chip { top: 30px; }
+    .ar-score { top: 66px; right: 10px; }
+    .clock { width: 26px; height: 26px; margin-left: -13px; top: 10px; }
+    .tower::before { top: -18px; margin-left: -10px; border-left-width: 10px; border-right-width: 10px; border-bottom-width: 18px; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .rise { animation: none; opacity: 1; transform: none; }
+    .live-dot, .cue svg, .ar-pin { animation: none; }
+  }
+</style>
