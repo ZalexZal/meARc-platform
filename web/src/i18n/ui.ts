@@ -16,6 +16,12 @@ export type Lang = keyof typeof languages;
 
 export const ui = {
   bg: {
+    'ui.toTop': "Към началото на страницата",
+    'cookie.lead': "Без проследяващи бисквитки.",
+    'cookie.body': "Браузърът ти пази само необходимото, за да останеш в профила си и да помни избраната тема.",
+    'cookie.ok': "Добре",
+    'cookie.privacy': "Поверителност",
+    'fb.again': "Изпрати още",
     'meta.title': 'AR Trail — маршрути с добавена реалност',
     'meta.description':
       'Маркери, закотвени по истинските улици. Създай маршрут, дай код и пусни хората да го извървят.',
@@ -346,6 +352,7 @@ export const ui = {
       'AR Trail е за хора на 13 и повече години. На 13 родител или настойник трябва да се съгласи, преди да влизаш в маршрути. Ще му изпратим линк.',
 
     'err.generic': 'Нещо се обърка. Опитай пак.',
+    'err.email': "Напиши имейл адреса си.",
     'err.fill': 'Попълни имейл и парола.',
     'ed.deleteTitle': 'Изтрий маршрута',
     'ed.editors': 'Редактори',
@@ -714,6 +721,12 @@ export const ui = {
   },
 
   en: {
+    'ui.toTop': "Back to top",
+    'cookie.lead': "No tracking cookies.",
+    'cookie.body': "Your browser keeps only what's needed to keep you signed in and remember your theme.",
+    'cookie.ok': "OK",
+    'cookie.privacy': "Privacy",
+    'fb.again': "Send another",
     'meta.title': 'AR Trail — augmented reality city trails',
     'meta.description':
       'Markers anchored to real streets. Build a trail, hand out a code, and let people walk it.',
@@ -1044,6 +1057,7 @@ export const ui = {
       'AR Trail is for people aged 13 and older. At 13, a parent or guardian has to agree before you join trails. We’ll send them a link.',
 
     'err.generic': 'Something went wrong. Try again.',
+    'err.email': "Enter your email address.",
     'err.fill': 'Fill in your email and password.',
     'ed.deleteTitle': 'Delete the trail',
     'ed.editors': 'Editors',

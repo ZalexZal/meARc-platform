@@ -1,4 +1,5 @@
 ---
+import Loading from './Loading.astro';
 import { useTranslations, localise, type Lang } from '../i18n/ui';
 
 interface Props { lang: Lang; }
@@ -677,9 +678,7 @@ const strings = {
   </section>
 </section>
 
-<p class="mx-auto max-w-7xl px-4 py-24 text-center text-[var(--ink-dim)]" data-editor-loading>
-  {t('games.loading')}
-</p>
+<Loading label={t('games.loading')} class="mx-auto max-w-7xl px-4 py-24" data-editor-loading />
 
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/maplibre-gl/5.6.0/maplibre-gl.css" />
 

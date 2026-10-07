@@ -1,4 +1,5 @@
 ---
+import Loading from './Loading.astro';
 import { useTranslations, localise, type Lang } from '../i18n/ui';
 
 interface Props { lang: Lang; }
@@ -325,9 +326,7 @@ const rail = [
   </div>
 </section>
 
-<p class="mx-auto max-w-4xl px-4 py-24 text-center text-[var(--ink-dim)]" data-acct-loading>
-  {t('games.loading')}
-</p>
+<Loading label={t('games.loading')} class="mx-auto max-w-4xl px-4 py-24" data-acct-loading />
 
 <script type="application/json" data-acct-strings set:html={JSON.stringify(strings)}></script>
 
@@ -456,6 +455,7 @@ const rail = [
 <script>
   import { db, signOut, askParent, redeemParentCode } from '../lib/supabase';
   import { requireUser, reveal, escapeHtml, text, count } from '../lib/session';
+  import { busy, formError, formOk } from '../lib/form';
 
   const S = JSON.parse(document.querySelector('[data-acct-strings]')!.textContent || '{}');
   const q = (sel: string) => document.querySelector(sel);
@@ -519,11 +519,8 @@ const rail = [
   // there was a way to ask. Both ways in, here.
   if (consent?.state === 'needed') {
     q('[data-consent-needed]')?.classList.remove('hidden');
-    const said = (m: string, good = false) => {
-      const el = q('[data-needed-msg]') as HTMLElement;
-      el.textContent = m;
-      el.className = 'msg ' + (good ? 'good' : 'bad');
-    };
+    const said = (m: string, good = false) =>
+      good ? formOk(q('[data-needed-msg]') as HTMLElement, m) : formError(q('[data-needed-msg]') as HTMLElement, m);
     q('[data-needed-send]')?.addEventListener('click', async () => {
       const email = (q('[data-needed-email]') as HTMLInputElement).value.trim();
       if (!email) return;
@@ -631,16 +628,16 @@ const rail = [
   }
 
   // ------------------------------------------------------------ settings
-  const say = (sel: string, msg: string, kind: 'good' | 'bad' | '' = '') => {
-    const el = q(sel) as HTMLElement;
-    el.textContent = msg;
-    el.className = 'msg ' + kind;
-  };
+  const say = (sel: string, msg: string, kind: 'good' | 'bad', field?: string) =>
+    kind === 'good' ? formOk(q(sel) as HTMLElement, msg, true)
+      : formError(q(sel) as HTMLElement, msg, field ? q(field) : null);
+  const working = (e: Event) => busy((e as SubmitEvent).submitter as HTMLButtonElement, true);
 
   q('[data-name-form]')?.addEventListener('submit', async (e) => {
     e.preventDefault();
     const value = (q('[data-name-input]') as HTMLInputElement).value.trim().slice(0, 40);
     if (!value) return;
+    working(e);
 
     // Both places: the profile row is what leaderboards read, the account's own
     // metadata is what the top bar reads before the page has loaded anything.
@@ -659,9 +656,10 @@ const rail = [
     e.preventDefault();
     const value = (q('[data-email-input]') as HTMLInputElement).value.trim();
     if (!value || value === user.email) return;
+    working(e);
 
     const { data, error } = await client.auth.updateUser({ email: value });
-    if (error) { say('[data-email-msg]', error.message, 'bad'); return; }
+    if (error) { say('[data-email-msg]', error.message, 'bad', '[data-email-input]'); return; }
 
     // With confirmation switched on, the address only changes once the email
     // is confirmed, and the account says so by carrying it as new_email.
@@ -681,13 +679,14 @@ const rail = [
     const next = (q('[data-pw-new]') as HTMLInputElement).value;
     const again = (q('[data-pw-again]') as HTMLInputElement).value;
 
-    if (next.length < 8) { say('[data-pw-msg]', S.pwShort, 'bad'); return; }
-    if (next !== again) { say('[data-pw-msg]', S.pwMismatch, 'bad'); return; }
+    if (next.length < 8) { say('[data-pw-msg]', S.pwShort, 'bad', '[data-pw-new]'); return; }
+    if (next !== again) { say('[data-pw-msg]', S.pwMismatch, 'bad', '[data-pw-again]'); return; }
+    working(e);
 
     // The current password first. A signed-in tab left open on a shared
     // computer should not be enough to take the account over.
     const { error: wrong } = await client.auth.signInWithPassword({ email: user.email ?? '', password: now });
-    if (wrong) { say('[data-pw-msg]', S.pwWrong, 'bad'); return; }
+    if (wrong) { say('[data-pw-msg]', S.pwWrong, 'bad', '[data-pw-now]'); return; }
 
     const { error } = await client.auth.updateUser({ password: next });
     if (error) { say('[data-pw-msg]', error.message, 'bad'); return; }

@@ -50,13 +50,13 @@ const strings = {
       <span>{t('auth.agreeRead')} {t('auth.agreeTerms')} {t('auth.agreeAnd')} {t('auth.agreePrivacy')}.</span>
     </label>
 
-    <p class="hidden rounded-lg border border-[var(--alert)] bg-[var(--alert-wash)] px-3 py-2.5 text-sm text-[var(--alert)]"
-       data-gate-error role="alert"></p>
+    <p class="hidden" data-gate-error role="alert"></p>
 
-    <button class="btn btn-primary w-full" type="submit">{t('terms.gate.accept')}</button>
+    <button class="btn btn-primary w-full" type="submit" data-gate-submit>{t('terms.gate.accept')}</button>
   </form>
 
-  <div class="card mt-8 hidden p-6 text-center" data-gate-parent>
+  <div class="card done-card mt-8 hidden p-6 text-center" data-gate-parent>
+    <span class="done-tick"><svg viewBox="0 0 20 20" aria-hidden="true"><path class="tick" d="M6 10.4l2.7 2.6L14.2 7.5" /></svg></span>
     <h2 class="text-xl">{t('auth.parentSent')}</h2>
     <p class="mt-2 text-sm text-[var(--ink-dim)]" data-gate-parent-body></p>
   </div>
@@ -69,6 +69,7 @@ const strings = {
   import { db, acceptTerms, askParent, redeemParentCode, markTooYoung } from '../lib/supabase';
   import { requireUser, reveal, param, text } from '../lib/session';
   import { TERMS_VERSION } from '../lib/terms';
+  import { busy, formError, formClear } from '../lib/form';
 
   const S = JSON.parse(document.querySelector('[data-gate-strings]')!.textContent || '{}');
   const q = (s: string) => document.querySelector(s) as HTMLElement;
@@ -95,24 +96,25 @@ const strings = {
   form.addEventListener('submit', async (event) => {
     event.preventDefault();
     const error = q('[data-gate-error]');
-    const fail = (m: string) => { text(error, m); error.classList.remove('hidden'); };
-    error.classList.add('hidden');
+    const fail = (m: string, at?: Element | null) => formError(error, m, at);
+    formClear(error);
 
     const age = (form.querySelector('input[name="age"]:checked') as HTMLInputElement)?.value;
     const parent = (q('[data-parent-email]') as HTMLInputElement).value.trim();
     const pcode = (q('[data-parent-code]') as HTMLInputElement).value.trim().toUpperCase();
 
-    if (!age) { fail(S.age); return; }
+    if (!age) { fail(S.age, form.querySelector('input[name="age"]')); return; }
     if (age === 'under13') { markTooYoung(); fail(S.tooYoung); return; }
-    if (!(q('[data-gate-agree]') as HTMLInputElement).checked) { fail(S.mustAgree); return; }
+    if (!(q('[data-gate-agree]') as HTMLInputElement).checked) { fail(S.mustAgree, q('[data-gate-agree]')); return; }
 
+    busy(q('[data-gate-submit]') as HTMLButtonElement, true);
     const { data: state } = await client.rpc('consent_state');
     const alreadyAsked = state && ['pending', 'granted'].includes(state.state);
 
-    if (young() && !alreadyAsked && !parent && !pcode) { fail(S.parentEither); return; }
+    if (young() && !alreadyAsked && !parent && !pcode) { fail(S.parentEither, q('[data-parent-email]')); return; }
     if (young() && !alreadyAsked && !pcode
         && (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(parent) || parent.toLowerCase() === (user.email ?? '').toLowerCase())) {
-      fail(S.parentEmail);
+      fail(S.parentEmail, q('[data-parent-email]'));
       return;
     }
 

@@ -1,4 +1,5 @@
 ---
+import Loading from './Loading.astro';
 import { useTranslations, localise, type Lang } from '../i18n/ui';
 import PageBand from './PageBand.astro';
 import { TERMS_VERSION } from '../lib/terms';
@@ -15,7 +16,7 @@ const strings = {
   refuseConfirm: t('cons.refuseConfirm'), needGuardian: t('cons.needGuardian'),
   withdraw: t('cons.withdraw'), withdrawConfirm: t('cons.withdrawConfirm'),
   erased: t('cons.erased'), done: t('cons.done'), failed: t('err.generic'),
-  linkSent: t('par.linkSent'), signedAs: t('par.signedAs'), none: t('par.none'),
+  linkSent: t('par.linkSent'), signedAs: t('par.signedAs'), none: t('par.none'), needEmail: t('err.email'),
   waiting: t('par.waiting'), agreedOn: t('par.agreedOn'), trails: t('par.trails'),
   teams: t('par.teams'), walked: t('par.walked'), badges: t('par.badges'),
   lastActive: t('par.lastActive'), never: t('par.never'), download: t('par.download'),
@@ -45,15 +46,15 @@ const strings = {
     </div>
   </details>
 
-  <p class="mt-10 text-[var(--ink-dim)]" data-cons-wait>{t('games.loading')}</p>
+  <Loading label={t('games.loading')} class="mt-10 py-6" data-cons-wait />
 
   <!-- Not signed in by link: ask for one. -->
   <form class="card mt-10 hidden space-y-3 p-6" data-cons-signin novalidate>
     <p class="text-sm text-[var(--ink-dim)]">{t('par.signIn')}</p>
     <label class="sr-only" for="cons-email">{t('auth.email')}</label>
     <input class="field" id="cons-email" type="email" autocomplete="email" placeholder={t('auth.email')} data-cons-email />
-    <button class="btn btn-primary" type="submit">{t('par.sendLink')}</button>
-    <p class="hidden text-sm text-[var(--ink-dim)]" data-cons-sent role="status"></p>
+    <p class="hidden" data-cons-sent role="status"></p>
+    <button class="btn btn-primary" type="submit" data-cons-send>{t('par.sendLink')}</button>
   </form>
 
   <!-- Signed in by link: the children, and adding one. -->
@@ -77,7 +78,8 @@ const strings = {
           <input class="mt-1 shrink-0" type="checkbox" data-add-guardian />
           <span>{t('cons.guardian')}</span>
         </label>
-        <button class="btn btn-primary" type="submit">{t('par.makeCode')}</button>
+        <p class="hidden" data-add-said role="status"></p>
+        <button class="btn btn-primary" type="submit" data-add-submit>{t('par.makeCode')}</button>
       </form>
       <div class="hidden rounded-xl border border-[var(--line)] p-4" data-new-code>
         <p class="text-sm font-medium" data-new-code-for></p>
@@ -92,7 +94,7 @@ const strings = {
     </section>
   </div>
 
-  <p class="mt-4 hidden text-sm" data-cons-said role="status"></p>
+  <p class="mt-4 hidden" data-cons-said role="status"></p>
 </article>
 
 <script type="application/json" data-cons-strings set:html={JSON.stringify(strings)}></script>
@@ -100,6 +102,7 @@ const strings = {
 <script>
   import { db, landing } from '../lib/supabase';
   import { escapeHtml, text } from '../lib/session';
+  import { busy, formError, formOk } from '../lib/form';
 
   const S = JSON.parse(document.querySelector('[data-cons-strings]')!.textContent || '{}');
   const q = (s: string) => document.querySelector(s) as HTMLElement;
@@ -110,11 +113,8 @@ const strings = {
   history.replaceState(null, '', location.pathname);
   q('[data-cons-wait]').classList.add('hidden');
 
-  const say = (message: string, bad = false) => {
-    text(q('[data-cons-said]'), message);
-    q('[data-cons-said]').style.color = bad ? 'var(--alert)' : 'var(--signal)';
-    q('[data-cons-said]').classList.remove('hidden');
-  };
+  const say = (message: string, bad = false) =>
+    bad ? formError(q('[data-cons-said]'), message) : formOk(q('[data-cons-said]'), message);
 
   const when = (iso: string | null) => iso
     ? new Date(iso).toLocaleDateString(S.lang === 'bg' ? 'bg-BG' : 'en-GB', { day: 'numeric', month: 'long', year: 'numeric' })
@@ -235,12 +235,16 @@ const strings = {
   q('[data-add]').addEventListener('submit', async (event) => {
     event.preventDefault();
     const name = (q('[data-add-name]') as HTMLInputElement).value.trim();
-    if (!name) { say(S.needName, true); return; }
-    if (!(q('[data-add-guardian]') as HTMLInputElement).checked) { say(S.needGuardian, true); return; }
+    const addSaid = q('[data-add-said]');
+    if (!name) { formError(addSaid, S.needName, q('[data-add-name]')); return; }
+    if (!(q('[data-add-guardian]') as HTMLInputElement).checked) { formError(addSaid, S.needGuardian, q('[data-add-guardian]')); return; }
 
+    busy(q('[data-add-submit]') as HTMLButtonElement, true);
     const { data: made, error } = await client.rpc('create_child_invite',
       { p_child_name: name, p_terms_version: S.termsVersion });
-    if (error || !made) { say(error?.message ?? S.failed, true); return; }
+    if (error || !made) { formError(addSaid, error?.message ?? S.failed); return; }
+    busy(q('[data-add-submit]') as HTMLButtonElement, false);
+    addSaid.classList.add('hidden');
 
     q('[data-new-code]').classList.remove('hidden');
     text(q('[data-new-code-for]'), S.code.replace('{0}', made.child_name));
@@ -261,15 +265,15 @@ const strings = {
     form.addEventListener('submit', async (event) => {
       event.preventDefault();
       const email = (q('[data-cons-email]') as HTMLInputElement).value.trim();
-      if (!email) return;
+      if (!email) { formError(q('[data-cons-sent]'), S.needEmail, q('[data-cons-email]')); return; }
+      busy(q('[data-cons-send]') as HTMLButtonElement, true);
       // A parent account is made by signing in the first time. The same
       // sentence whether or not the address had one, so the form cannot be
       // used to find out which addresses do.
       await client.auth.signInWithOtp({
         email, options: { shouldCreateUser: true, emailRedirectTo: landing('parent') },
       });
-      text(q('[data-cons-sent]'), S.linkSent);
-      q('[data-cons-sent]').classList.remove('hidden');
+      formOk(q('[data-cons-sent]'), S.linkSent);
     });
   }
 </script>

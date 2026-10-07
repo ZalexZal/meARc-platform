@@ -9,7 +9,7 @@ const href = localise(lang);
 
 const strings = {
   sent: t('reset.sent'), done: t('reset.done'), expired: t('reset.expired'),
-  weak: t('err.weakPassword'), accountHref: href('/account'),
+  weak: t('err.weakPassword'), accountHref: href('/account'), needEmail: t('err.email'),
 };
 ---
 
@@ -26,17 +26,23 @@ const strings = {
       <label class="mb-1.5 block text-sm font-medium" for="reset-email">{t('auth.email')}</label>
       <input class="field" id="reset-email" type="email" autocomplete="email" required data-reset-email />
     </div>
-    <button class="btn btn-primary w-full" type="submit">{t('reset.send')}</button>
-    <p class="hidden text-sm text-[var(--ink-dim)]" data-reset-said role="status"></p>
+    <p class="hidden" data-reset-said role="status"></p>
+    <button class="btn btn-primary w-full" type="submit" data-reset-send>{t('reset.send')}</button>
   </form>
+
+  <div class="card done-card mt-8 hidden p-6 text-center" data-reset-sent>
+    <span class="done-tick"><svg viewBox="0 0 20 20" aria-hidden="true"><path class="tick" d="M6 10.4l2.7 2.6L14.2 7.5" /></svg></span>
+    <h2 class="text-xl">{t('auth.checkInbox')}</h2>
+    <p class="mt-2 text-sm text-[var(--ink-dim)]">{t('reset.sent')}</p>
+  </div>
 
   <form class="card mt-8 hidden space-y-4 p-6" data-reset-new novalidate>
     <div>
       <label class="mb-1.5 block text-sm font-medium" for="reset-pw">{t('reset.newPw')}</label>
       <input class="field" id="reset-pw" type="password" autocomplete="new-password" minlength="8" required data-reset-pw />
     </div>
-    <button class="btn btn-primary w-full" type="submit">{t('reset.save')}</button>
-    <p class="hidden text-sm" data-reset-done role="status"></p>
+    <p class="hidden" data-reset-done role="status"></p>
+    <button class="btn btn-primary w-full" type="submit" data-reset-save>{t('reset.save')}</button>
   </form>
 </section>
 </AuthShell>
@@ -45,7 +51,7 @@ const strings = {
 
 <script>
   import { db, landing } from '../lib/supabase';
-  import { text } from '../lib/session';
+  import { busy, formError, formOk } from '../lib/form';
 
   const S = JSON.parse(document.querySelector('[data-reset-strings]')!.textContent || '{}');
   const q = (s: string) => document.querySelector(s) as HTMLElement;
@@ -64,33 +70,34 @@ const strings = {
     q('[data-reset-ask]').classList.add('hidden');
     q('[data-reset-new]').classList.remove('hidden');
   } else if (problem) {
-    text(q('[data-reset-said]'), S.expired);
-    q('[data-reset-said]').classList.remove('hidden');
+    formError(q('[data-reset-said]'), S.expired);
   }
 
   q('[data-reset-ask]').addEventListener('submit', async (event) => {
     event.preventDefault();
-    const email = (q('[data-reset-email]') as HTMLInputElement).value.trim();
-    if (!email) return;
+    const field = q('[data-reset-email]') as HTMLInputElement;
+    const email = field.value.trim();
+    if (!email) { formError(q('[data-reset-said]'), S.needEmail, field); return; }
+    busy(q('[data-reset-send]') as HTMLButtonElement, true);
     // The same answer whether or not the address has an account.
     await client.auth.resetPasswordForEmail(email, { redirectTo: landing('reset') });
-    text(q('[data-reset-said]'), S.sent);
-    q('[data-reset-said]').classList.remove('hidden');
+    q('[data-reset-ask]').classList.add('hidden');
+    q('[data-reset-sent]').classList.remove('hidden');
   });
 
   q('[data-reset-new]').addEventListener('submit', async (event) => {
     event.preventDefault();
-    const password = (q('[data-reset-pw]') as HTMLInputElement).value;
+    const field = q('[data-reset-pw]') as HTMLInputElement;
+    const password = field.value;
     const done = q('[data-reset-done]');
-    done.classList.remove('hidden');
 
-    if (password.length < 8) { text(done, S.weak); done.style.color = 'var(--alert)'; return; }
+    if (password.length < 8) { formError(done, S.weak, field); return; }
 
+    busy(q('[data-reset-save]') as HTMLButtonElement, true);
     const { error } = await client.auth.updateUser({ password });
-    if (error) { text(done, error.message); done.style.color = 'var(--alert)'; return; }
+    if (error) { formError(done, error.message, field); return; }
 
-    text(done, S.done);
-    done.style.color = 'var(--signal)';
+    formOk(done, S.done);
     setTimeout(() => { location.href = S.accountHref; }, 1500);
   });
 </script>

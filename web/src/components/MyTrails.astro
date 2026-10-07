@@ -1,4 +1,5 @@
 ---
+import Loading from './Loading.astro';
 import { useTranslations, localise, type Lang } from '../i18n/ui';
 import PageBand from './PageBand.astro';
 
@@ -114,7 +115,7 @@ const modes = [
             ))}
           </div>
         </fieldset>
-        <p class="note note-alert hidden" data-create-error role="alert"></p>
+        <p class="hidden" data-create-error role="alert"></p>
         <div class="flex flex-wrap items-center gap-3">
           <button class="btn btn-primary btn-lg" type="submit" data-create-submit>{t('mine.createGo')}</button>
         </div>
@@ -125,9 +126,7 @@ const modes = [
   </div>
 </section>
 
-<p class="mx-auto max-w-5xl px-4 py-24 text-center text-[var(--ink-dim)]" data-mine-loading>
-  {t('mine.loading')}
-</p>
+<Loading label={t('mine.loading')} class="mx-auto max-w-5xl px-4 py-24" data-mine-loading />
 
 <script type="application/json" data-mine-strings set:html={JSON.stringify(strings)}></script>
 
@@ -135,6 +134,7 @@ const modes = [
   import { db } from '../lib/supabase';
   import { requireUser, reveal, escapeHtml, text, count, who } from '../lib/session';
   import { levelOf, isPending, isListed, setLevel } from '../lib/publishing';
+  import { busy, formError, formClear } from '../lib/form';
 
   const S = JSON.parse(document.querySelector('[data-mine-strings]')!.textContent || '{}');
   const q = (sel: string) => document.querySelector(sel);
@@ -322,27 +322,20 @@ const modes = [
 
   form.addEventListener('submit', async (event) => {
     event.preventDefault();
-    errorBox.classList.add('hidden');
+    formClear(errorBox);
     const data = new FormData(form);
     const name = String(data.get('name') ?? '').trim();
     const mode = String(data.get('mode') ?? 'guide');
     if (!name) {
-      errorBox.textContent = S.lang === 'bg' ? 'Дай име на маршрута.' : 'Give the trail a name.';
-      errorBox.classList.remove('hidden');
-      nameField.focus();
+      formError(errorBox, S.lang === 'bg' ? 'Дай име на маршрута.' : 'Give the trail a name.', nameField);
       return;
     }
-    const label = submit.textContent;
-    submit.disabled = true;
-    text(submit, S.creating);
+    busy(submit, true);
     const { data: world, error } = await client.rpc('create_world', { p_name: name, p_mode: mode, p_language: S.lang });
     if (error) {
-      submit.disabled = false;
-      text(submit, label);
-      errorBox.textContent = /parent needs to agree/i.test(error.message)
+      formError(errorBox, /parent needs to agree/i.test(error.message)
         ? (S.lang === 'bg' ? 'Родител или настойник трябва първо да се съгласи.' : 'A parent or guardian has to agree first.')
-        : error.message;
-      errorBox.classList.remove('hidden');
+        : error.message);
       return;
     }
     // Straight into the builder: somebody who just named a trail wants to

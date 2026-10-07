@@ -1,4 +1,5 @@
 ---
+import Loading from './Loading.astro';
 import { useTranslations, localise, type Lang } from '../i18n/ui';
 import AuthShell from './AuthShell.astro';
 
@@ -13,7 +14,7 @@ const href = localise(lang);
      the sign-up could not do without a session, and to say where to go. -->
 <AuthShell>
 <section class="mx-auto max-w-lg px-4 py-24 text-center sm:px-6">
-  <p class="text-[var(--ink-dim)]" data-conf-wait>{t('games.loading')}</p>
+  <Loading label={t('games.loading')} class="py-6" data-conf-wait />
 
   <div class="hidden" data-conf-ok>
     <h1 class="text-3xl">{t('conf.title')}</h1>

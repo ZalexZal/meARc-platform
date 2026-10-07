@@ -65,6 +65,18 @@ const other = path.startsWith('/404')
     <main id="main" class="flex-1"><slot /></main>
     <Footer lang={lang} />
 
+    <button class="to-top" type="button" aria-label={t('ui.toTop')} title={t('ui.toTop')} data-to-top>
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 19V5M5.5 11.5L12 5l6.5 6.5" /></svg>
+    </button>
+
+    <div class="cookie-bar" role="region" aria-label={t('cookie.privacy')} hidden data-cookie-bar>
+      <p><strong>{t('cookie.lead')}</strong> {t('cookie.body')}</p>
+      <div class="cookie-bar-actions">
+        <a class="btn btn-ghost btn-sm" href={href('/privacy')}>{t('cookie.privacy')}</a>
+        <button class="btn btn-primary btn-sm" type="button" data-cookie-ok>{t('cookie.ok')}</button>
+      </div>
+    </div>
+
     <script>
       // Sections marked data-reveal arrive as they scroll into view. theme.js
       // hid them before the first paint; this is the half that shows them, and
@@ -94,6 +106,63 @@ const other = path.startsWith('/404')
       addEventListener('scroll', queue, { passive: true });
       addEventListener('resize', queue);
       matchHeader();
+
+      // Back to top, with a ring that fills as you read down the page. --lift
+      // raises it over whatever owns the bottom of the screen at the time: the
+      // cookie notice, or the builder's step bar while it is stuck there.
+      const toTop = document.querySelector('[data-to-top]') as HTMLElement | null;
+      const cookieBar = document.querySelector('[data-cookie-bar]') as HTMLElement | null;
+      let topQueued = false;
+      const placeTop = () => {
+        topQueued = false;
+        if (!toTop) return;
+        const room = document.documentElement.scrollHeight - innerHeight;
+        toTop.classList.toggle('is-shown', scrollY > innerHeight * 1.5);
+        toTop.style.setProperty('--read', String(room > 0 ? Math.min(1, scrollY / room) : 0));
+        let lift = cookieBar?.classList.contains('is-shown') ? cookieBar.offsetHeight + 12 : 0;
+        const foot = document.querySelector('[data-wiz-foot]')?.getBoundingClientRect();
+        if (foot && foot.height && foot.top < innerHeight && foot.bottom >= innerHeight - 2) {
+          lift = Math.max(lift, innerHeight - foot.top + 4);
+        }
+        toTop.style.setProperty('--lift', `${lift}px`);
+        // Like the header: night over the map, the reader's theme elsewhere.
+        for (const el of [toTop, cookieBar]) {
+          if (!el || el.hidden) continue;
+          // Where it sits, or where it is about to: the notice is checked
+          // while it is still sliding up from below the screen.
+          const r = el.getBoundingClientRect();
+          const night = document.elementsFromPoint(r.left + r.width / 2, Math.min(r.top + r.height / 2, innerHeight - 8))
+            .some((x) => !el.contains(x) && !toTop.contains(x) && !cookieBar?.contains(x) && x.closest('.night'));
+          el.classList.toggle('night', night);
+        }
+      };
+      const queueTop = () => { if (!topQueued) { topQueued = true; requestAnimationFrame(placeTop); } };
+      addEventListener('scroll', queueTop, { passive: true });
+      addEventListener('resize', queueTop);
+      placeTop();
+      toTop?.addEventListener('click', () => {
+        scrollTo({ top: 0, behavior: 'smooth' });
+        // Keyboard focus goes back up with the page, not left at the bottom.
+        const main = document.getElementById('main');
+        main?.setAttribute('tabindex', '-1');
+        main?.focus({ preventScroll: true });
+      });
+
+      // The cookie notice: what the browser keeps, said once. Remembered in
+      // the same storage it describes; with storage blocked it simply shows
+      // again next time, which costs nothing.
+      let cookiesSeen = false;
+      try { cookiesSeen = localStorage.getItem('artrail-cookies-ok') === '1'; } catch (e) {}
+      if (cookieBar && !cookiesSeen) {
+        cookieBar.hidden = false;
+        setTimeout(() => { cookieBar.classList.add('is-shown'); queueTop(); }, 1000);
+        cookieBar.querySelector('[data-cookie-ok]')?.addEventListener('click', () => {
+          try { localStorage.setItem('artrail-cookies-ok', '1'); } catch (e) {}
+          cookieBar.classList.remove('is-shown');
+          queueTop();
+          setTimeout(() => { cookieBar.hidden = true; }, 500);
+        });
+      }
 
       // The toggle writes an explicit choice, which then beats the OS setting in
       // both directions - the reason the stylesheet carries a data-theme block

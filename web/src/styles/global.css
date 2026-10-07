@@ -837,5 +837,262 @@ input[type="file"].field::file-selector-button:hover { border-color: var(--ink-f
 
 .lede { font-size: clamp(1.0625rem, 1.3vw, 1.25rem); line-height: 1.55; color: var(--ink-dim); text-wrap: pretty; }
 
+/* -------------------------------------------------------------- scroll bar
+
+   Thin, a pill on whatever it runs beside, and blue while it is held - the one
+   accent, used the way every other control uses it. Chrome and Safari take the
+   pseudo-elements; Firefox, which has none, takes the two standard properties. */
+
+@supports not selector(::-webkit-scrollbar) {
+  html { scrollbar-width: thin; scrollbar-color: color-mix(in oklab, var(--ink) 30%, transparent) transparent; }
+}
+::-webkit-scrollbar { width: 12px; height: 12px; }
+::-webkit-scrollbar-track,
+::-webkit-scrollbar-corner { background: transparent; }
+::-webkit-scrollbar-thumb {
+  border: 3px solid transparent;
+  border-radius: 999px;
+  background: color-mix(in oklab, var(--ink) 26%, transparent) padding-box;
+}
+::-webkit-scrollbar-thumb:hover { background-color: var(--signal); }
+::-webkit-scrollbar-thumb:active { background-color: var(--signal-bright); }
+
+/* ---------------------------------------------------------- a busy button
+
+   lib/form.ts sets aria-busy while a form works: the words give way to a
+   spinner in the same place, so the button neither jumps nor reads as broken. */
+
+.btn { --btn-spin: currentColor; }
+.btn-primary, .btn-danger { --btn-spin: var(--signal-ink); }
+.btn[aria-busy="true"] { position: relative; opacity: 1; color: transparent; }
+.btn[aria-busy="true"] > * { visibility: hidden; }
+.btn[aria-busy="true"]::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  margin: auto;
+  width: 1.15em;
+  height: 1.15em;
+  border-radius: 50%;
+  border: 2px solid color-mix(in oklab, var(--ink) 25%, transparent);
+  border-top-color: var(--ink);
+  animation: spin .7s linear infinite;
+}
+.btn-primary[aria-busy="true"]::after,
+.btn-danger[aria-busy="true"]::after {
+  border-color: color-mix(in oklab, var(--signal-ink) 35%, transparent);
+  border-top-color: var(--signal-ink);
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* ------------------------------------------------------ what a form says
+
+   An error and a success look like siblings: the same line, an icon that
+   explains itself, and the colour that tells them apart. The field at fault
+   carries the same red, and the form gives a single shake.                   */
+
+.form-msg {
+  display: flex;
+  align-items: flex-start;
+  gap: .5rem;
+  padding: .625rem .875rem;
+  border-radius: 14px;
+  border: 1px solid;
+  font-size: var(--text-sm);
+  font-weight: 500;
+  line-height: 1.45;
+  text-align: left;
+  animation: msg-in .32s cubic-bezier(.2, .8, .2, 1);
+}
+.form-msg.is-error { border-color: var(--alert); background: var(--alert-wash); color: var(--alert); }
+.form-msg.is-ok { border-color: color-mix(in oklab, var(--tier-1) 55%, transparent); background: var(--tier-1-wash); color: var(--tier-1); }
+.form-msg-icon {
+  width: 1.15rem;
+  height: 1.15rem;
+  flex-shrink: 0;
+  margin-top: .05rem;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.form-msg-icon .dot { fill: currentColor; }
+.form-msg-icon .tick,
+.done-tick .tick {
+  stroke-dasharray: 14;
+  stroke-dashoffset: 14;
+  animation: tick-draw .45s .12s cubic-bezier(.4, 0, .2, 1) forwards;
+}
+@keyframes tick-draw { to { stroke-dashoffset: 0; } }
+@keyframes msg-in { from { opacity: 0; transform: translateY(-4px); } }
+
+input[aria-invalid="true"],
+textarea[aria-invalid="true"],
+select[aria-invalid="true"] { border-color: var(--alert); }
+input[type="checkbox"][aria-invalid="true"],
+input[type="radio"][aria-invalid="true"] { outline: 2px solid var(--alert); outline-offset: 2px; }
+
+.shake { animation: shake .36s cubic-bezier(.36, .07, .19, .97); }
+@keyframes shake {
+  20%, 60% { transform: translateX(-6px); }
+  40%, 80% { transform: translateX(6px); }
 }
 
+/* A form that is finished folds into a card: a tick drawing itself, what
+   happened, and what to do next. */
+.done-card { animation: card-in .45s cubic-bezier(.2, .8, .2, 1); }
+.done-tick {
+  display: grid;
+  place-items: center;
+  width: 3.25rem;
+  height: 3.25rem;
+  margin: 0 auto 1rem;
+  border-radius: 50%;
+  background: var(--tier-1-wash);
+  color: var(--tier-1);
+  animation: tick-pop .5s cubic-bezier(.3, 1.5, .5, 1);
+}
+.done-tick svg {
+  width: 1.75rem;
+  height: 1.75rem;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.done-tick circle { display: none; }
+@keyframes card-in { from { opacity: 0; transform: translateY(10px) scale(.98); } }
+@keyframes tick-pop { from { transform: scale(.4); opacity: 0; } }
+
+/* ---------------------------------------------------------------- waiting
+
+   components/Loading.astro: three stops on a trail and a pulse walking it, each
+   stop lighting as the pulse arrives - the hero, small enough to wait inside a
+   card.                                                                       */
+
+.loader {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: .625rem;
+  color: var(--ink-dim);
+  font-size: var(--text-sm);
+}
+.loader-trail { width: 120px; height: 32px; overflow: visible; }
+.loader-line {
+  fill: none;
+  stroke: color-mix(in oklab, var(--signal) 40%, transparent);
+  stroke-width: 1.5;
+  stroke-dasharray: 3 4;
+  animation: march 1.2s linear infinite;
+}
+.loader-pulse { fill: var(--signal); filter: drop-shadow(0 0 4px var(--signal)); }
+.loader-stop {
+  fill: var(--surface);
+  stroke: var(--signal);
+  stroke-width: 2;
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: stop-light 1.8s ease-in-out infinite;
+  animation-delay: calc(var(--at) * .6s);
+}
+.loader-label { letter-spacing: .01em; }
+@keyframes march { to { stroke-dashoffset: -14; } }
+@keyframes stop-light {
+  0%, 100% { fill: var(--surface); transform: scale(1); }
+  12% { fill: var(--signal); transform: scale(1.3); }
+  30% { fill: var(--signal); transform: scale(1); }
+  45% { fill: var(--surface); }
+}
+
+/* ----------------------------------------------------------- back to top
+
+   Arrives after a screen and a half, and its ring fills with how far down the
+   page you are. It rises above the cookie notice and the builder's step bar
+   rather than sitting on them (--lift, set by Base.astro).                    */
+
+.to-top {
+  position: fixed;
+  right: max(1.25rem, env(safe-area-inset-right));
+  bottom: calc(max(1.25rem, env(safe-area-inset-bottom)) + var(--lift, 0px));
+  z-index: 45;
+  display: grid;
+  place-items: center;
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  border: 1px solid color-mix(in oklab, var(--line) 80%, transparent);
+  background: color-mix(in oklab, var(--surface) 76%, transparent);
+  -webkit-backdrop-filter: blur(16px) saturate(160%);
+  backdrop-filter: blur(16px) saturate(160%);
+  box-shadow: var(--shadow-soft);
+  color: var(--ink);
+  cursor: pointer;
+  opacity: 0;
+  visibility: hidden;
+  transform: translateY(14px) scale(.9);
+  transition: opacity .25s ease, transform .3s cubic-bezier(.2, .8, .2, 1),
+              visibility 0s linear .3s, bottom .3s cubic-bezier(.2, .8, .2, 1), background-color .18s ease;
+}
+.to-top.is-shown {
+  opacity: 1;
+  visibility: visible;
+  transform: none;
+  transition-delay: 0s;
+}
+.to-top:hover { background: var(--surface); color: var(--signal); }
+.to-top:active { transform: scale(.94); }
+.to-top:focus-visible { outline: 2px solid var(--signal); outline-offset: 3px; }
+.to-top::before {
+  content: "";
+  position: absolute;
+  inset: -1px;
+  border-radius: 50%;
+  background: conic-gradient(var(--signal) calc(var(--read, 0) * 1turn), transparent 0);
+  -webkit-mask: radial-gradient(farthest-side, transparent calc(100% - 2.5px), #000 calc(100% - 2px));
+  mask: radial-gradient(farthest-side, transparent calc(100% - 2.5px), #000 calc(100% - 2px));
+  pointer-events: none;
+}
+.to-top svg { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+
+/* ---------------------------------------------------------- cookie notice
+
+   Not a consent banner: there is nothing to consent to. It says what the
+   browser keeps, once, and goes when it has been read.                       */
+
+.cookie-bar {
+  position: fixed;
+  left: 50%;
+  bottom: max(1rem, env(safe-area-inset-bottom));
+  z-index: 46;
+  display: flex;
+  align-items: center;
+  gap: .875rem 1.25rem;
+  width: min(44rem, calc(100% - 2rem));
+  padding: .875rem .875rem .875rem 1.25rem;
+  border-radius: 22px;
+  border: 1px solid color-mix(in oklab, var(--line) 80%, transparent);
+  background: color-mix(in oklab, var(--surface) 82%, transparent);
+  -webkit-backdrop-filter: blur(18px) saturate(160%);
+  backdrop-filter: blur(18px) saturate(160%);
+  box-shadow: var(--shadow-lift);
+  color: var(--ink);
+  font-size: var(--text-sm);
+  line-height: 1.45;
+  transform: translate(-50%, calc(100% + 2rem));
+  opacity: 0;
+  transition: transform .5s cubic-bezier(.2, .8, .2, 1), opacity .35s ease;
+}
+.cookie-bar.is-shown { transform: translate(-50%, 0); opacity: 1; }
+.cookie-bar p { flex: 1; color: var(--ink-dim); }
+.cookie-bar p strong { color: var(--ink); font-weight: 600; }
+.cookie-bar-actions { display: flex; align-items: center; gap: .25rem; flex-shrink: 0; }
+@media (max-width: 560px) {
+  .cookie-bar { flex-direction: column; align-items: stretch; padding: 1rem; }
+  .cookie-bar-actions { justify-content: flex-end; }
+}
+
+}

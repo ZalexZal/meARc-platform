@@ -37,18 +37,23 @@ const strings = {
       <span>{t('fb.reply')}</span>
     </label>
 
-    <div class="flex flex-wrap items-center gap-3">
-      <button type="submit" class="btn btn-primary" data-fb-send>{t('fb.send')}</button>
-      <p class="text-sm" aria-live="polite" data-fb-said></p>
-    </div>
+    <p class="hidden" role="status" data-fb-said></p>
+    <button type="submit" class="btn btn-primary" data-fb-send>{t('fb.send')}</button>
   </form>
+
+  <div class="card done-card mt-8 hidden p-6 text-center sm:p-8" data-fb-done>
+    <span class="done-tick"><svg viewBox="0 0 20 20" aria-hidden="true"><path class="tick" d="M6 10.4l2.7 2.6L14.2 7.5" /></svg></span>
+    <p class="text-lg font-semibold">{t('fb.sent')}</p>
+    <button type="button" class="btn btn-quiet btn-sm mt-5" data-fb-again>{t('fb.again')}</button>
+  </div>
 </section>
 
 <script type="application/json" data-fb-strings set:html={JSON.stringify(strings)}></script>
 
 <script>
   import { db } from '../lib/supabase';
-  import { requireUser, reveal, text } from '../lib/session';
+  import { requireUser, reveal } from '../lib/session';
+  import { busy, formError, formClear } from '../lib/form';
 
   const S = JSON.parse(document.querySelector('[data-fb-strings]')!.textContent || '{}');
   const user = await requireUser({ needsReal: false });
@@ -59,20 +64,22 @@ const strings = {
 
   const form = document.querySelector('[data-fb-form]') as HTMLFormElement;
   const said = document.querySelector('[data-fb-said]') as HTMLElement;
-  const say = (m: string, good = false) => {
-    text(said, m);
-    said.style.color = good ? 'var(--signal)' : 'var(--alert)';
-  };
+  const done = document.querySelector('[data-fb-done]') as HTMLElement;
+  document.querySelector('[data-fb-again]')?.addEventListener('click', () => {
+    done.classList.add('hidden');
+    form.classList.remove('hidden');
+    (form.querySelector('[data-fb-message]') as HTMLElement).focus();
+  });
 
   form.addEventListener('submit', async (event) => {
     event.preventDefault();
     const field = form.querySelector('[data-fb-message]') as HTMLTextAreaElement;
     const message = field.value.trim();
-    if (!message) { say(S.empty); return; }
+    if (!message) { formError(said, S.empty, field); return; }
 
     const send = form.querySelector('[data-fb-send]') as HTMLButtonElement;
-    send.disabled = true;
-    say(S.working, true);
+    formClear(said);
+    busy(send, true);
 
     const referrer = document.referrer.startsWith(location.origin)
       ? new URL(document.referrer).pathname : '';
@@ -86,16 +93,16 @@ const strings = {
       p_reply_ok: (form.querySelector('[data-fb-reply]') as HTMLInputElement).checked,
     });
 
-    send.disabled = false;
-
     if (error) {
-      say(/parent needs to agree/.test(error.message) ? S.parent
+      formError(said, /parent needs to agree/.test(error.message) ? S.parent
         : /a lot of feedback/.test(error.message) ? S.tooMany
         : S.failed);
       return;
     }
 
+    busy(send, false);
     field.value = '';
-    say(S.sent, true);
+    form.classList.add('hidden');
+    done.classList.remove('hidden');
   });
 </script>
