@@ -1,0 +1,8 @@
+[Unit]
+Description=AR Trail weekly encrypted backup (database + media)
+Wants=network-online.target
+After=network-online.target
+
+[Service]
+Type=oneshot
+ExecStart=/bin/bash -c '"%h/Desktop/ARTrails/noit-platform/noit-platform/tools/backup.sh" >> "%h/keys/backups/backup.log" 2>&1'

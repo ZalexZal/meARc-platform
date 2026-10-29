@@ -1,0 +1,9 @@
+[Unit]
+Description=AR Trail weekly backup, Sundays 20:00 (caught up if the laptop was off)
+
+[Timer]
+OnCalendar=Sun 20:00
+Persistent=true
+
+[Install]
+WantedBy=timers.target
