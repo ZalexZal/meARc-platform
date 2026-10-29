@@ -1,12 +1,12 @@
 ---
 /**
- * Signing in, signing up and the other one-question pages stand on the night
+ * Signing in, signing up and the other one-question pages stand on the
  * map: the form is the one lit thing on it. Pulled up under the header like the
  * home page, so the header floats over the map.
  */
 ---
 
-<div class="auth-shell night" data-auth-shell>
+<div class="auth-shell map" data-auth-shell>
   <div class="auth-in"><slot /></div>
 </div>
 
@@ -22,11 +22,11 @@
     position: relative; isolation: isolate; overflow: hidden;
     margin-top: -64px; padding-top: 64px;
     min-height: max(40rem, 100svh);
-    background: #080d10;
+    background: var(--map-ground);
   }
   .auth-shell::before {
     content: ""; position: absolute; inset: 0; z-index: -1; pointer-events: none;
-    background: radial-gradient(ellipse 46rem 40rem at 50% 45%, rgba(8,13,16,.9), rgba(8,13,16,.55) 60%, rgba(8,13,16,.25));
+    background: radial-gradient(ellipse 46rem 40rem at 50% 45%, rgba(var(--map-ground-rgb), .9), rgba(var(--map-ground-rgb), .55) 60%, rgba(var(--map-ground-rgb), .25));
   }
   .auth-in { position: relative; }
 </style>

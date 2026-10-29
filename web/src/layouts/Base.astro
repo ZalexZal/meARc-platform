@@ -52,7 +52,7 @@ const other = path.startsWith('/404')
   </head>
 
   <!-- A column the height of the screen, so a short page still ends on the
-       footer's night rather than on a strip of page below it. -->
+       footer's map rather than on a strip of page below it. -->
   <body class="flex min-h-svh flex-col">
     <a
       href="#main"
@@ -91,8 +91,8 @@ const other = path.startsWith('/404')
       }, { rootMargin: '0px 0px -10% 0px' });
       document.querySelectorAll('[data-reveal], [data-reveal-group]').forEach((el) => arrive.observe(el));
 
-      // The header takes the colours of whatever it is over: night over the
-      // map, the reader's theme over everything else.
+      // The header takes the colours of whatever it is over: the map's over
+      // the map, the reader's theme over everything else.
       const header = document.querySelector('[data-site-header]');
       let queued = false;
       const matchHeader = () => {
@@ -100,7 +100,7 @@ const other = path.startsWith('/404')
         if (!header) return;
         const under = document.elementsFromPoint(12, header.getBoundingClientRect().bottom + 4)
           .find((el) => !header.contains(el));
-        header.classList.toggle('night', Boolean(under?.closest('.night')));
+        header.classList.toggle('map', Boolean(under?.closest('.map')));
       };
       const queue = () => { if (!queued) { queued = true; requestAnimationFrame(matchHeader); } };
       addEventListener('scroll', queue, { passive: true });
@@ -125,15 +125,15 @@ const other = path.startsWith('/404')
           lift = Math.max(lift, innerHeight - foot.top + 4);
         }
         toTop.style.setProperty('--lift', `${lift}px`);
-        // Like the header: night over the map, the reader's theme elsewhere.
+        // Like the header: the map's colours over the map, the reader's theme elsewhere.
         for (const el of [toTop, cookieBar]) {
           if (!el || el.hidden) continue;
           // Where it sits, or where it is about to: the notice is checked
           // while it is still sliding up from below the screen.
           const r = el.getBoundingClientRect();
-          const night = document.elementsFromPoint(r.left + r.width / 2, Math.min(r.top + r.height / 2, innerHeight - 8))
-            .some((x) => !el.contains(x) && !toTop.contains(x) && !cookieBar?.contains(x) && x.closest('.night'));
-          el.classList.toggle('night', night);
+          const onMap = document.elementsFromPoint(r.left + r.width / 2, Math.min(r.top + r.height / 2, innerHeight - 8))
+            .some((x) => !el.contains(x) && !toTop.contains(x) && !cookieBar?.contains(x) && x.closest('.map'));
+          el.classList.toggle('map', onMap);
         }
       };
       const queueTop = () => { if (!topQueued) { topQueued = true; requestAnimationFrame(placeTop); } };

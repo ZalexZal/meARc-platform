@@ -1,7 +1,7 @@
 ---
 /**
  * The top of every page that is not the home page: its title over a live
- * corner of the night map. One band, so every page starts the way the home
+ * corner of the map. One band, so every page starts the way the home
  * page does and the site reads as one place.
  */
 interface Props {
@@ -17,7 +17,7 @@ const { eyebrow, title, lede, h1 = {} } = Astro.props;
 const seed = [...title].reduce((sum, ch) => (sum * 31 + ch.charCodeAt(0)) | 0, 7);
 ---
 
-<section class="band night page-band" data-band data-seed={seed}>
+<section class="band map page-band" data-band data-seed={seed}>
   <div class="band-in">
     <div class="band-copy">
       {eyebrow && <p class="eyebrow band-eyebrow"><span class="band-dot" aria-hidden="true"></span>{eyebrow}</p>}
@@ -42,7 +42,7 @@ const seed = [...title].reduce((sum, ch) => (sum * 31 + ch.charCodeAt(0)) | 0, 7
 
 <style>
   /* Pulled up under the header, like the home page's map, so the header floats
-     over the night from the first frame. */
+     over the map from the first frame. */
   .page-band { margin-top: -64px; }
   .band-in {
     position: relative; max-width: 76rem; margin: 0 auto;
@@ -53,7 +53,7 @@ const seed = [...title].reduce((sum, ch) => (sum * 31 + ch.charCodeAt(0)) | 0, 7
   @media (max-width: 640px) { .band-in { padding: calc(64px + 3rem) 1.25rem 2.75rem; min-height: 0; } }
   .band-copy { max-width: 42rem; animation: band-rise .8s cubic-bezier(.2,.7,.2,1) both; }
   .band-eyebrow { display: flex; align-items: center; gap: .625rem; color: var(--ink-dim); }
-  .band-dot { width: 7px; height: 7px; border-radius: 50%; background: #2997ff; box-shadow: 0 0 0 4px rgba(41,151,255,.18); }
+  .band-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--map-blue); box-shadow: 0 0 0 4px rgba(var(--map-blue-rgb), .18); }
   .band-copy h1 { margin-top: .875rem; }
   .band-lede { margin-top: 1rem; max-width: 36em; }
   @keyframes band-rise { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: none; } }

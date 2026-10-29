@@ -150,11 +150,105 @@
   --shadow-lift: 0 2px 4px rgba(0, 0, 0, .5), 0 18px 44px -18px rgba(0, 0, 0, .8);
 }
 
-/* The night map, whatever the theme. The home page, the band at the top of a
-   page, the sign-in pages and the footer are drawn at night in both themes: the
-   map's pulses only glow on a dark ground, and the site is recognisable by it.
-   Tokens only - the element decides its own background. */
-.night {
+/* The map: the home page, the band at the top of a page, the sign-in pages and
+   the footer. It follows the theme like everything else (until 30 October it
+   was night in both): by day a light town, by night the dark one with its
+   glowing pulses. Tokens only - the element decides its own background.
+   Day is the default, as on :root; night comes with the dark theme, chosen or
+   followed from the system. */
+.map {
+  color-scheme: light;
+
+  --ground: #eef3f4;
+  --ground-deep: #e1eaec;
+  --surface: rgba(255, 255, 255, .8);
+  --surface-2: rgba(60, 90, 110, .08);
+  --line: rgba(60, 90, 110, .2);
+  --line-soft: rgba(60, 90, 110, .12);
+
+  --ink: #0a1418;
+  --ink-dim: #3f5764;
+  --ink-faint: #52697a;
+
+  --signal: #0066cc;
+  --signal-bright: #0071e3;
+  --signal-ink: #ffffff;
+  --signal-wash: rgba(0, 102, 204, 0.1);
+
+  --lamp: #a75f14;
+  --lamp-wash: #fbeedd;
+
+  --alert: #b8301d;
+  --alert-wash: #fbe6e2;
+
+  --grid: rgba(10, 20, 24, 0.055);
+  --shadow-soft: none;
+  --shadow-lift: 0 30px 70px -34px rgba(10, 30, 45, .35);
+
+  /* The map's own colours. The *-rgb ones take an alpha: rgba(var(--x), .5). */
+  --map-ground: #eef3f4;
+  --map-ground-rgb: 238, 243, 244;
+  --map-panel-rgb: 255, 255, 255;
+  --map-street-rgb: 60, 90, 110;
+  --map-blue: #0066cc;
+  --map-blue-rgb: 0, 102, 204;
+  --map-blue-ink: #ffffff;
+  --map-blue-soft: #0a5aa8;
+  --map-green: #2f8f4e;
+  --map-shadow-rgb: 10, 30, 45;
+  --map-panel-deep-rgb: 255, 255, 255;
+  --map-panel-deeper-rgb: 255, 255, 255;
+  --map-dim-rgb: 238, 243, 244;
+
+  color: var(--ink);
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) .map {
+    color-scheme: dark;
+
+    --ground: #080d10;
+    --ground-deep: #05090b;
+    --surface: rgba(16, 26, 31, .72);
+    --surface-2: rgba(140, 190, 215, .1);
+    --line: rgba(140, 190, 215, .2);
+    --line-soft: rgba(140, 190, 215, .12);
+
+    --ink: #e9f2f5;
+    --ink-dim: #a3b8c2;
+    --ink-faint: #7d95a0;
+
+    --signal: #2997ff;
+    --signal-bright: #4aa8ff;
+    --signal-ink: #04182e;
+    --signal-wash: rgba(41, 151, 255, 0.14);
+
+    --lamp: #f0a868;
+    --lamp-wash: rgba(240, 168, 104, 0.12);
+
+    --alert: #ff7a6b;
+    --alert-wash: rgba(255, 122, 107, 0.12);
+
+    --grid: rgba(140, 200, 215, 0.05);
+    --shadow-soft: none;
+    --shadow-lift: 0 30px 80px -30px rgba(0, 0, 0, .8);
+
+    /* The map's own colours. The *-rgb ones take an alpha: rgba(var(--x), .5). */
+    --map-ground: #080d10;
+    --map-ground-rgb: 8, 13, 16;
+    --map-panel-rgb: 16, 26, 31;
+    --map-street-rgb: 140, 190, 215;
+    --map-blue: #2997ff;
+    --map-blue-rgb: 41, 151, 255;
+    --map-blue-ink: #04182e;
+    --map-blue-soft: #8cc8ff;
+    --map-green: #74d96b;
+    --map-shadow-rgb: 0, 0, 0;
+    --map-panel-deep-rgb: 12, 19, 24;
+    --map-panel-deeper-rgb: 10, 17, 21;
+    --map-dim-rgb: 5, 8, 10;
+  }
+}
+:root[data-theme="dark"] .map {
   color-scheme: dark;
 
   --ground: #080d10;
@@ -183,7 +277,20 @@
   --shadow-soft: none;
   --shadow-lift: 0 30px 80px -30px rgba(0, 0, 0, .8);
 
-  color: var(--ink);
+  /* The map's own colours. The *-rgb ones take an alpha: rgba(var(--x), .5). */
+  --map-ground: #080d10;
+  --map-ground-rgb: 8, 13, 16;
+  --map-panel-rgb: 16, 26, 31;
+  --map-street-rgb: 140, 190, 215;
+  --map-blue: #2997ff;
+  --map-blue-rgb: 41, 151, 255;
+  --map-blue-ink: #04182e;
+  --map-blue-soft: #8cc8ff;
+  --map-green: #74d96b;
+  --map-shadow-rgb: 0, 0, 0;
+  --map-panel-deep-rgb: 12, 19, 24;
+  --map-panel-deeper-rgb: 10, 17, 21;
+  --map-dim-rgb: 5, 8, 10;
 }
 
 @theme inline {
@@ -324,8 +431,8 @@ img, svg, video { max-width: 100%; height: auto; display: block; }
   border: 1px solid var(--line);
   border-radius: 22px;
 }
-/* At night a card is glass over the map, so the streets show through it. */
-.night .card {
+/* On the map a card is glass, so the streets show through it. */
+.map .card {
   -webkit-backdrop-filter: blur(16px) saturate(140%);
   backdrop-filter: blur(16px) saturate(140%);
 }
@@ -792,26 +899,26 @@ input[type="file"].field::file-selector-button:hover { border-color: var(--ink-f
    streets and what lies on them (two canvases it tilts in 3D), a haze where
    the ground meets the sky, and the pins standing upright in front.           */
 
-.town { isolation: isolate; overflow: hidden; background-color: #080d10; }
+.town { isolation: isolate; overflow: hidden; background-color: var(--map-ground, #080d10); }
 .town > .town-ground { position: absolute; left: 0; top: 0; transform-origin: 0 0; pointer-events: none; z-index: -5; }
 .town > .town-live { z-index: -4; }
 .town > .town-fog {
   position: absolute; inset: 0; pointer-events: none; z-index: -3;
   background:
-    linear-gradient(180deg, #080d10 0%, rgba(8, 13, 16, .85) 8%, rgba(8, 13, 16, .3) 19%, rgba(8, 13, 16, 0) 30%),
-    radial-gradient(ellipse 75% 20% at 62% 14%, rgba(41, 151, 255, .16), rgba(41, 151, 255, 0) 70%);
+    linear-gradient(180deg, var(--map-ground, #080d10) 0%, rgba(var(--map-ground-rgb, 8, 13, 16), .85) 8%, rgba(var(--map-ground-rgb, 8, 13, 16), .3) 19%, rgba(var(--map-ground-rgb, 8, 13, 16), 0) 30%),
+    radial-gradient(ellipse 75% 20% at 62% 14%, rgba(var(--map-blue-rgb, 41, 151, 255), .16), rgba(var(--map-blue-rgb, 41, 151, 255), 0) 70%);
 }
 .town > .town-over { position: absolute; left: 0; top: 0; pointer-events: none; z-index: -2; }
 
 /* -------------------------------------------------------------- page band
 
-   The night map at the top of a page: its title over a live corner of the
+   The map at the top of a page: its title over a live corner of the
    town. The map is the canvas; the scrim keeps the words readable over it.   */
 
 .band {
   position: relative;
   overflow: hidden;
-  background: #080d10;
+  background: var(--map-ground, #080d10);
   isolation: isolate;
 }
 .band::before {
@@ -821,12 +928,12 @@ input[type="file"].field::file-selector-button:hover { border-color: var(--ink-f
   z-index: -1;
   pointer-events: none;
   background:
-    linear-gradient(90deg, rgba(8, 13, 16, .94) 0%, rgba(8, 13, 16, .74) 34%, rgba(8, 13, 16, .2) 72%, rgba(8, 13, 16, .35) 100%),
-    linear-gradient(0deg, rgba(8, 13, 16, .6), rgba(8, 13, 16, 0) 40%);
+    linear-gradient(90deg, rgba(var(--map-ground-rgb, 8, 13, 16), .94) 0%, rgba(var(--map-ground-rgb, 8, 13, 16), .74) 34%, rgba(var(--map-ground-rgb, 8, 13, 16), .2) 72%, rgba(var(--map-ground-rgb, 8, 13, 16), .35) 100%),
+    linear-gradient(0deg, rgba(var(--map-ground-rgb, 8, 13, 16), .6), rgba(var(--map-ground-rgb, 8, 13, 16), 0) 40%);
 }
 @media (max-width: 760px) {
   .band::before {
-    background: linear-gradient(180deg, rgba(8, 13, 16, .55), rgba(8, 13, 16, .88) 70%, rgba(8, 13, 16, .94));
+    background: linear-gradient(180deg, rgba(var(--map-ground-rgb, 8, 13, 16), .55), rgba(var(--map-ground-rgb, 8, 13, 16), .88) 70%, rgba(var(--map-ground-rgb, 8, 13, 16), .94));
   }
 }
 
@@ -1092,6 +1199,16 @@ input[type="radio"][aria-invalid="true"] { outline: 2px solid var(--alert); outl
 .cookie-bar-actions { display: flex; align-items: center; gap: .25rem; flex-shrink: 0; }
 @media (max-width: 560px) {
   .cookie-bar { flex-direction: column; align-items: stretch; padding: 1rem; }
+  .cookie-bar-actions { justify-content: flex-end; }
+}
+/* On a wide screen a compact card in the corner, clear of the hero's words. */
+@media (min-width: 900px) {
+  .cookie-bar {
+    left: auto; right: 1.5rem; width: 22rem;
+    flex-direction: column; align-items: stretch;
+    transform: translate(0, calc(100% + 2rem));
+  }
+  .cookie-bar.is-shown { transform: translate(0, 0); }
   .cookie-bar-actions { justify-content: flex-end; }
 }
 

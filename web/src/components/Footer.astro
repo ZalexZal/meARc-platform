@@ -8,9 +8,9 @@ const href = localise(lang);
 const year = new Date().getFullYear();
 ---
 
-<!-- At night on every page, so the site ends where the home page begins: on
-     the map. -->
-<footer class="night site-footer" data-map-texture>
+<!-- On the map on every page, by day or by night with the theme, so the site
+     ends where the home page begins. -->
+<footer class="map site-footer" data-map-texture>
   <div class="mx-auto grid max-w-6xl gap-10 px-4 py-16 sm:px-6 md:grid-cols-[1.5fr_1fr_1fr]">
     <div>
       <a href={href('/')} class="flex w-fit items-center gap-2.5">
@@ -57,21 +57,25 @@ const year = new Date().getFullYear();
 </footer>
 
 <script>
-  import { mapTexture } from '../lib/town';
+  import { mapTexture, watchTheme } from '../lib/town';
 
   // The same streets as the map above, faint, repeating without a seam behind
-  // every long stretch of night. Drawn once per page, in the browser.
-  const tile = mapTexture();
-  if (tile) {
+  // every long stretch of map. Drawn in the browser, and again in the other
+  // palette when the theme changes.
+  const paint = () => {
+    const tile = mapTexture();
+    if (!tile) return;
     document.querySelectorAll<HTMLElement>('[data-map-texture]').forEach((el) => {
       el.style.backgroundImage = `url(${tile})`;
     });
-  }
+  };
+  paint();
+  watchTheme(paint);
 </script>
 
 <style>
   .site-footer {
-    background-color: #080d10;
+    background-color: var(--map-ground);
     background-size: 960px 960px;
     border-top: 1px solid var(--line-soft);
   }

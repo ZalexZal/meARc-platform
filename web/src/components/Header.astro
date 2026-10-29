@@ -10,11 +10,10 @@ const links: { label: UIKey; to: string }[] = [
   { label: 'nav.how',   to: '/#how' },
   { label: 'nav.games', to: '/trails' },
   { label: 'nav.play',  to: '/play' },
-  { label: 'nav.faq',   to: '/#faq' },
 ];
 
-// Which link is the page you are on. The two anchors on the home page are
-// never "here": they are places on a page, not pages.
+// Which link is the page you are on. The anchor on the home page is never
+// "here": it is a place on a page, not a page.
 const here = Astro.url.pathname.replace(/^\/en/, '').replace(/\/$/, '') || '/';
 const current = (to: string) => !to.includes('#') && here === to;
 ---
@@ -54,7 +53,6 @@ const current = (to: string) => !to.includes('#') && here === to;
         </summary>
         <nav class="menu-pop" aria-label={t('nav.menu')}>
           {links.map((l) => <a href={href(l.to)}>{t(l.label)}</a>)}
-          <a href={href('/my-trails')} data-auth-in hidden class="strong">{t('nav.mine')}</a>
           <a href={href('/signin')} data-auth-out hidden class="strong">{t('nav.signin')}</a>
         </nav>
       </details>
@@ -75,23 +73,79 @@ const current = (to: string) => !to.includes('#') && here === to;
         <a href={href('/signin')} class="btn btn-quiet btn-sm hide-sm">{t('nav.signin')}</a>
         <a href={href('/signup')} class="btn btn-primary btn-sm">{t('nav.signup')}</a>
       </span>
-      <span class="contents" data-auth-in hidden>
-        <a href={href('/account')} class="me-chip" aria-label={t('nav.account')}>
+      <!-- The way to everything that is yours: one menu under your initials, on
+           every width. -->
+      <div class="me" data-auth-in hidden data-me>
+        <button type="button" class="me-chip" aria-haspopup="menu" aria-expanded="false"
+                aria-controls="me-menu" aria-label={t('nav.account')} data-me-button>
           <span class="me-face" data-me-initials aria-hidden="true">·</span>
           <span class="me-name" data-me-name>{t('nav.account')}</span>
-        </a>
-      </span>
+          <svg class="me-caret" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="m6 9 6 6 6-6" />
+          </svg>
+        </button>
+        <div class="me-pop" id="me-menu" role="menu" aria-label={t('nav.account')} hidden data-me-menu>
+          <a role="menuitem" href={href('/account')}>{t('nav.profile')}</a>
+          <a role="menuitem" href={href('/account#settings')}>{t('nav.settings')}</a>
+          <a role="menuitem" href={href('/my-trails')}>{t('nav.mine')}</a>
+          <button role="menuitem" type="button" class="out" data-me-signout>{t('nav.signout')}</button>
+        </div>
+      </div>
     </div>
   </div>
 </header>
 
 <script>
   import { who } from '../lib/session';
+  import { signOut } from '../lib/supabase';
 
   // A tap anywhere else closes the phone menu, the way a menu is expected to.
   const menu = document.querySelector('[data-menu]') as HTMLDetailsElement | null;
   document.addEventListener('click', (event) => {
     if (menu?.open && !menu.contains(event.target as Node)) menu.open = false;
+  });
+
+  // The profile menu: opens from the chip, closes on Escape, on a click
+  // outside and on choosing an item; the arrow keys walk its items.
+  const me = document.querySelector<HTMLElement>('[data-me]');
+  const meButton = document.querySelector<HTMLButtonElement>('[data-me-button]');
+  const meMenu = document.querySelector<HTMLElement>('[data-me-menu]');
+  const items = () => Array.from(meMenu?.querySelectorAll<HTMLElement>('[role="menuitem"]') ?? []);
+
+  function setMenu(open: boolean, focus: 'first' | 'button' | null = null) {
+    if (!meButton || !meMenu) return;
+    meMenu.hidden = !open;
+    meButton.setAttribute('aria-expanded', String(open));
+    if (focus === 'first') items()[0]?.focus();
+    if (focus === 'button') meButton.focus();
+  }
+
+  meButton?.addEventListener('click', () => setMenu(meMenu?.hidden ?? false));
+  meButton?.addEventListener('keydown', (event) => {
+    if (event.key === 'ArrowDown') { event.preventDefault(); setMenu(true, 'first'); }
+  });
+  meMenu?.addEventListener('keydown', (event) => {
+    const list = items();
+    const at = list.indexOf(document.activeElement as HTMLElement);
+    if (event.key === 'Escape') { event.preventDefault(); setMenu(false, 'button'); }
+    else if (event.key === 'ArrowDown') { event.preventDefault(); list[(at + 1) % list.length]?.focus(); }
+    else if (event.key === 'ArrowUp') { event.preventDefault(); list[(at - 1 + list.length) % list.length]?.focus(); }
+    else if (event.key === 'Home') { event.preventDefault(); list[0]?.focus(); }
+    else if (event.key === 'End') { event.preventDefault(); list[list.length - 1]?.focus(); }
+  });
+  document.addEventListener('click', (event) => {
+    if (meMenu && !meMenu.hidden && !me?.contains(event.target as Node)) setMenu(false);
+  });
+  document.addEventListener('keydown', (event) => {
+    if (event.key === 'Escape' && meMenu && !meMenu.hidden) setMenu(false, 'button');
+  });
+  // Settings is a place on the account page; from the account page itself the
+  // link only changes the hash, so the menu closes by hand.
+  meMenu?.querySelectorAll('a').forEach((a) => a.addEventListener('click', () => setMenu(false)));
+
+  document.querySelector('[data-me-signout]')?.addEventListener('click', async () => {
+    await signOut();
+    location.href = location.pathname.startsWith('/en/') ? '/en/' : '/';
   });
 
   // Neither pair is visible until this decides, so nobody sees the wrong one.
@@ -191,5 +245,25 @@ const current = (to: string) => !to.includes('#') && here === to;
     font-family: var(--font-display); font-weight: 800; font-size: .72rem;
   }
   .me-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-  @media (max-width: 640px) { .me-name { display: none; } .me-chip { padding-right: 4px; } }
+  .me-caret { flex: none; color: var(--ink-dim); transition: transform .2s ease; }
+  .me-chip[aria-expanded="true"] .me-caret { transform: rotate(180deg); }
+  @media (max-width: 640px) { .me-name { display: none; } .me-chip { padding-right: 10px; } }
+
+  .me { position: relative; }
+  .me-chip { cursor: pointer; background: transparent; }
+  .me-pop {
+    position: absolute; right: 0; top: calc(100% + 8px); z-index: 50; min-width: 13rem;
+    display: flex; flex-direction: column; padding: .5rem;
+    border-radius: 20px; border: 1px solid var(--line);
+    background: color-mix(in srgb, var(--ground) 94%, transparent);
+    -webkit-backdrop-filter: blur(20px); backdrop-filter: blur(20px);
+    box-shadow: 0 24px 50px -24px rgba(0, 0, 0, .55);
+  }
+  .me-pop[hidden] { display: none; }
+  .me-pop a, .me-pop button {
+    padding: .75rem .75rem; border-radius: 14px; font-size: 15px; text-align: left;
+    color: var(--ink); background: transparent; cursor: pointer;
+  }
+  .me-pop a:hover, .me-pop button:hover, .me-pop a:focus-visible, .me-pop button:focus-visible { background: var(--surface-2); outline: none; }
+  .me-pop .out { margin-top: .25rem; border-top: 1px solid var(--line-soft); border-radius: 0 0 14px 14px; color: var(--ink-dim); }
 </style>

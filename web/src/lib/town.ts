@@ -1,5 +1,5 @@
 /**
- * The night town: a made-up map seen at an angle, with its stops standing on
+ * The town: a made-up map seen at an angle, by night or by day, with its stops standing on
  * the street corners as pins and its walkers out on the streets.
  *
  * Three layers. The streets and everything that lies on them (links between
@@ -60,8 +60,58 @@ type Walker = { x: number; y: number; at: number; to: number; hx: number; hy: nu
 type Label = { m: number; text: string; t: number; life: number };
 type Cam = { fx: number; fy: number; ax: number; ay: number; tilt: number; zoom: number };
 
-const NIGHT = '#080d10';
-const BLUE = '41,151,255';
+type Edge = { a: number; b: number; major: boolean; cx: number; cy: number };
+
+/**
+ * Every colour the town is drawn in, by night and by day. Night is the town as
+ * it always was. Day is the same town on a light ground: additive light only
+ * works on dark, so by day glows are laid on normally and the pulses are blue.
+ * "r,g,b" strings take an alpha where they are used.
+ */
+type Palette = {
+  ground: string; groundRgb: string; blue: string; blueHex: string; blueLight: string;
+  pinInk: string; pinEdge: string; street: string; streetA: number; avenueA: number;
+  block: string; blockK: number; park: string; parkA: number; window: string; windowA: number;
+  riverA: number; riverEdgeA: number; tail: string; web: string; spark: string;
+  sparkGlow: string; sparkCore: string; green: string; amber: string; amberGlow: string;
+  amberInk: string; bubble: string; bubbleEdge: string; bubbleInk: string;
+  glowOp: GlobalCompositeOperation; glowA: number;
+};
+const NIGHT_PALETTE: Palette = {
+  ground: '#080d10', groundRgb: '8,13,16', blue: '41,151,255', blueHex: '#2997ff', blueLight: '#8cc8ff',
+  pinInk: '#04182e', pinEdge: 'rgba(8,13,16,0.85)', street: '140,190,215', streetA: 0.15, avenueA: 0.28,
+  block: '150,190,210', blockK: 1, park: '98,201,131', parkA: 0.08, window: '240,190,120', windowA: 0.16,
+  riverA: 0.09, riverEdgeA: 0.22, tail: '150,205,255', web: '140,200,255', spark: '220,240,255',
+  sparkGlow: 'rgba(214,236,255,0.85)', sparkCore: '#ffffff', green: '116,217,107', amber: '#f0a868',
+  amberGlow: 'rgba(240,168,104,0.9)', amberInk: '#2a1604', bubble: 'rgba(16,26,31,0.88)',
+  bubbleEdge: 'rgba(140,190,215,0.3)', bubbleInk: '#e9f2f5', glowOp: 'lighter', glowA: 0.9,
+};
+const DAY_PALETTE: Palette = {
+  ground: '#eef3f4', groundRgb: '238,243,244', blue: '0,102,204', blueHex: '#0066cc', blueLight: '#3d8fe0',
+  pinInk: '#ffffff', pinEdge: 'rgba(255,255,255,0.9)', street: '60,90,110', streetA: 0.22, avenueA: 0.38,
+  block: '70,100,120', blockK: 1.3, park: '47,143,78', parkA: 0.14, window: '167,95,20', windowA: 0,
+  riverA: 0.12, riverEdgeA: 0.3, tail: '0,102,204', web: '0,102,204', spark: '0,102,204',
+  sparkGlow: 'rgba(0,102,204,0.35)', sparkCore: '#0058b0', green: '47,143,78', amber: '#f0a868',
+  amberGlow: 'rgba(240,168,104,0.6)', amberInk: '#2a1604', bubble: 'rgba(255,255,255,0.94)',
+  bubbleEdge: 'rgba(10,40,60,0.18)', bubbleInk: '#0a1418', glowOp: 'source-over', glowA: 0.28,
+};
+
+/** Light theme, whether chosen on the site or followed from the system. */
+export function isDay(): boolean {
+  const chosen = document.documentElement.getAttribute('data-theme');
+  if (chosen === 'light') return true;
+  if (chosen === 'dark') return false;
+  return !matchMedia('(prefers-color-scheme: dark)').matches;
+}
+
+/** Calls back whenever the theme changes, by the site's switch or the system's. */
+export function watchTheme(cb: () => void): () => void {
+  const mo = new MutationObserver(cb);
+  mo.observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
+  const mq = matchMedia('(prefers-color-scheme: dark)');
+  mq.addEventListener('change', cb);
+  return () => { mo.disconnect(); mq.removeEventListener('change', cb); };
+}
 
 function rng(seed: number) {
   return function () {
@@ -74,6 +124,21 @@ function rng(seed: number) {
 const clamp = (v: number, a: number, b: number) => (v < a ? a : v > b ? b : v);
 /** 0 before a, 1 after b, an S-curve between. */
 const smooth = (a: number, b: number, x: number) => { const t = clamp((x - a) / (b - a), 0, 1); return t * t * (3 - 2 * t); };
+/**
+ * How far through the scroll (0–1) becomes where the story is (0–5). The walk
+ * is 2.6 screens tall, so 1.6 of scrolling plays it: the hero's exit (story
+ * 0–0.7) takes the first 0.2 of a screen, the quiet end (4.65–5) the last 0.05,
+ * and Build, Walk and Find share everything between, so their words stay up as
+ * long as the shorter page allows.
+ */
+const STORY_KNOTS: [number, number][] = [[0, 0], [0.2 / 1.6, 0.7], [1 - 0.05 / 1.6, 4.65], [1, 5]];
+const storyAt = (p: number) => {
+  for (let i = 1; i < STORY_KNOTS.length; i++) {
+    const [p0, s0] = STORY_KNOTS[i - 1], [p1, s1] = STORY_KNOTS[i];
+    if (p <= p1) return s0 + ((p - p0) / (p1 - p0)) * (s1 - s0);
+  }
+  return 5;
+};
 const ease = (u: number) => (u < 0.5 ? 2 * u * u : 1 - Math.pow(-2 * u + 2, 2) / 2);
 const back = (u: number) => { const c1 = 1.70158, c3 = c1 + 1; return 1 + c3 * Math.pow(u - 1, 3) + c1 * Math.pow(u - 1, 2); };
 const mix = (a: number, b: number, t: number) => a + (b - a) * t;
@@ -112,13 +177,13 @@ export function startTown(o: TownOptions): () => void {
   host.prepend(base, live, fog, over);
   const b2 = base.getContext('2d'), l2 = live.getContext('2d'), o2 = over.getContext('2d');
   if (!b2 || !l2 || !o2) return () => {};
-  const glow = sprite(`rgba(${BLUE},0.9)`);
-  const glowAmber = sprite('rgba(240,168,104,0.9)');
-  const glowWhite = sprite('rgba(214,236,255,0.85)');
+  let pal = isDay() ? DAY_PALETTE : NIGHT_PALETTE;
+  let glow = sprite(`rgba(${pal.blue},${pal.glowA})`), glowAmber = sprite(pal.amberGlow), glowWhite = sprite(pal.sparkGlow);
 
   let W = 0, H = 0, Gw = 0, Gh = 0, gd = 1, od = 1, S = 80, mobile = false;
   let nodes: Pt[] = [], adj: number[][] = [], markers: Marker[] = [], links: [number, number][] = [];
   let trail: number[] = [], pathPts: [number, number][] = [], pathLen = 0;
+  let blocks: { pts: [number, number][]; park: boolean; shade: number }[] = [], windows: [number, number][] = [], keptEdges: Edge[] = [];
   let pulses: Pulse[] = [], walkers: Walker[] = [], labels: Label[] = [];
   let F0 = { x: 0, y: 0 };
   let M = new DOMMatrix(), zoomNow = 1, camCss = '';
@@ -136,6 +201,55 @@ export function startTown(o: TownOptions): () => void {
     x + 22 * Math.sin(y / 170 + 1.3) + 12 * Math.sin((x + y) / 260),
     y + 18 * Math.cos(x / 210 + 0.4) + 12 * Math.cos((x - y) / 300),
   ];
+
+  // The ground: blocks, the river, the streets and the faded edges, in the
+  // current palette. Drawn once per build and again on a change of theme.
+  function paintGround() {
+    const g = b2!;
+    g.setTransform(gd, 0, 0, gd, 0, 0);
+    g.fillStyle = pal.ground; g.fillRect(0, 0, Gw, Gh);
+    for (const bl of blocks) {
+      g.beginPath();
+      bl.pts.forEach(([x, y], n) => { if (n) g.lineTo(x, y); else g.moveTo(x, y); });
+      g.closePath();
+      g.fillStyle = bl.park ? `rgba(${pal.park},${pal.parkA})` : `rgba(${pal.block},${(bl.shade * pal.blockK).toFixed(3)})`;
+      g.fill();
+    }
+    g.fillStyle = `rgba(${pal.window},${pal.windowA})`;
+    for (const [x, y] of windows) g.fillRect(x, y, 3, 2);
+    if (riverOn) {
+      g.beginPath();
+      for (let x = -24; x <= Gw + 24; x += 8) { if (x === -24) g.moveTo(x, riverY(x) - RW); else g.lineTo(x, riverY(x) - RW); }
+      for (let x = Gw + 24; x >= -24; x -= 8) g.lineTo(x, riverY(x) + RW);
+      g.closePath(); g.fillStyle = `rgba(${pal.blue},${pal.riverA})`; g.fill();
+      g.strokeStyle = `rgba(${pal.blue},${pal.riverEdgeA})`; g.lineWidth = 1;
+      for (const off of [-RW, RW]) {
+        g.beginPath();
+        for (let x = -24; x <= Gw + 24; x += 8) { if (x === -24) g.moveTo(x, riverY(x) + off); else g.lineTo(x, riverY(x) + off); }
+        g.stroke();
+      }
+    }
+    g.lineCap = 'round';
+    g.strokeStyle = `rgba(${pal.street},${pal.streetA})`; g.lineWidth = 1.3; g.beginPath();
+    for (const e of keptEdges) if (!e.major) { const A = nodes[e.a], B = nodes[e.b]; g.moveTo(A.x, A.y); g.quadraticCurveTo(e.cx, e.cy, B.x, B.y); }
+    g.stroke();
+    g.strokeStyle = `rgba(${pal.street},${pal.avenueA})`; g.lineWidth = 3; g.beginPath();
+    for (const e of keptEdges) if (e.major) { const A = nodes[e.a], B = nodes[e.b]; g.moveTo(A.x, A.y); g.quadraticCurveTo(e.cx, e.cy, B.x, B.y); }
+    g.stroke();
+    if (!flat) {
+      // The edges of the town dissolve into the ground instead of ending.
+      const edge = (x0: number, y0: number, x1: number, y1: number, x: number, y: number, w: number, h: number) => {
+        const gr = g.createLinearGradient(x0, y0, x1, y1);
+        gr.addColorStop(0, pal.ground); gr.addColorStop(1, `rgba(${pal.groundRgb},0)`);
+        g.fillStyle = gr; g.fillRect(x, y, w, h);
+      };
+      const ex = Gw * 0.14, ey = Gh * 0.12;
+      edge(0, 0, 0, ey, 0, 0, Gw, ey);
+      edge(0, Gh, 0, Gh - ey, 0, Gh - ey, Gw, ey);
+      edge(0, 0, ex, 0, 0, 0, ex, Gh);
+      edge(Gw, 0, Gw - ex, 0, Gw - ex, 0, ex, Gh);
+    }
+  }
 
   // ------------------------------------------------------------------ the town
   function build() {
@@ -166,14 +280,13 @@ export function startTown(o: TownOptions): () => void {
       nodes.push({ x, y, bx, by });
     }
     const avRow = Math.round(rows * 0.45), avCol = Math.round(cols * (mobile ? 0.5 : 0.42));
-    type E = { a: number; b: number; major: boolean; cx: number; cy: number };
-    const edges: E[] = [];
+    const edges: Edge[] = [];
     adj = nodes.map(() => []);
     for (let j = 0; j < rows; j++) for (let i = 0; i < cols; i++) {
       if (i + 1 < cols) { const major = j === avRow; if (major || R() < 0.84) edges.push({ a: id(i, j), b: id(i + 1, j), major, cx: 0, cy: 0 }); }
       if (j + 1 < rows) { const major = i === avCol; if (major || R() < 0.84) edges.push({ a: id(i, j), b: id(i, j + 1), major, cx: 0, cy: 0 }); }
     }
-    const kept: E[] = [];
+    const kept: Edge[] = [];
     for (const e of edges) {
       const A = nodes[e.a], B = nodes[e.b];
       const m = warp((A.bx + B.bx) / 2, (A.by + B.by) / 2);
@@ -184,10 +297,10 @@ export function startTown(o: TownOptions): () => void {
       if (!wet) { adj[e.a].push(e.b); adj[e.b].push(e.a); }
     }
 
-    // The streets, drawn once.
-    const g = b2!;
-    g.setTransform(gd, 0, 0, gd, 0, 0);
-    g.fillStyle = NIGHT; g.fillRect(0, 0, Gw, Gh);
+    // The streets, kept so they can be painted again in the other palette
+    // when the theme changes. The random numbers are drawn here, in the same
+    // order as ever, so the town is the same town by day and by night.
+    blocks = []; windows = []; keptEdges = kept;
     for (let j = 0; j < rows - 1; j++) for (let i = 0; i < cols - 1; i++) {
       const q = [nodes[id(i, j)], nodes[id(i + 1, j)], nodes[id(i + 1, j + 1)], nodes[id(i, j + 1)]];
       const cx = (q[0].x + q[1].x + q[2].x + q[3].x) / 4, cy = (q[0].y + q[1].y + q[2].y + q[3].y) / 4;
@@ -195,49 +308,14 @@ export function startTown(o: TownOptions): () => void {
       const rr = R();
       if (rr > 0.82) continue;
       const park = rr < 0.07, k = park ? 0.86 : 0.72;
-      g.beginPath();
-      q.forEach((p, n) => { const x = cx + (p.x - cx) * k, y = cy + (p.y - cy) * k; if (n) g.lineTo(x, y); else g.moveTo(x, y); });
-      g.closePath();
-      g.fillStyle = park ? 'rgba(98,201,131,0.08)' : `rgba(150,190,210,${(0.045 + R() * 0.035).toFixed(3)})`;
-      g.fill();
+      const pts = q.map((p): [number, number] => [cx + (p.x - cx) * k, cy + (p.y - cy) * k]);
+      blocks.push({ pts, park, shade: park ? 0 : 0.045 + R() * 0.035 });
       // A lit window or two: the town is lived in.
       if (!park && R() < 0.35) {
-        g.fillStyle = 'rgba(240,190,120,0.16)';
-        for (let w = 0; w < 3; w++) g.fillRect(cx + (R() - 0.5) * S * 0.5, cy + (R() - 0.5) * S * 0.5, 3, 2);
+        for (let w = 0; w < 3; w++) windows.push([cx + (R() - 0.5) * S * 0.5, cy + (R() - 0.5) * S * 0.5]);
       }
     }
-    if (riverOn) {
-      g.beginPath();
-      for (let x = -24; x <= Gw + 24; x += 8) { if (x === -24) g.moveTo(x, riverY(x) - RW); else g.lineTo(x, riverY(x) - RW); }
-      for (let x = Gw + 24; x >= -24; x -= 8) g.lineTo(x, riverY(x) + RW);
-      g.closePath(); g.fillStyle = `rgba(${BLUE},0.09)`; g.fill();
-      g.strokeStyle = `rgba(${BLUE},0.22)`; g.lineWidth = 1;
-      for (const off of [-RW, RW]) {
-        g.beginPath();
-        for (let x = -24; x <= Gw + 24; x += 8) { if (x === -24) g.moveTo(x, riverY(x) + off); else g.lineTo(x, riverY(x) + off); }
-        g.stroke();
-      }
-    }
-    g.lineCap = 'round';
-    g.strokeStyle = 'rgba(140,190,215,0.15)'; g.lineWidth = 1.3; g.beginPath();
-    for (const e of kept) if (!e.major) { const A = nodes[e.a], B = nodes[e.b]; g.moveTo(A.x, A.y); g.quadraticCurveTo(e.cx, e.cy, B.x, B.y); }
-    g.stroke();
-    g.strokeStyle = 'rgba(140,190,215,0.28)'; g.lineWidth = 3; g.beginPath();
-    for (const e of kept) if (e.major) { const A = nodes[e.a], B = nodes[e.b]; g.moveTo(A.x, A.y); g.quadraticCurveTo(e.cx, e.cy, B.x, B.y); }
-    g.stroke();
-    if (!flat) {
-      // The edges of the town dissolve into the night instead of ending.
-      const edge = (x0: number, y0: number, x1: number, y1: number, x: number, y: number, w: number, h: number) => {
-        const gr = g.createLinearGradient(x0, y0, x1, y1);
-        gr.addColorStop(0, NIGHT); gr.addColorStop(1, 'rgba(8,13,16,0)');
-        g.fillStyle = gr; g.fillRect(x, y, w, h);
-      };
-      const ex = Gw * 0.14, ey = Gh * 0.12;
-      edge(0, 0, 0, ey, 0, 0, Gw, ey);
-      edge(0, Gh, 0, Gh - ey, 0, Gh - ey, Gw, ey);
-      edge(0, 0, ex, 0, 0, 0, ex, Gh);
-      edge(Gw, 0, Gw - ex, 0, Gw - ex, 0, ex, Gh);
-    }
+    paintGround();
 
     // Stops stand on street corners.
     const margin = flat ? 16 : 60;
@@ -481,12 +559,12 @@ export function startTown(o: TownOptions): () => void {
     c.bezierCurveTo(x + r, hy + r * 0.55, x + r * 0.6, y - r * 0.9, x, y);
     c.closePath();
     c.fillStyle = colour; c.fill();
-    c.lineWidth = Math.max(1, 1.4 * Math.min(scale, 1.4)); c.strokeStyle = 'rgba(8,13,16,0.85)'; c.stroke();
+    c.lineWidth = Math.max(1, 1.4 * Math.min(scale, 1.4)); c.strokeStyle = pal.pinEdge; c.stroke();
     if (label) {
-      c.fillStyle = '#04182e'; c.font = `600 ${Math.max(8, Math.round(8.5 * scale))}px "JetBrains Mono", monospace`;
+      c.fillStyle = pal.pinInk; c.font = `600 ${Math.max(8, Math.round(8.5 * scale))}px "JetBrains Mono", monospace`;
       c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillText(label, x, hy + 0.5);
     } else {
-      c.beginPath(); c.arc(x, hy, r * 0.36, 0, 6.2832); c.fillStyle = '#04182e'; c.fill();
+      c.beginPath(); c.arc(x, hy, r * 0.36, 0, 6.2832); c.fillStyle = pal.pinInk; c.fill();
     }
     c.globalAlpha = 1;
   }
@@ -498,10 +576,10 @@ export function startTown(o: TownOptions): () => void {
     c.globalAlpha = alpha;
     c.beginPath();
     c.roundRect(x - w / 2, y - h, w, h, 12);
-    c.fillStyle = plus ? '#f0a868' : 'rgba(16,26,31,0.88)';
+    c.fillStyle = plus ? pal.amber : pal.bubble;
     c.fill();
-    if (!plus) { c.strokeStyle = 'rgba(140,190,215,0.3)'; c.lineWidth = 1; c.stroke(); }
-    c.fillStyle = plus ? '#2a1604' : '#e9f2f5';
+    if (!plus) { c.strokeStyle = pal.bubbleEdge; c.lineWidth = 1; c.stroke(); }
+    c.fillStyle = plus ? pal.amberInk : pal.bubbleInk;
     c.textAlign = 'center'; c.textBaseline = 'middle';
     c.fillText(text, x, y - h / 2 + 0.5);
     c.globalAlpha = 1;
@@ -515,7 +593,7 @@ export function startTown(o: TownOptions): () => void {
     let s = 0;
     if (story) {
       const wr = story.scroller.getBoundingClientRect();
-      const target = clamp(-wr.top / Math.max(1, wr.height - H), 0, 1) * 5;
+      const target = storyAt(clamp(-wr.top / Math.max(1, wr.height - H), 0, 1));
       sNow += (target - sNow) * (1 - Math.exp(-dt * 9));
       s = sNow;
     }
@@ -551,7 +629,7 @@ export function startTown(o: TownOptions): () => void {
     g.lineCap = 'round'; g.lineJoin = 'round';
 
     // Light around everybody walking.
-    g.globalCompositeOperation = 'lighter';
+    g.globalCompositeOperation = pal.glowOp;
     const pool = (x: number, y: number, r: number, a: number) => {
       if (a < 0.01) return;
       g.globalAlpha = a; g.drawImage(glow, x - r, y - r, r * 2, r * 2); g.globalAlpha = 1;
@@ -567,7 +645,7 @@ export function startTown(o: TownOptions): () => void {
     if (free > 0.01) for (const wk of walkers) {
       const tl = wk.tail;
       for (let i = 2; i < tl.length; i += 2) {
-        g.strokeStyle = `rgba(150,205,255,${((i / tl.length) * 0.55 * free).toFixed(3)})`;
+        g.strokeStyle = `rgba(${pal.tail},${((i / tl.length) * 0.55 * free).toFixed(3)})`;
         g.lineWidth = 2.4;
         g.beginPath(); g.moveTo(tl[i - 2], tl[i - 1]); g.lineTo(tl[i], tl[i + 1]); g.stroke();
       }
@@ -579,14 +657,14 @@ export function startTown(o: TownOptions): () => void {
       for (let k = 0; k < trail.length - 1; k++) {
         const u = clamp((b - (0.2 + k * 0.15)) / 0.15, 0, 1); if (u <= 0) continue;
         const A = markers[trail[k]], B = markers[trail[k + 1]];
-        g.strokeStyle = `rgba(150,205,255,${(0.85 * (1 - 0.5 * f)).toFixed(3)})`;
+        g.strokeStyle = `rgba(${pal.tail},${(0.85 * (1 - 0.5 * f)).toFixed(3)})`;
         g.beginPath(); g.moveTo(A.x, A.y); g.lineTo(A.x + (B.x - A.x) * u, A.y + (B.y - A.y) * u); g.stroke();
       }
       g.setLineDash([]);
     }
     if (w > 0 && pathPts.length > 1) {
       const target = w * pathLen; let acc = 0;
-      g.strokeStyle = `rgba(${BLUE},0.95)`; g.lineWidth = 4.5;
+      g.strokeStyle = `rgba(${pal.blue},0.95)`; g.lineWidth = 4.5;
       g.beginPath(); g.moveTo(pathPts[0][0], pathPts[0][1]);
       for (let i = 1; i < pathPts.length; i++) {
         const [x0, y0] = pathPts[i - 1], [x1, y1] = pathPts[i];
@@ -600,12 +678,12 @@ export function startTown(o: TownOptions): () => void {
     // Rings on the ground where something arrived.
     for (const m of markers) {
       if (m.ring <= 0.01) continue;
-      g.strokeStyle = `rgba(${BLUE},${(m.ring * 0.7 * dim).toFixed(3)})`; g.lineWidth = 1.6;
+      g.strokeStyle = `rgba(${pal.blue},${(m.ring * 0.7 * dim).toFixed(3)})`; g.lineWidth = 1.6;
       g.beginPath(); g.arc(m.x, m.y, 6 + (1 - m.ring) * 34, 0, 6.2832); g.stroke();
     }
     if (story && w > 0.96 && f < 0.7 && trail.length > 1) {
       const S2 = markers[trail[1]], rt = (t % 1.6) / 1.6;
-      g.strokeStyle = `rgba(116,217,107,${(0.8 * (1 - rt)).toFixed(3)})`; g.lineWidth = 2.5;
+      g.strokeStyle = `rgba(${pal.green},${(0.8 * (1 - rt)).toFixed(3)})`; g.lineWidth = 2.5;
       g.beginPath(); g.arc(S2.x, S2.y, 10 + 40 * rt, 0, 6.2832); g.stroke();
     }
 
@@ -614,10 +692,10 @@ export function startTown(o: TownOptions): () => void {
       if (a < 0.01) return;
       const rt = (t % 1.8) / 1.8;
       g.globalAlpha = a;
-      g.strokeStyle = `rgba(${BLUE},${(0.6 * (1 - rt)).toFixed(3)})`; g.lineWidth = 1.6;
+      g.strokeStyle = `rgba(${pal.blue},${(0.6 * (1 - rt)).toFixed(3)})`; g.lineWidth = 1.6;
       g.beginPath(); g.arc(x, y, r + 22 * rt, 0, 6.2832); g.stroke();
       g.fillStyle = '#ffffff'; g.beginPath(); g.arc(x, y, r, 0, 6.2832); g.fill();
-      g.fillStyle = '#2997ff'; g.beginPath(); g.arc(x, y, r * 0.66, 0, 6.2832); g.fill();
+      g.fillStyle = pal.blueHex; g.beginPath(); g.arc(x, y, r * 0.66, 0, 6.2832); g.fill();
       g.globalAlpha = 1;
     };
     if (free > 0.01) {
@@ -671,11 +749,11 @@ export function startTown(o: TownOptions): () => void {
       const al = (0.2 + 0.6 * act) * vis;
       const kk = Math.min(hk[ia], hk[ib]);
       if (act > 0.3) {
-        c.strokeStyle = `rgba(140,200,255,${((act - 0.3) * 0.28 * vis).toFixed(3)})`;
+        c.strokeStyle = `rgba(${pal.web},${((act - 0.3) * 0.28 * vis).toFixed(3)})`;
         c.lineWidth = (2.5 + 3 * act) * kk;
         c.beginPath(); c.moveTo(hx[ia], hy[ia]); c.lineTo(hx[ib], hy[ib]); c.stroke();
       }
-      c.strokeStyle = `rgba(${BLUE},${al.toFixed(3)})`;
+      c.strokeStyle = `rgba(${pal.blue},${al.toFixed(3)})`;
       c.lineWidth = 0.7 + 0.6 * kk;
       c.beginPath(); c.moveTo(hx[ia], hy[ia]); c.lineTo(hx[ib], hy[ib]); c.stroke();
     }
@@ -691,11 +769,11 @@ export function startTown(o: TownOptions): () => void {
       const pa = Math.min(1, P2.e) * vis;
       const kk = (hk[ia] + hk[ib]) / 2;
       const gr = c.createLinearGradient(tx, ty, x, y);
-      gr.addColorStop(0, 'rgba(140,200,255,0)'); gr.addColorStop(1, `rgba(220,240,255,${(0.9 * pa).toFixed(3)})`);
+      gr.addColorStop(0, `rgba(${pal.web},0)`); gr.addColorStop(1, `rgba(${pal.spark},${(0.9 * pa).toFixed(3)})`);
       c.strokeStyle = gr; c.lineWidth = 1.6 * kk + 0.6;
       c.beginPath(); c.moveTo(tx, ty); c.lineTo(x, y); c.stroke();
       c.globalAlpha = pa; c.drawImage(glowWhite, x - 14 * kk, y - 14 * kk, 28 * kk, 28 * kk);
-      c.fillStyle = '#ffffff'; c.beginPath(); c.arc(x, y, 1.6 + kk, 0, 6.2832); c.fill();
+      c.fillStyle = pal.sparkCore; c.beginPath(); c.arc(x, y, 1.6 + kk, 0, 6.2832); c.fill();
       c.globalAlpha = 1;
     }
 
@@ -712,7 +790,7 @@ export function startTown(o: TownOptions): () => void {
       const gs = (14 + 30 * halo) * k;
       c.globalAlpha = Math.min(1, halo) * fade; c.drawImage(glow, sx - gs, sy + bob - gs * 1.2, gs * 2, gs * 2); c.globalAlpha = 1;
       const scale = k * (0.62 + 0.75 * ease(clamp(m.a, 0, 1)));
-      pin(c, sx, sy + bob, scale, m.a > 0.55 ? '#8cc8ff' : '#2997ff', null, fade * (0.6 + 0.4 * Math.max(m.a, beat * 0.5)));
+      pin(c, sx, sy + bob, scale, m.a > 0.55 ? pal.blueLight : pal.blueHex, null, fade * (0.6 + 0.4 * Math.max(m.a, beat * 0.5)));
     }
 
     // The trail's own stops, numbered, dropping in as it is built.
@@ -730,7 +808,7 @@ export function startTown(o: TownOptions): () => void {
         c.globalAlpha = u * 0.85 * horizon(sy);
         c.drawImage(found ? glowAmber : glow, sx - 30 * kk, sy - 44 * kk + yo, 60 * kk, 60 * kk);
         c.globalAlpha = 1;
-        pin(c, sx, sy + yo, 1.6 * kk, found ? '#f0a868' : '#2997ff', String(k + 1), u * horizon(sy));
+        pin(c, sx, sy + yo, 1.6 * kk, found ? pal.amber : pal.blueHex, String(k + 1), u * horizon(sy));
       });
     }
 
@@ -855,8 +933,18 @@ export function startTown(o: TownOptions): () => void {
   build();
   kick();
 
+  // A change of theme repaints the town in the other palette, in place: the
+  // stops, pulses and the story carry on where they were.
+  const stopWatching = watchTheme(() => {
+    const next = isDay() ? DAY_PALETTE : NIGHT_PALETTE;
+    if (next === pal) return;
+    pal = next;
+    glow = sprite(`rgba(${pal.blue},${pal.glowA})`); glowAmber = sprite(pal.amberGlow); glowWhite = sprite(pal.sparkGlow);
+    paintGround(); kick();
+  });
+
   return () => {
-    running = false; cancelAnimationFrame(raf); ro.disconnect(); io.disconnect();
+    running = false; cancelAnimationFrame(raf); ro.disconnect(); io.disconnect(); stopWatching();
     removeEventListener('pointermove', onMove);
     removeEventListener('pointerdown', onDown);
     document.removeEventListener('visibilitychange', onVisibility);
@@ -868,7 +956,7 @@ export function startTown(o: TownOptions): () => void {
  * draw a canvas behind. Every wobble and every random choice repeats with the
  * tile, so its right edge meets its left and its bottom meets its top.
  */
-export function mapTexture(tile = 960, seed = 3): string {
+export function mapTexture(tile = 960, seed = 3, day = isDay()): string {
   const c = document.createElement('canvas');
   c.width = c.height = tile;
   const g = c.getContext('2d');
@@ -895,10 +983,12 @@ export function mapTexture(tile = 960, seed = 3): string {
     g.beginPath();
     q.forEach(([x, y], m) => { const px = cx + (x - cx) * k, py = cy + (y - cy) * k; if (m) g.lineTo(px, py); else g.moveTo(px, py); });
     g.closePath();
-    g.fillStyle = park ? 'rgba(98,201,131,0.05)' : 'rgba(150,190,210,0.035)';
+    g.fillStyle = day
+      ? (park ? 'rgba(47,143,78,0.06)' : 'rgba(70,100,120,0.035)')
+      : (park ? 'rgba(98,201,131,0.05)' : 'rgba(150,190,210,0.035)');
     g.fill();
   }
-  g.strokeStyle = 'rgba(140,190,215,0.08)'; g.lineWidth = 1.1; g.lineCap = 'round';
+  g.strokeStyle = day ? 'rgba(60,90,110,0.09)' : 'rgba(140,190,215,0.08)'; g.lineWidth = 1.1; g.lineCap = 'round';
   g.beginPath();
   for (let j = -1; j <= n; j++) for (let i = -1; i <= n; i++) {
     const [ax, ay] = at(i, j);
