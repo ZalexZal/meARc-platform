@@ -85,6 +85,11 @@ const current = (to: string) => !to.includes('#') && here === to;
           </svg>
         </button>
         <div class="me-pop" id="me-menu" role="menu" aria-label={t('nav.account')} hidden data-me-menu>
+          <!-- Your level (0056), filled in once my_level answers. -->
+          <div class="me-level" data-me-level data-lang={lang} data-label={t('nav.level')} hidden>
+            <p><span data-me-level-n></span> · <b data-me-level-name></b></p>
+            <span class="me-bar" aria-hidden="true"><span data-me-level-bar></span></span>
+          </div>
           <a role="menuitem" href={href('/account')}>{t('nav.profile')}</a>
           <a role="menuitem" href={href('/account#settings')}>{t('nav.settings')}</a>
           <a role="menuitem" href={href('/my-trails')}>{t('nav.mine')}</a>
@@ -97,7 +102,8 @@ const current = (to: string) => !to.includes('#') && here === to;
 
 <script>
   import { who } from '../lib/session';
-  import { signOut } from '../lib/supabase';
+  import { signOut, db } from '../lib/supabase';
+  import { myLevel, levelName, levelProgress, type Level } from '../lib/levels';
 
   // A tap anywhere else closes the phone menu, the way a menu is expected to.
   const menu = document.querySelector('[data-menu]') as HTMLDetailsElement | null;
@@ -163,6 +169,24 @@ const current = (to: string) => !to.includes('#') && here === to;
 
     document.querySelectorAll('[data-me-initials]').forEach((el) => (el.textContent = initials));
     if (name) document.querySelectorAll('[data-me-name]').forEach((el) => (el.textContent = name));
+
+    // Read when the page opens and again each time the menu does: a finish
+    // recorded by the page underneath (the account page's my_profile) moves the
+    // level after the header has drawn it.
+    const box = document.querySelector<HTMLElement>('[data-me-level]');
+    const client = db();
+    const paintLevel = async (known?: Level) => {
+      const lv = known ?? (client && box ? await myLevel(client) : null);
+      if (!lv || !box) return;
+      const lang = box.dataset.lang === 'en' ? 'en' : 'bg';
+      box.querySelector('[data-me-level-n]')!.textContent = (box.dataset.label ?? '{0}').replace('{0}', String(lv.level));
+      box.querySelector('[data-me-level-name]')!.textContent = levelName(lv.level, lang);
+      box.querySelector<HTMLElement>('[data-me-level-bar]')!.style.width = `${Math.round(levelProgress(lv) * 100)}%`;
+      box.hidden = false;
+    };
+    paintLevel();
+    meButton?.addEventListener('click', () => { if (!meMenu?.hidden) paintLevel(); });
+    addEventListener('artrail:level', (e) => paintLevel((e as CustomEvent<Level>).detail));
   }
 </script>
 
@@ -260,6 +284,11 @@ const current = (to: string) => !to.includes('#') && here === to;
     box-shadow: 0 24px 50px -24px rgba(0, 0, 0, .55);
   }
   .me-pop[hidden] { display: none; }
+  .me-level { padding: .5rem .75rem .75rem; margin-bottom: .25rem; border-bottom: 1px solid var(--line-soft); font-size: 13px; color: var(--ink-dim); }
+  .me-level[hidden] { display: none; }
+  .me-level b { color: var(--ink); font-weight: 600; }
+  .me-bar { display: block; height: 4px; margin-top: 6px; border-radius: 999px; background: var(--surface-2); overflow: hidden; }
+  .me-bar span { display: block; height: 100%; width: 0; background: var(--signal); border-radius: inherit; }
   .me-pop a, .me-pop button {
     padding: .75rem .75rem; border-radius: 14px; font-size: 15px; text-align: left;
     color: var(--ink); background: transparent; cursor: pointer;

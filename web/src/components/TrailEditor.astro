@@ -157,6 +157,14 @@ const strings = {
                data-team-size inputmode="numeric" maxlength="2" />
       </label>
 
+      <!-- The creator's finish bonus (0056): XP for finishing, 0 to 500. -->
+      <label class="card flex items-center gap-2 px-3 py-2 text-xs" data-owner-only
+             title={t('ed.bonusHint')}>
+        <span class="eyebrow">{t('ed.bonus')}</span>
+        <input class="data w-14 bg-transparent text-base font-medium text-[var(--ink)] outline-none"
+               data-finish-bonus inputmode="numeric" maxlength="3" aria-label={t('ed.bonusHint')} />
+      </label>
+
       <!-- The same three rungs My trails offers. There used to be a Publish
            button here that wrote the same two columns with different words, so a
            trail could be "published" on one screen and "only me" on the other,
@@ -790,8 +798,10 @@ const strings = {
   // dropping and recreating the function, and nothing else wanted them.
   const sizeBox = q('[data-team-size]') as HTMLInputElement;
   const settings = await client.from('worlds')
-    .select('team_size,reveal_one_at_a_time,mode').eq('id', worldId).single();
+    .select('team_size,reveal_one_at_a_time,mode,finish_bonus_xp').eq('id', worldId).single();
   sizeBox.value = String(settings.data?.team_size ?? 4);
+  const bonusBox = q('[data-finish-bonus]') as HTMLInputElement;
+  bonusBox.value = String(settings.data?.finish_bonus_xp ?? 0);
 
   // ctf and guide are the ordered pair; the other two have no next marker, so
   // there is nothing for this switch to withhold.
@@ -827,6 +837,19 @@ const strings = {
     const { error } = await client.from('worlds').update({ team_size: wanted }).eq('id', worldId);
     if (error) { alert(error.message); return; }
     sizeBox.value = String(wanted);
+  });
+
+  // The same way: 0 to 500, as the database checks too.
+  bonusBox.addEventListener('change', async () => {
+    const wanted = Math.round(Number(bonusBox.value || 0));
+    if (!Number.isFinite(wanted) || wanted < 0 || wanted > 500) {
+      const current = await client.from('worlds').select('finish_bonus_xp').eq('id', worldId).single();
+      bonusBox.value = String(current.data?.finish_bonus_xp ?? 0);
+      return;
+    }
+    const { error } = await client.from('worlds').update({ finish_bonus_xp: wanted }).eq('id', worldId);
+    if (error) { alert(error.message); return; }
+    bonusBox.value = String(wanted);
   });
 
   // The row as the server last described it. Every level change reloads it

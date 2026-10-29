@@ -16,6 +16,7 @@ const copy = {
     since: 'Ходи от', guest: 'Гост',
     kTrails: 'извървени маршрута', kStops: 'намерени спирки',
     kPoints: 'точки за отборите ти', kBadges: 'значки',
+    lvLevel: 'Ниво {0}', lvToNext: '{0} XP · още {1} до ниво {2}', lvTop: '{0} XP · най-високото ниво',
     latest: 'Последни значки', noneYet: 'Още няма. Първата идва с първия завършен маршрут.',
     allBadges: 'Всички значки',
     colTrail: 'Маршрут', colTeam: 'Отбор', colStops: 'Спирки', colPoints: 'Точки',
@@ -49,6 +50,7 @@ const copy = {
     since: 'Walking since', guest: 'Guest',
     kTrails: 'trails walked', kStops: 'stops found',
     kPoints: 'points for your teams', kBadges: 'badges',
+    lvLevel: 'Level {0}', lvToNext: '{0} XP · {1} more to level {2}', lvTop: '{0} XP · the top level',
     latest: 'Latest badges', noneYet: 'None yet. The first comes with your first finished trail.',
     allBadges: 'All badges',
     colTrail: 'Trail', colTeam: 'Team', colStops: 'Stops', colPoints: 'Points',
@@ -184,6 +186,17 @@ const rail = [
             <button type="button" class="btn btn-quiet btn-sm" data-needed-use>{copy.useCode}</button>
           </div>
           <p class="msg" data-needed-msg aria-live="polite"></p>
+        </div>
+
+        <!-- The level (0056): XP from stops reached on other people's trails and
+             creators' finish bonuses. Hidden until my_level answers. -->
+        <div class="card level-card" data-level-card hidden>
+          <span class="level-n data" data-lv-n>1</span>
+          <div class="min-w-0 flex-1">
+            <p class="level-name"><span data-lv-label></span> · <b data-lv-name></b></p>
+            <div class="level-bar" aria-hidden="true"><span data-lv-bar></span></div>
+            <p class="level-xp data" data-lv-xp></p>
+          </div>
         </div>
 
         <div class="kpis" data-kpis>
@@ -354,6 +367,14 @@ const rail = [
     background: var(--signal); color: var(--signal-ink);
   }
 
+  .level-card { display: flex; align-items: center; gap: 16px; padding: 18px 20px; }
+  .level-card[hidden] { display: none; }
+  .level-n { flex: none; width: 52px; height: 52px; border-radius: 16px; display: grid; place-items: center; background: var(--signal); color: var(--signal-ink); font-size: 1.25rem; font-weight: 700; }
+  .level-name { font-size: .95rem; color: var(--ink-dim); }
+  .level-name b { color: var(--ink); font-weight: 600; }
+  .level-bar { height: 8px; margin: 8px 0 6px; border-radius: 999px; background: var(--surface-2); overflow: hidden; }
+  .level-bar span { display: block; height: 100%; width: 0; border-radius: inherit; background: var(--signal); transition: width .6s cubic-bezier(.2,.7,.2,1); }
+  .level-xp { font-size: .8rem; color: var(--ink-faint); }
   .kpis { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; }
   .kpi {
     background: var(--surface); border: 1px solid var(--line-soft); border-radius: 14px;
@@ -454,6 +475,7 @@ const rail = [
 
 <script>
   import { db, signOut, askParent, redeemParentCode } from '../lib/supabase';
+  import { myLevel, levelName, levelProgress } from '../lib/levels';
   import { requireUser, reveal, escapeHtml, text, count } from '../lib/session';
   import { busy, formError, formOk } from '../lib/form';
 
@@ -601,6 +623,22 @@ const rail = [
 
     q('[data-trails-short]')!.innerHTML = trailsTable(profile.trails ?? [], 5);
     q('[data-trails-full]')!.innerHTML = trailsTable(profile.trails ?? []);
+
+    // After my_profile on purpose: that is where a finished trail is recorded,
+    // and with it the creator's finish bonus.
+    const lv = await myLevel(client);
+    if (lv) {
+      text(q('[data-lv-n]'), lv.level);
+      text(q('[data-lv-label]'), S.lvLevel.replace('{0}', String(lv.level)));
+      text(q('[data-lv-name]'), levelName(lv.level, S.lang));
+      (q('[data-lv-bar]') as HTMLElement).style.width = `${Math.round(levelProgress(lv) * 100)}%`;
+      text(q('[data-lv-xp]'), lv.next === null
+        ? S.lvTop.replace('{0}', String(lv.xp))
+        : S.lvToNext.replace('{0}', String(lv.xp)).replace('{1}', String(lv.next - lv.xp)).replace('{2}', String(lv.level + 1)));
+      q('[data-level-card]')?.removeAttribute('hidden');
+      // The header's menu drew the level before the finish was recorded.
+      window.dispatchEvent(new CustomEvent('artrail:level', { detail: lv }));
+    }
 
     q('[data-latest]')!.innerHTML = earned.length
       ? earned.slice(-4).reverse().map((b) => `<div class="medal">${medal(b.key, true, b.tier ?? 0)}
