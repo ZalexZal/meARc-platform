@@ -19,7 +19,7 @@ const strings = {
   published: t('ed.published'),
   draft: t('ed.draft'),
   pending: t('acct.pending'),
-  saving: t('mine.saving'),
+  saving: t('mine.saving'), pubDrafts: t('pub.drafts'),
   editorOnly: t('mine.editorOnly'),
   roleEditor: t('mine.roleEditor'),
   failed: t('mine.failed'),
@@ -133,7 +133,7 @@ const modes = [
 <script>
   import { db } from '../lib/supabase';
   import { requireUser, reveal, escapeHtml, text, count, who } from '../lib/session';
-  import { levelOf, isPending, isListed, setLevel } from '../lib/publishing';
+  import { levelOf, isPending, isListed, setLevel, unfinishedStops } from '../lib/publishing';
   import { busy, formError, formClear } from '../lib/form';
 
   const S = JSON.parse(document.querySelector('[data-mine-strings]')!.textContent || '{}');
@@ -374,7 +374,7 @@ const modes = [
       // markers_near and the trails listing both want status published AND
       // visibility unlisted-or-public. One without the other is a trail that
       // claims to be shared and opens for nobody.
-      const failed = await setLevel(client, world, wanted as 'draft' | 'code');
+      const failed = await setLevel(client, world, wanted as 'draft' | 'code', S.pubDrafts);
       if (failed) { say(id, failed); return; }
 
       // Reloaded rather than guessed: withdraw_listing may have run on the way
@@ -402,6 +402,9 @@ const modes = [
     if (ask && !ask.disabled) {
       const id = ask.dataset.ask!;
       say(id, S.saving);
+
+      const drafts = await unfinishedStops(client, id);
+      if (drafts > 0) { say(id, S.pubDrafts.replace('{0}', String(drafts))); return; }
 
       const { error } = await client.rpc('request_listing', { p_world: id });
       if (error) { say(id, error.message); return; }

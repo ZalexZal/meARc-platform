@@ -37,7 +37,20 @@ export const isListed = (world: { status?: string; visibility?: string }) =>
   world.visibility === 'public' && world.status !== 'submitted';
 
 /**
+ * How many of a trail's stops are still drafts: placed on the map and never
+ * finished. Drafts are never sent to walkers, so a trail shared with any of
+ * them would be missing stops.
+ */
+export async function unfinishedStops(client: SupabaseClient, worldId: string): Promise<number> {
+  const { data } = await client.rpc('trail_markers', { p_world: worldId });
+  return ((data ?? []) as { status?: string }[]).filter((m) => m.status === 'draft').length;
+}
+
+/**
  * Moves a trail to a rung.
+ *
+ * Shared or listed only once every stop is finished (30 October 2026):
+ * `draftsMessage` is said instead, with {0} for how many are not.
  *
  * Returns an error message or null. The caller reloads afterwards rather than
  * guessing the new state: request_listing refuses a trail with no stops, and
@@ -47,7 +60,13 @@ export async function setLevel(
   client: SupabaseClient,
   world: { id: string; status?: string; visibility?: string },
   level: Level,
+  draftsMessage: string,
 ): Promise<string | null> {
+  if (level !== 'draft') {
+    const drafts = await unfinishedStops(client, world.id);
+    if (drafts > 0) return draftsMessage.replace('{0}', String(drafts));
+  }
+
   // Leaving the queue first. A submitted trail cannot simply be written over -
   // it would sit in the reviewer's list pointing at something that had changed
   // underneath them.

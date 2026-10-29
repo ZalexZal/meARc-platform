@@ -89,7 +89,12 @@ const strings = {
   lvAsk: t('vis.publicAsk'), lvAskHint: t('vis.publicAskHint'),
   lvWaiting: t('mine.pending'), lvWaitingBody: t('mine.pendingBody'),
   lvNote: t('mine.reviewNote'), copy: t('pub.copy'), copied: t('pub.copied'),
-  colourNone: t('ed.colourNone'),
+  colourNone: t('ed.colourNone'), pubDrafts: t('pub.drafts'),
+  miss: {
+    title: t('miss.title'), optional: t('miss.optional'), titleBg: t('miss.titleBg'),
+    titleEn: t('miss.titleEn'), place: t('miss.place'), question: t('miss.question'),
+    choice: t('miss.choice'), accepted: t('miss.accepted'),
+  },
   revealOff: t('ed.revealOff'),
   boardHref: href('/board'),
   hidden: t('board.hidden'), revBlock: t('rev.block'), revBlockConfirm: t('rev.blockConfirm'),
@@ -223,8 +228,10 @@ const strings = {
 
       <!-- The stop, one question at a time. It was five tabs and a Save button;
            a creator who had not opened the fourth tab never knew it was there.
-           Now the steps come in order, each saved as it is left, and the two
-           that a plain tour does not need can be skipped. -->
+           The steps come in order, each saved as it is left, and the two that a
+           plain tour does not need can be skipped. Since 30 October any step
+           can be opened at any time, as in YambolTrails' builder, and "Still
+           missing" at the top says what the stop needs before it is ready. -->
       <form class="wiz hidden" data-marker-form novalidate>
         <div class="wiz-top">
           <div class="wiz-id">
@@ -263,6 +270,13 @@ const strings = {
         </div>
 
         <div class="wiz-body">
+          <!-- What the stop still needs, each linked to its field. Required items
+               are exactly what saving checks; the second language is optional. -->
+          <div class="missing" data-missing hidden role="status">
+            <p class="missing-title">{t('miss.title')}</p>
+            <ul data-missing-list></ul>
+          </div>
+
           <!-- 1 · The basics: words only. -->
           <div class="pane" data-panel="basics">
             <header class="pane-head">
@@ -1044,6 +1058,65 @@ const strings = {
     }
   }
 
+  /**
+   * What the stop still needs. The required items are exactly the ones save()
+   * refuses without, so the list and the refusal never disagree; the English
+   * title is listed as optional.
+   */
+  function missingItems() {
+    const items: { label: string; panel: typeof STEPS[number]; field: string | null; required: boolean }[] = [];
+    if (!val('titleBg')) items.push({ label: S.miss.titleBg, panel: 'basics', field: 'titleBg', required: true });
+    const lat = num('lat'), lng = num('lng');
+    if (lat === null || lng === null || Number.isNaN(lat) || Number.isNaN(lng)
+        || lat < -90 || lat > 90 || lng < -180 || lng > 180) {
+      items.push({ label: S.miss.place, panel: 'place', field: 'lat', required: true });
+    }
+    const kind = (field('kind') as HTMLSelectElement).value;
+    if (kind !== 'none' && !val('questionBg') && !val('questionEn')) {
+      items.push({ label: S.miss.question, panel: 'question', field: 'questionBg', required: true });
+    }
+    const kept = choices.filter((c) => c.bg.trim() || c.en.trim());
+    if (kind === 'choice' && (kept.length < 2 || !kept.some((c) => c.correct))) {
+      items.push({ label: S.miss.choice, panel: 'question', field: null, required: true });
+    }
+    if (kind === 'exact' && !val('accepted')) {
+      items.push({ label: S.miss.accepted, panel: 'question', field: 'accepted', required: true });
+    }
+    if (!val('titleEn')) items.push({ label: S.miss.titleEn, panel: 'basics', field: 'titleEn', required: false });
+    return items;
+  }
+
+  function paintMissing() {
+    const box = q('[data-missing]') as HTMLElement | null;
+    const list = q('[data-missing-list]') as HTMLElement | null;
+    if (!box || !list || !selected) return;
+    const items = missingItems();
+    box.hidden = items.length === 0;
+    list.replaceChildren(...items.map((it) => {
+      const li = document.createElement('li');
+      const go = document.createElement('button');
+      go.type = 'button';
+      go.className = it.required ? 'miss-go' : 'miss-go is-optional';
+      go.textContent = it.label;
+      if (!it.required) {
+        const tag = document.createElement('span');
+        tag.className = 'miss-tag';
+        tag.textContent = S.miss.optional;
+        go.append(' ', tag);
+      }
+      go.addEventListener('click', () => {
+        goTo(STEPS.indexOf(it.panel));
+        if (it.field) (field(it.field) as HTMLElement | null)?.focus();
+      });
+      li.append(go);
+      return li;
+    }));
+  }
+  // Typing, choosing a kind, adding or ticking an option: all recheck it.
+  for (const ev of ['input', 'change', 'click']) {
+    form.addEventListener(ev, () => setTimeout(paintMissing, 0));
+  }
+
   function goTo(i: number) {
     ready = false;
     step = Math.max(0, Math.min(STEPS.length - 1, i));
@@ -1051,6 +1124,7 @@ const strings = {
     show(STEPS[step]);
     paintSteps();
     q('[data-marker-error]')!.classList.add('hidden');
+    paintMissing();
     bringFormIntoView(false);
   }
 
@@ -1070,7 +1144,7 @@ const strings = {
   function startSteps(m: any, fresh: boolean) {
     // A stop just placed is still a draft: its first Next has to publish it.
     dirty = fresh || m.status !== 'published';
-    visited = new Set(fresh ? [0] : [0, 1, 2, 3, 4]);
+    visited = new Set([0, 1, 2, 3, 4]);
     doneSteps = new Set<number>();
     skippedSteps = new Set<number>();
     if (!fresh) {
@@ -1121,13 +1195,10 @@ const strings = {
   qa('[data-step]').forEach((b) => b.addEventListener('click', async () => {
     const i = Number((b as HTMLElement).dataset.step);
     if (i === step && !ready) return;
-    // Forward is a promise that this step is finished, so it is checked like
-    // Next. Back is not: whatever is half-written stays in the form.
-    if (i > step && !ready) {
-      if (!(await save())) return;
-      doneSteps.add(step);
-      skippedSteps.delete(step);
-    } else if (!ready && (await save(true))) {
+    // Any step, any time. What can be saved is saved on the way; what cannot
+    // stays in the form, and "Still missing" says what it needs.
+    if (!ready && (await save(true))) {
+      if (i > step) { doneSteps.add(step); skippedSteps.delete(step); }
       flash(S.wiz.saved);
     }
     goTo(i);
@@ -1692,7 +1763,7 @@ const strings = {
       .update({
         content,
         radius_m: num('radius') ?? 100,
-        colour_hex: hue === null ? null : hueToHex(hue),
+        colour_hex: hue === null ? DEFAULT_STOP_COLOUR : hueToHex(hue),
         style_key: shape,
         status: 'published',
       })
@@ -1780,7 +1851,7 @@ const strings = {
     if (!button || button.disabled) return;
 
     const wanted = button.dataset.level as 'draft' | 'code' | 'public';
-    const failed = await setLevel(client, world, wanted);
+    const failed = await setLevel(client, world, wanted, S.pubDrafts);
     if (failed) { alert(failed); return; }
 
     const { data: again } = await client
@@ -2054,6 +2125,12 @@ const strings = {
 
   let hue: number | null = null;
 
+  // The colour every stop has until its creator picks one (30 October 2026),
+  // the brand blue the app also falls back to. hue stays null while it is the
+  // default, so the default is what is saved, not the slider's nearest hue.
+  const DEFAULT_STOP_COLOUR = '#0066cc';
+  const DEFAULT_HUE = 210;
+
   /** HSL to the #rrggbb the markers table stores. */
   function hueToHex(h: number) {
     const s = HUE_SAT / 100;
@@ -2101,22 +2178,22 @@ const strings = {
     if (!handle || !strip) return;
 
     const chosen = hue !== null;
-    handle.hidden = !chosen;
-    strip.setAttribute('aria-valuenow', String(hue ?? 0));
+    handle.hidden = false;
+    strip.setAttribute('aria-valuenow', String(hue ?? DEFAULT_HUE));
 
-    const hex = chosen ? hueToHex(hue!) : 'transparent';
+    const hex = chosen ? hueToHex(hue!) : DEFAULT_STOP_COLOUR;
 
-    if (chosen) handle.style.left = `${(hue! / 359) * 100}%`;
+    handle.style.left = `${((hue ?? DEFAULT_HUE) / 359) * 100}%`;
     if (light) light.style.background = hex;
     if (dark) dark.style.background = hex;
 
     // The shape cards take the stop's colour, so the choice reads as "this, in
-    // the camera"; with no colour chosen they stay in ink.
-    (q('[data-shapes]') as HTMLElement)?.style.setProperty('--shape-tint', chosen ? hex : 'currentColor');
+    // the camera".
+    (q('[data-shapes]') as HTMLElement)?.style.setProperty('--shape-tint', hex);
 
-    text(q('[data-hue-value]'), chosen ? hueToHex(hue!) : S.colourNone);
+    text(q('[data-hue-value]'), chosen ? hex : `${DEFAULT_STOP_COLOUR} · ${S.colourNone}`);
     const badge = q('[data-wiz-pin]') as HTMLElement | null;
-    if (badge) badge.style.background = chosen ? hex : '';
+    if (badge) badge.style.background = hex;
   }
 
   const SHAPES = ['pin', 'sphere', 'cone', 'cube', 'sign', 'model'];
@@ -2367,7 +2444,7 @@ const strings = {
     if (!step) return;
 
     event.preventDefault();
-    hue = ((hue ?? 0) + step + 360) % 360;
+    hue = ((hue ?? DEFAULT_HUE) + step + 360) % 360;
     dirty = true;
     paintHue();
   });
@@ -2707,6 +2784,15 @@ const strings = {
   }
 
   .wiz-body { flex: 1; padding: 1.5rem; }
+  .missing { margin-bottom: 1.25rem; padding: .875rem 1rem; border-radius: 16px; background: var(--lamp-wash); border: 1px solid color-mix(in srgb, var(--lamp) 30%, transparent); }
+  .missing[hidden] { display: none; }
+  .missing-title { font-size: .8125rem; font-weight: 600; color: var(--lamp); }
+  .missing ul { display: flex; flex-wrap: wrap; gap: .375rem; margin-top: .5rem; }
+  /* The items are made by the script, so they carry no scope: :global. */
+  .missing :global(.miss-go) { min-height: 36px; padding: .375rem .75rem; border-radius: 999px; font-size: .8125rem; color: var(--ink); background: var(--surface); border: 1px solid var(--line); cursor: pointer; }
+  .missing :global(.miss-go:hover), .missing :global(.miss-go:focus-visible) { border-color: var(--signal); color: var(--signal); }
+  .missing :global(.miss-go.is-optional) { color: var(--ink-dim); }
+  .missing :global(.miss-tag) { font-size: .75rem; color: var(--ink-faint); }
   @media (max-width: 640px) { .wiz-body { padding: 1.25rem 1.125rem; } }
   .pane { display: flex; flex-direction: column; gap: 1.25rem; animation: pane-in .42s cubic-bezier(.2,.8,.2,1); }
   .pane.hidden { display: none; }
