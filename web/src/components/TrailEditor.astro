@@ -157,6 +157,17 @@ const strings = {
                data-team-size inputmode="numeric" maxlength="2" />
       </label>
 
+      <!-- When a live event starts (0058): at once, by the board's Start, or at a time. -->
+      <label class="card flex flex-wrap items-center gap-2 px-3 py-2 text-xs" data-owner-only title={t('ed.startHint')}>
+        <span class="eyebrow">{t('ed.start')}</span>
+        <select class="bg-transparent text-sm font-medium text-[var(--ink)] outline-none" data-start-mode aria-label={t('ed.startHint')}>
+          <option value="none">{t('ed.startNone')}</option>
+          <option value="manual">{t('ed.startManual')}</option>
+          <option value="auto">{t('ed.startAuto')}</option>
+        </select>
+        <input type="datetime-local" class="bg-transparent text-sm text-[var(--ink)] outline-none" data-start-at hidden aria-label={t('ed.startAuto')} />
+      </label>
+
       <!-- The creator's finish bonus (0056): XP for finishing, 0 to 500. -->
       <label class="card flex items-center gap-2 px-3 py-2 text-xs" data-owner-only
              title={t('ed.bonusHint')}>
@@ -798,8 +809,33 @@ const strings = {
   // dropping and recreating the function, and nothing else wanted them.
   const sizeBox = q('[data-team-size]') as HTMLInputElement;
   const settings = await client.from('worlds')
-    .select('team_size,reveal_one_at_a_time,mode,finish_bonus_xp').eq('id', worldId).single();
+    .select('team_size,reveal_one_at_a_time,mode,finish_bonus_xp,start_mode,starts_at').eq('id', worldId).single();
   sizeBox.value = String(settings.data?.team_size ?? 4);
+  // The start: datetime-local speaks the browser's own time zone, so it is
+  // turned into an instant here, and back for display.
+  const startMode = q('[data-start-mode]') as HTMLSelectElement;
+  const startAt = q('[data-start-at]') as HTMLInputElement;
+  const local = (iso: string | null) => {
+    if (!iso) return '';
+    const d = new Date(iso);
+    return new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().slice(0, 16);
+  };
+  startMode.value = settings.data?.start_mode ?? 'none';
+  startAt.value = local(settings.data?.starts_at ?? null);
+  startAt.hidden = startMode.value !== 'auto';
+  const saveStart = async () => {
+    startAt.hidden = startMode.value !== 'auto';
+    const row: Record<string, unknown> = { start_mode: startMode.value };
+    if (startMode.value === 'auto') {
+      if (!startAt.value) return;
+      row.starts_at = new Date(startAt.value).toISOString();
+    }
+    const { error } = await client.from('worlds').update(row).eq('id', worldId);
+    if (error) alert(error.message);
+  };
+  startMode.addEventListener('change', saveStart);
+  startAt.addEventListener('change', saveStart);
+
   const bonusBox = q('[data-finish-bonus]') as HTMLInputElement;
   bonusBox.value = String(settings.data?.finish_bonus_xp ?? 0);
 

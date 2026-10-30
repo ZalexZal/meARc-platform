@@ -39,12 +39,24 @@ const strings = {
     endConfirm: 'Да приключим ли играта? Отговорите, подсказките и промените в отборите спират, а класирането става окончателно. Може да я отвориш отново.',
     ended: 'Играта приключи в',
     reopen: 'Отвори отново',
+    startManual: 'Играта чака старта. Отборите се събират и проверяват GPS.',
+    startAuto: 'Играта започва сама в {0}. Можеш да я пуснеш и по-рано.',
+    startDo: 'Старт',
+    startConfirm: 'Да започне ли играта сега? Спирките се появяват и отговорите започват да се броят.',
+    ready: 'Готови телефони: {0} от {1}', notReady: 'Без GPS', readyAll: 'Всички телефони са готови.',
+    gaveUp: 'Отборът се отказа', webAnswers: '{0} от {1} отговора са от сайта',
   } : {
     live: 'The game is on. Points move while teams are answering.',
     endDo: 'End the game',
     endConfirm: 'End the game? Answers, hints and team changes stop, and the board becomes final. You can reopen it.',
     ended: 'The game ended at',
     reopen: 'Reopen',
+    startManual: 'The game waits for its start. Teams are gathering and checking GPS.',
+    startAuto: 'The game starts by itself at {0}. You can start it earlier.',
+    startDo: 'Start',
+    startConfirm: 'Start the game now? The stops appear and answers start to count.',
+    ready: 'Phones ready: {0} of {1}', notReady: 'No GPS', readyAll: 'Every phone is ready.',
+    gaveUp: 'The team gave up', webAnswers: '{0} of {1} answers from the website',
   }),
 };
 ---
@@ -76,6 +88,15 @@ const strings = {
 
     <!-- The whistle. It freezes the board, which is what makes first place a
          result rather than a moment. -->
+    <!-- The start of a live event (0058), and which phones are ready for it. -->
+    <div class="card mt-6 hidden p-4" data-start-box>
+      <div class="flex flex-wrap items-center justify-between gap-4">
+        <p class="text-sm text-[var(--ink-dim)]" data-start-text></p>
+        <button type="button" class="btn btn-primary btn-sm" data-start-do></button>
+      </div>
+      <p class="mt-3 text-sm font-semibold" data-ready-count></p>
+      <ul class="mt-2 space-y-1 text-sm text-[var(--ink-dim)]" data-ready-list></ul>
+    </div>
     <div class="card mt-6 hidden flex-wrap items-center justify-between gap-4 p-4" data-endgame>
       <p class="text-sm text-[var(--ink-dim)]" data-endgame-text></p>
       <button type="button" class="btn btn-quiet btn-sm" data-endgame-do></button>
@@ -246,6 +267,58 @@ const strings = {
         });
       }
 
+      // The start (0058): a Start button and the GPS-ready panel while a live
+      // event waits, looked at again every 5 s until it has started.
+      const startBox = q('[data-start-box]') as HTMLElement;
+      const drawStart = async () => {
+        const { data: st } = await client.rpc('trail_start', { p_world: worldId });
+        if (!st || st.start_mode === 'none' || st.started) { startBox.classList.add('hidden'); return false; }
+        startBox.classList.remove('hidden');
+        const at = st.starts_at ? new Date(st.starts_at).toLocaleString(S.lang === 'bg' ? 'bg-BG' : 'en-GB',
+          { hour: '2-digit', minute: '2-digit', day: 'numeric', month: 'short' }) : null;
+        text(q('[data-start-text]'), st.start_mode === 'auto' && at ? S.startAuto.replace('{0}', at) : S.startManual);
+        text(q('[data-start-do]'), S.startDo);
+        const { data: r } = await client.rpc('world_readiness', { p_world: worldId });
+        if (r) {
+          text(q('[data-ready-count]'), S.ready.replace('{0}', r.ready).replace('{1}', r.phones));
+          const missing = (r.teams ?? []).filter((t: any) => !t.gave_up)
+            .map((t: any) => ({ name: t.name, who: (t.members ?? []).filter((m: any) => !m.gps).map((m: any) => m.name) }))
+            .filter((t: any) => t.who.length);
+          q('[data-ready-list]')!.innerHTML = missing.length
+            ? missing.map((t: any) => `<li><b>${escapeHtml(t.name)}</b> · ${escapeHtml(S.notReady)}: ${t.who.map(escapeHtml).join(', ')}</li>`).join('')
+            : (r.phones ? `<li>${escapeHtml(S.readyAll)}</li>` : '');
+        }
+        return true;
+      };
+      if (await drawStart()) {
+        const again = window.setInterval(async () => { if (!(await drawStart())) clearInterval(again); }, 5000);
+      }
+      q('[data-start-do]')!.addEventListener('click', async (event) => {
+        if (!confirm(S.startConfirm)) return;
+        const button = event.currentTarget as HTMLButtonElement;
+        button.disabled = true;
+        const { error } = await client.rpc('moderator_start_game', { p_world: worldId });
+        button.disabled = false;
+        if (error) { alert(error.message || S.modFailed); return; }
+        await drawStart();
+      });
+
+      // Each team's answers from the website (0059) and whether it gave up
+      // (0058), shown on its card.
+      const extra = async () => {
+        const [web, ready] = await Promise.all([
+          client.rpc('world_web_answers', { p_world: worldId }),
+          client.rpc('world_readiness', { p_world: worldId }),
+        ]);
+        const byTeam: Record<string, { web: number; total: number; gaveUp: boolean }> = {};
+        for (const w of (web.data ?? []) as any[]) byTeam[w.team_id] = { web: Number(w.web), total: Number(w.total), gaveUp: false };
+        for (const t of (ready.data?.teams ?? []) as any[]) {
+          byTeam[t.id] = { ...(byTeam[t.id] ?? { web: 0, total: 0 }), gaveUp: !!t.gave_up };
+        }
+        return byTeam;
+      };
+      let marks = await extra();
+
       // The stop list, for the skip control. Fetched once, and only here: a
       // walker reading a public board never gets past the error above, so the
       // route is not handed out for the sake of a dropdown.
@@ -289,6 +362,9 @@ const strings = {
                   ? `<p class="note note-lamp mt-4 text-sm" title="${escapeHtml(S.warnHelp)}"><strong>${escapeHtml(S.warnings)}:</strong> ${
                       Object.entries(t.warnings).map(([k, n]) => `${Number(n)} ${escapeHtml(S.warn[k] ?? k)}`).join(' · ')}</p>`
                   : ''}
+                ${marks[t.id]?.gaveUp ? `<p class="note note-lamp mt-4 text-sm"><strong>${escapeHtml(S.gaveUp)}</strong></p>` : ''}
+                ${marks[t.id]?.web ? `<p class="data mt-2 text-xs text-[var(--ink-faint)]">${escapeHtml(
+                  S.webAnswers.replace('{0}', String(marks[t.id].web)).replace('{1}', String(marks[t.id].total)))}</p>` : ''}
                 ${out ? `<p class="note note-alert mt-4 text-sm"><strong>${escapeHtml(S.dqOn)}</strong>${
                   t.disqualified_reason ? ` — ${escapeHtml(t.disqualified_reason)}` : ''}</p>` : ''}
 
@@ -368,7 +444,7 @@ const strings = {
         // card that did not change instead of one that lies.
         const refresh = async () => {
           const again = await client.rpc('world_teams', { p_world: worldId });
-          if (!again.error && again.data) drawTeams(again.data);
+          if (!again.error && again.data) { marks = await extra(); drawTeams(again.data); }
           await drawBoard();
         };
 
