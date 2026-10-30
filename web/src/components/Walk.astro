@@ -44,6 +44,8 @@ const copy = {
     startWaiting: 'Играта започва в {0}', startManual: 'Играта започва, когато организаторът натисне Старт.', startSoon: 'Започва след {0}',
     teamTitle: 'Отборът', teamNone: 'Тази игра се играе в отбор. Можеш да си отбор и сам.',
     teamName: 'Име на отбора', teamCreate: 'Създай отбор', teamCode: 'Код на отбора', teamJoin: 'Влез в отбора',
+    teamJoinOpen: 'Влез с код', teamCreateTitle: 'Нов отбор', teamCreateBody: 'Ти ставаш капитан. После даваш кода на съотборниците си.',
+    teamJoinTitle: 'Влез в отбор', teamJoinBody: 'Въведи кода, който ти даде капитанът.', cancel: 'Отказ',
     teamCodeShow: 'Код за съотборниците', copy: 'Копирай', copied: 'Копирано',
     captain: 'капитан', you: 'ти', gpsYes: 'GPS', gpsNo: 'Без GPS', gpsUnknown: 'GPS ?',
     makeCaptain: 'Направи капитан', remove: 'Премахни', removeConfirm: 'Да махна ли {0} от отбора?',
@@ -75,6 +77,18 @@ const copy = {
     compass: ['север', 'североизток', 'изток', 'югоизток', 'юг', 'югозапад', 'запад', 'северозапад'],
     failed: 'Нещо се обърка. Опитай пак.', notStarted: 'Играта още не е започнала.', ended: 'Играта е приключила.',
     afterword: 'Още нещо',
+    // What the database says when it refuses, in words for a walker.
+    refuse: {
+      'no team with that code': 'Няма отбор с този код. Провери буквите.',
+      'this team is full': 'Отборът е пълен.',
+      'already on a team for this trail': 'Вече си в отбор за този маршрут.',
+      'already on a team here': 'Вече си в отбор за този маршрут.',
+      'leave your team before joining another': 'Първо излез от отбора си.',
+      'a competitive trail needs a real account': 'Тази игра иска профил.',
+      'a parent needs to agree first': 'Първо родител трябва да се съгласи.',
+      'this game has ended': 'Играта е приключила.',
+      'not a member of this trail': 'Първо влез в маршрута.',
+    },
   },
   en: {
     loading: 'Loading the trail…',
@@ -102,6 +116,8 @@ const copy = {
     startWaiting: 'The game starts at {0}', startManual: 'The game starts when the organiser presses Start.', startSoon: 'Starts in {0}',
     teamTitle: 'Your team', teamNone: 'This game is played in teams. You can be a team of one.',
     teamName: 'Team name', teamCreate: 'Create a team', teamCode: 'Team code', teamJoin: 'Join the team',
+    teamJoinOpen: 'Join with a code', teamCreateTitle: 'A new team', teamCreateBody: 'You become its captain, then give the code to your teammates.',
+    teamJoinTitle: 'Join a team', teamJoinBody: 'Type the code your captain gave you.', cancel: 'Cancel',
     teamCodeShow: 'Code for your teammates', copy: 'Copy', copied: 'Copied',
     captain: 'captain', you: 'you', gpsYes: 'GPS', gpsNo: 'No GPS', gpsUnknown: 'GPS ?',
     makeCaptain: 'Make captain', remove: 'Remove', removeConfirm: 'Remove {0} from the team?',
@@ -133,6 +149,17 @@ const copy = {
     compass: ['north', 'north-east', 'east', 'south-east', 'south', 'south-west', 'west', 'north-west'],
     failed: 'Something went wrong. Try again.', notStarted: 'The game has not started yet.', ended: 'The game has ended.',
     afterword: 'One more thing',
+    refuse: {
+      'no team with that code': 'No team has that code. Check the letters.',
+      'this team is full': 'The team is full.',
+      'already on a team for this trail': 'You are already on a team for this trail.',
+      'already on a team here': 'You are already on a team for this trail.',
+      'leave your team before joining another': 'Leave your team first.',
+      'a competitive trail needs a real account': 'This game needs an account.',
+      'a parent needs to agree first': 'A parent has to agree first.',
+      'this game has ended': 'The game has ended.',
+      'not a member of this trail': 'Join the trail first.',
+    },
   },
 }[lang];
 
@@ -211,14 +238,10 @@ const strings = {
         <h2 class="text-base">{copy.teamTitle}</h2>
         <div data-team-none hidden>
           <p class="walk-lede">{copy.teamNone}</p>
-          <form class="walk-row" data-team-create>
-            <input class="field-input" maxlength="40" placeholder={copy.teamName} aria-label={copy.teamName} data-team-name required />
-            <button class="btn btn-primary" type="submit">{copy.teamCreate}</button>
-          </form>
-          <form class="walk-row" data-team-join>
-            <input class="field-input uppercase tracking-widest" maxlength="8" placeholder={copy.teamCode} aria-label={copy.teamCode} data-team-code required />
-            <button class="btn btn-quiet" type="submit">{copy.teamJoin}</button>
-          </form>
+          <div class="walk-actions">
+            <button class="btn btn-primary" type="button" data-open-create>{copy.teamCreate}</button>
+            <button class="btn btn-quiet" type="button" data-open-join>{copy.teamJoinOpen}</button>
+          </div>
         </div>
         <div data-team-on hidden>
           <p class="walk-teamname" data-team-title></p>
@@ -241,6 +264,32 @@ const strings = {
       </div>
     </div>
   </div>
+
+  <!-- Making or joining a team: each its own popup (Alex, 30 October). -->
+  <dialog class="walk-dialog" data-dialog-create aria-labelledby="walk-create-title">
+    <form method="dialog" class="walk-dialog-in" data-team-create>
+      <h2 class="text-xl" id="walk-create-title">{copy.teamCreateTitle}</h2>
+      <p class="walk-lede">{copy.teamCreateBody}</p>
+      <input class="field-input mt-4 w-full" maxlength="40" placeholder={copy.teamName} aria-label={copy.teamName} data-team-name required />
+      <p class="walk-msg" data-create-msg role="alert"></p>
+      <div class="walk-actions">
+        <button class="btn btn-primary" type="submit" value="ok">{copy.teamCreate}</button>
+        <button class="btn btn-quiet" type="button" data-dialog-cancel>{copy.cancel}</button>
+      </div>
+    </form>
+  </dialog>
+  <dialog class="walk-dialog" data-dialog-join aria-labelledby="walk-join-title">
+    <form method="dialog" class="walk-dialog-in" data-team-join>
+      <h2 class="text-xl" id="walk-join-title">{copy.teamJoinTitle}</h2>
+      <p class="walk-lede">{copy.teamJoinBody}</p>
+      <input class="field-input mt-4 w-full uppercase tracking-widest" maxlength="8" placeholder={copy.teamCode} aria-label={copy.teamCode} data-team-code required />
+      <p class="walk-msg" data-join-msg role="alert"></p>
+      <div class="walk-actions">
+        <button class="btn btn-primary" type="submit" value="ok">{copy.teamJoin}</button>
+        <button class="btn btn-quiet" type="button" data-dialog-cancel>{copy.cancel}</button>
+      </div>
+    </form>
+  </dialog>
 
   <!-- The game. -->
   <div class="walk-game" data-stage="game" hidden>
@@ -315,6 +364,8 @@ const strings = {
   const stage = (name: string) => document.querySelectorAll<HTMLElement>('[data-stage]')
     .forEach((el) => { el.hidden = el.dataset.stage !== name; });
   const say = (sel: string, msg: string) => text(q(sel), msg);
+  /** A refusal from the database, in the walker's words; anything else, the general one. */
+  const refusal = (e: { message?: string } | null) => (e?.message && S.refuse[e.message]) || S.failed;
 
   if (!configured()) { stage('find'); throw new Error('not configured'); }
   const client = db()!;
@@ -469,17 +520,33 @@ const strings = {
     if (gpsReady && !team.members.find((m: any) => m.is_me)?.gps) await client.rpc('set_gps_ready', { p_team: team.id, p_ok: true });
   }
 
+  // Each opens its own popup; the popup stays open, with the reason, if the
+  // server says no.
+  const createDialog = q<HTMLDialogElement>('[data-dialog-create]')!;
+  const joinDialog = q<HTMLDialogElement>('[data-dialog-join]')!;
+  q('[data-open-create]')?.addEventListener('click', () => { say('[data-create-msg]', ''); createDialog.showModal(); });
+  q('[data-open-join]')?.addEventListener('click', () => { say('[data-join-msg]', ''); joinDialog.showModal(); });
+  document.querySelectorAll('[data-dialog-cancel]').forEach((b) =>
+    b.addEventListener('click', () => (b.closest('dialog') as HTMLDialogElement).close()));
+  // A tap on the dimmed backdrop closes it too.
+  for (const d of [createDialog, joinDialog]) {
+    d.addEventListener('click', (e) => { if (e.target === d) d.close(); });
+  }
   q('[data-team-create]')?.addEventListener('submit', async (e) => {
     e.preventDefault();
     const name = q<HTMLInputElement>('[data-team-name]')!.value.trim();
+    if (!name) return;
     const { error } = await client.rpc('create_team', { p_world: worldId, p_name: name });
-    say('[data-team-msg]', error ? error.message : ''); loadTeam().then(paintGo);
+    if (error) { say('[data-create-msg]', refusal(error)); return; }
+    createDialog.close(); await loadTeam(); paintGo();
   });
   q('[data-team-join]')?.addEventListener('submit', async (e) => {
     e.preventDefault();
     const c = q<HTMLInputElement>('[data-team-code]')!.value.trim();
+    if (!c) return;
     const { error } = await client.rpc('join_team', { p_code: c });
-    say('[data-team-msg]', error ? error.message : ''); loadTeam().then(paintGo);
+    if (error) { say('[data-join-msg]', refusal(error)); return; }
+    joinDialog.close(); await loadTeam(); paintGo();
   });
   q('[data-team-copy]')?.addEventListener('click', async () => {
     try { await navigator.clipboard.writeText(team?.invite_code ?? ''); text(q('[data-team-copy]'), S.copied); } catch {}
@@ -820,6 +887,13 @@ const strings = {
   .walk-members :global(.gps-no) { color: var(--alert); }
   .walk-members :global(.gps-unknown) { color: var(--ink-faint); }
 
+  /* Centred: Tailwind's reset takes away the browser's own margin: auto. */
+  .walk-dialog { margin: auto; width: min(28rem, calc(100% - 2rem)); padding: 0; border: 1px solid var(--line); border-radius: 24px;
+    background: var(--surface); color: var(--ink); box-shadow: var(--shadow-lift); }
+  .walk-dialog::backdrop { background: rgba(0, 0, 0, .45); backdrop-filter: blur(4px); }
+  .walk-dialog-in { padding: 1.5rem; }
+  .walk-dialog[open] { animation: walk-pop .18s cubic-bezier(.2,.7,.2,1); }
+  @keyframes walk-pop { from { opacity: 0; transform: translateY(8px) scale(.98); } to { opacity: 1; transform: none; } }
   .walk-game { position: fixed; inset: 64px 0 0 0; z-index: 30; background: var(--ground); }
   .walk-map { position: absolute; inset: 0; }
   .walk-top { position: absolute; top: .75rem; left: .75rem; right: .75rem; display: grid; gap: .5rem; justify-items: start; pointer-events: none; }
