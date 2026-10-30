@@ -1,6 +1,6 @@
 ---
 import Loading from './Loading.astro';
-import { useTranslations, type Lang } from '../i18n/ui';
+import { useTranslations, localise, type Lang } from '../i18n/ui';
 import PageBand from './PageBand.astro';
 
 interface Props { lang: Lang; }
@@ -58,7 +58,8 @@ const modeNames = lang === 'bg'
     set:html={JSON.stringify({ modeNames, lang,
       stop: t('n.stop'), stops: t('n.stops'),
       team: t('n.team'), teams: t('n.teams'),
-      openApp: t('games.openApp'), map: t('games.map'), qr: t('games.qr'),
+      openApp: t('games.openApp'), walkWeb: t('games.walkWeb'), walkHref: localise(lang)('/walk'),
+      map: t('games.map'), qr: t('games.qr'),
       qrHint: t('games.qrHint'), away: t('games.away'),
       locating: t('games.locating'), sorted: t('games.sorted'),
       denied: t('games.denied'), report: t('games.report'), reportSubject: t('games.reportSubject') })}
@@ -150,6 +151,7 @@ const modeNames = lang === 'bg'
         </p>
         <div class="mt-6 flex flex-wrap gap-2">
           <a class="btn btn-primary" href="${appLink(trail.id)}">${strings.openApp}</a>
+          <a class="btn btn-quiet" href="${strings.walkHref}?id=${encodeURIComponent(trail.id)}">${strings.walkWeb}</a>
           ${mapHref ? `<a class="btn btn-quiet" href="${mapHref}" target="_blank" rel="noopener">${strings.map}</a>` : ''}
           <button type="button" class="btn btn-ghost" data-qr="${id}" aria-expanded="false">${strings.qr}</button>
           <a class="ml-auto self-center text-xs text-[var(--ink-faint)] underline-offset-2 hover:text-[var(--alert)] hover:underline"

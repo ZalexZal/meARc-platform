@@ -1,0 +1,862 @@
+---
+/**
+ * Web lite: walking a trail on the website, without AR.
+ * Design: docs/superpowers/specs/2026-10-30-web-lite-design.md.
+ *
+ * The way in (a trail id or a code), the guest warning, the lobby (location
+ * first, then the team and its captain, and the start on a live event), and
+ * the game: a map, the next stop, a stop that opens by itself inside its
+ * circle, its contents, question and hints. Every rule is the server's; the
+ * page calls what the app calls (join_world, markers_near, record_visit,
+ * marker_detail, check_answer, reveal_hint) and draws what it is told.
+ */
+import { localise, type Lang } from '../i18n/ui';
+import Loading from './Loading.astro';
+
+interface Props { lang: Lang; }
+const { lang } = Astro.props;
+const href = localise(lang);
+
+const copy = {
+  bg: {
+    loading: 'Зареждам маршрута…',
+    noTrail: 'Няма такъв маршрут', noTrailBody: 'Провери линка или кода. Частните маршрути се отварят само с код.',
+    codeLabel: 'Код на маршрута', codeGo: 'Отвори',
+    gateTitle: 'Ходиш като гост', gateBody: 'Можеш да вървиш и без профил, но тогава разходката ти се пази само в този браузър. С профил пазиш XP, нивото и значките си навсякъде.',
+    gateCreate: 'Създай профил', gateSignIn: 'Вход', gateGuest: 'Продължи като гост',
+    ageTitle: 'На колко години си?', age14: '14 или повече', age13: 'На 13', age12: '12 или по-малко',
+    terms: 'Приемам Условията и Политиката за поверителност', termsNeed: 'Отбележи, че приемаш условията.',
+    age13Body: 'На 13 години родител трябва първо да се съгласи. Създай профил и поискай съгласие.',
+    age12Body: 'AR Trail е за хора на 13 и повече години.',
+    needsAccount: 'Тази игра иска профил', needsAccountBody: 'Маршрутите с точки се играят в отбори с истински имена. Създай профил – разходката ти досега остава.',
+    gpsTitle: 'Стъпка 1 · Разреши местоположението', gpsBody: 'Спирките се отварят, когато стоиш до тях. Затова сайтът трябва да знае къде си.',
+    gpsAsk: 'Разреши сега', gpsChecking: 'Проверявам…', gpsOk: 'GPS е готов (±{0} м)', gpsLater: 'По-късно',
+    gpsDenied: 'Местоположението е спряно за този сайт. Пусни го така:', gpsOff: 'Няма местоположение. Провери, че е включено на телефона, и опитай пак.',
+    gpsRetry: 'Опитай пак',
+    steps: {
+      'ios-safari': 'Натисни „аА“ в адресната лента → Настройки на сайта → Местоположение → Разреши. Провери и Настройки → Поверителност → Услуги за местоположение.',
+      'ios-chrome': 'Отвори Настройки на телефона → Chrome → Местоположение → Докато се ползва.',
+      'android-chrome': 'Натисни катинарчето до адреса → Разрешения → Местоположение → Разреши.',
+      samsung: 'Натисни катинарчето до адреса → Разрешения за сайта → Местоположение → Разреши.',
+      firefox: 'Натисни катинарчето до адреса → изчисти блокирането на местоположението → презареди.',
+      desktop: 'Натисни иконата до адреса → Местоположение → Разреши, после презареди страницата.',
+    },
+    startWaiting: 'Играта започва в {0}', startManual: 'Играта започва, когато организаторът натисне Старт.', startSoon: 'Започва след {0}',
+    teamTitle: 'Отборът', teamNone: 'Тази игра се играе в отбор. Можеш да си отбор и сам.',
+    teamName: 'Име на отбора', teamCreate: 'Създай отбор', teamCode: 'Код на отбора', teamJoin: 'Влез в отбора',
+    teamCodeShow: 'Код за съотборниците', copy: 'Копирай', copied: 'Копирано',
+    captain: 'капитан', you: 'ти', gpsYes: 'GPS', gpsNo: 'Без GPS', gpsUnknown: 'GPS ?',
+    makeCaptain: 'Направи капитан', remove: 'Премахни', removeConfirm: 'Да махна ли {0} от отбора?',
+    makeConfirm: 'Да предам ли капитанството на {0}?',
+    leave: 'Излез от отбора', leaveConfirm: 'Да изляза ли от отбора?',
+    giveUp: 'Откажи се за целия отбор', giveUpConfirm: 'Отборът спира да играе и не може да продължи. Сигурен ли си?',
+    captainLeave: 'Капитанът първо предава капитанството или се отказва за отбора.',
+    gaveUp: 'Отборът се е отказал. Резултатът му е запазен.',
+    go: 'Тръгни', board: 'Класация',
+    found: '{0} от {1} спирки', points: '{0} т.',
+    next: 'Следваща', nextOf: 'Следваща · {0} от {1}', nearest: 'Най-близката', allDone: 'Всички спирки са намерени!',
+    away: '{0} на {1}', here: 'Тук си', weak: 'Слаб сигнал (±{0} м). Спирките се отварят при точност до 50 м.',
+    open: 'Отвори спирката', close: 'Затвори',
+    getApp: 'Виж я изправена на улицата: изтегли приложението', getAppShort: 'В приложението',
+    question: 'Въпрос', check: 'Провери', yourAnswer: 'Твоят отговор',
+    worth: '{0} точки', hints: 'Подсказки', hintFor: 'Отвори за {0} т.', hintConfirm: 'Подсказката струва {0} точки. Да я отворя ли?',
+    v: {
+      correct: 'Вярно! +{0}', correct0: 'Вярно!', incorrect: 'Не е вярно.', wait: 'Изчакай {0} с.',
+      out_of_order: 'Първо минете спирките преди тази.', pending_review: 'Изпратено. Създателят ще го прегледа.',
+      position: 'Отговорът не мина: {0}', skipped: 'Тази спирка приключи.', already: 'Вече е решена.',
+      deducted: 'Грешен отговор: −{0} точки.',
+    },
+    pos: {
+      far: 'твърде далеч си от спирката.', mock: 'използваш приложение за фалшиво местоположение.',
+      fast: 'местоположението се премести твърде бързо.', no_position: 'няма местоположение.',
+      inaccurate: 'сигналът е твърде слаб.', not_started: 'играта още не е започнала.', gave_up: 'отборът се е отказал.',
+    },
+    visitNo: 'Спирката не се отчете: {0}',
+    compass: ['север', 'североизток', 'изток', 'югоизток', 'юг', 'югозапад', 'запад', 'северозапад'],
+    failed: 'Нещо се обърка. Опитай пак.', notStarted: 'Играта още не е започнала.', ended: 'Играта е приключила.',
+    afterword: 'Още нещо',
+  },
+  en: {
+    loading: 'Loading the trail…',
+    noTrail: 'No such trail', noTrailBody: 'Check the link or the code. Private trails open only with a code.',
+    codeLabel: 'Trail code', codeGo: 'Open',
+    gateTitle: 'You are walking as a guest', gateBody: 'You can walk without an account, but then your walk is kept only in this browser. With an account your XP, level and badges are kept anywhere.',
+    gateCreate: 'Create an account', gateSignIn: 'Sign in', gateGuest: 'Continue as a guest',
+    ageTitle: 'How old are you?', age14: '14 or older', age13: '13', age12: '12 or younger',
+    terms: 'I accept the Terms of use and the Privacy policy', termsNeed: 'Tick that you accept the terms.',
+    age13Body: 'At 13 a parent has to agree first. Create an account and ask for consent.',
+    age12Body: 'AR Trail is for people aged 13 and over.',
+    needsAccount: 'This game needs an account', needsAccountBody: 'Trails with points are played in teams with real names. Make an account: your walk so far stays.',
+    gpsTitle: 'Step 1 · Allow location', gpsBody: 'Stops open when you stand at them, so the site needs to know where you are.',
+    gpsAsk: 'Allow now', gpsChecking: 'Checking…', gpsOk: 'GPS ready (±{0} m)', gpsLater: 'Later',
+    gpsDenied: 'Location is blocked for this site. To allow it:', gpsOff: 'No location. Check that it is switched on, and try again.',
+    gpsRetry: 'Try again',
+    steps: {
+      'ios-safari': 'Tap "aA" in the address bar → Website Settings → Location → Allow. Also check Settings → Privacy → Location Services.',
+      'ios-chrome': 'Open the phone Settings → Chrome → Location → While Using the App.',
+      'android-chrome': 'Tap the lock next to the address → Permissions → Location → Allow.',
+      samsung: 'Tap the lock next to the address → Site permissions → Location → Allow.',
+      firefox: 'Tap the lock next to the address → clear the location block → reload.',
+      desktop: 'Click the icon next to the address → Location → Allow, then reload the page.',
+    },
+    startWaiting: 'The game starts at {0}', startManual: 'The game starts when the organiser presses Start.', startSoon: 'Starts in {0}',
+    teamTitle: 'Your team', teamNone: 'This game is played in teams. You can be a team of one.',
+    teamName: 'Team name', teamCreate: 'Create a team', teamCode: 'Team code', teamJoin: 'Join the team',
+    teamCodeShow: 'Code for your teammates', copy: 'Copy', copied: 'Copied',
+    captain: 'captain', you: 'you', gpsYes: 'GPS', gpsNo: 'No GPS', gpsUnknown: 'GPS ?',
+    makeCaptain: 'Make captain', remove: 'Remove', removeConfirm: 'Remove {0} from the team?',
+    makeConfirm: 'Hand the captaincy to {0}?',
+    leave: 'Leave the team', leaveConfirm: 'Leave the team?',
+    giveUp: 'Give up for the whole team', giveUpConfirm: 'The team stops playing and cannot carry on. Are you sure?',
+    captainLeave: 'The captain hands the captaincy over, or gives up for the team, first.',
+    gaveUp: 'The team has given up. Its result is kept.',
+    go: 'Start walking', board: 'Leaderboard',
+    found: '{0} of {1} stops', points: '{0} pts',
+    next: 'Next', nextOf: 'Next · {0} of {1}', nearest: 'Nearest', allDone: 'Every stop found!',
+    away: '{0} {1}', here: "You're here", weak: 'Weak signal (±{0} m). Stops open at 50 m accuracy or better.',
+    open: 'Open the stop', close: 'Close',
+    getApp: 'See it standing in the street: get the app', getAppShort: 'In the app',
+    question: 'Question', check: 'Check', yourAnswer: 'Your answer',
+    worth: '{0} points', hints: 'Hints', hintFor: 'Open for {0} pts', hintConfirm: 'This hint costs {0} points. Open it?',
+    v: {
+      correct: 'Correct! +{0}', correct0: 'Correct!', incorrect: 'Not right.', wait: 'Wait {0} s.',
+      out_of_order: 'Do the stops before this one first.', pending_review: 'Sent. The creator will review it.',
+      position: 'Not accepted: {0}', skipped: 'This stop is over.', already: 'Already solved.',
+      deducted: 'Wrong answer: −{0} points.',
+    },
+    pos: {
+      far: 'you are too far from the stop.', mock: 'a fake-location app is on.',
+      fast: 'your position moved too fast.', no_position: 'no location.',
+      inaccurate: 'the signal is too weak.', not_started: 'the game has not started.', gave_up: 'your team has given up.',
+    },
+    visitNo: 'The stop did not count: {0}',
+    compass: ['north', 'north-east', 'east', 'south-east', 'south', 'south-west', 'west', 'north-west'],
+    failed: 'Something went wrong. Try again.', notStarted: 'The game has not started yet.', ended: 'The game has ended.',
+    afterword: 'One more thing',
+  },
+}[lang];
+
+const strings = {
+  ...copy, lang,
+  signupHref: href('/signup'), signinHref: href('/signin'), termsHref: href('/terms'), privacyHref: href('/privacy'),
+  boardHref: href('/board'), trailsHref: href('/trails'), walkHref: href('/walk'),
+};
+---
+
+<section class="walk-page" data-walk-page>
+  <Loading label={copy.loading} class="py-24" data-stage="loading" />
+
+  <!-- No trail found, or a code to type. -->
+  <div class="walk-card" data-stage="find" hidden>
+    <h1 class="text-2xl" data-find-title>{copy.noTrail}</h1>
+    <p class="walk-lede" data-find-body>{copy.noTrailBody}</p>
+    <form class="walk-row" data-code-form>
+      <input class="field-input uppercase tracking-widest" maxlength="8" autocomplete="off"
+             placeholder={copy.codeLabel} aria-label={copy.codeLabel} data-code-input />
+      <button class="btn btn-primary" type="submit">{copy.codeGo}</button>
+    </form>
+  </div>
+
+  <!-- The guest warning (YambolTrails' gate, in AR Trail's terms). -->
+  <div class="walk-card" data-stage="gate" hidden>
+    <h1 class="text-2xl">{copy.gateTitle}</h1>
+    <p class="walk-lede">{copy.gateBody}</p>
+    <div class="walk-actions" data-gate-choices>
+      <a class="btn btn-primary" data-gate-create>{copy.gateCreate}</a>
+      <a class="btn btn-quiet" data-gate-signin>{copy.gateSignIn}</a>
+      <button class="btn btn-quiet" type="button" data-gate-guest>{copy.gateGuest}</button>
+    </div>
+    <div class="walk-age" data-gate-age hidden>
+      <p class="font-semibold">{copy.ageTitle}</p>
+      <label class="walk-tick"><input type="checkbox" data-gate-terms />
+        <span><a href={strings.termsHref} target="_blank" rel="noopener">{copy.terms}</a></span></label>
+      <div class="walk-actions">
+        <button class="btn btn-primary" type="button" data-age="14">{copy.age14}</button>
+        <button class="btn btn-quiet" type="button" data-age="13">{copy.age13}</button>
+        <button class="btn btn-quiet" type="button" data-age="12">{copy.age12}</button>
+      </div>
+      <p class="walk-msg" data-gate-msg role="alert"></p>
+    </div>
+  </div>
+
+  <!-- The lobby: location first, then the start and the team. -->
+  <div class="walk-lobby" data-stage="lobby" hidden>
+    <header class="walk-head">
+      <p class="eyebrow" data-trail-mode></p>
+      <h1 class="text-2xl sm:text-3xl" data-trail-name></h1>
+    </header>
+
+    <div class="walk-card walk-gps" data-gps-step>
+      <h2 class="text-base">{copy.gpsTitle}</h2>
+      <p class="walk-lede" data-gps-text>{copy.gpsBody}</p>
+      <p class="walk-help" data-gps-help hidden></p>
+      <div class="walk-actions">
+        <button class="btn btn-primary" type="button" data-gps-ask>{copy.gpsAsk}</button>
+        <button class="btn btn-quiet" type="button" data-gps-later>{copy.gpsLater}</button>
+      </div>
+    </div>
+
+    <div class="walk-rest" data-lobby-rest>
+      <div class="walk-card" data-start-card hidden>
+        <p class="font-semibold" data-start-text></p>
+      </div>
+
+      <div class="walk-card" data-account-card hidden>
+        <h2 class="text-base">{copy.needsAccount}</h2>
+        <p class="walk-lede">{copy.needsAccountBody}</p>
+        <a class="btn btn-primary" data-account-go>{copy.gateCreate}</a>
+      </div>
+
+      <div class="walk-card" data-team-card hidden>
+        <h2 class="text-base">{copy.teamTitle}</h2>
+        <div data-team-none hidden>
+          <p class="walk-lede">{copy.teamNone}</p>
+          <form class="walk-row" data-team-create>
+            <input class="field-input" maxlength="40" placeholder={copy.teamName} aria-label={copy.teamName} data-team-name required />
+            <button class="btn btn-primary" type="submit">{copy.teamCreate}</button>
+          </form>
+          <form class="walk-row" data-team-join>
+            <input class="field-input uppercase tracking-widest" maxlength="8" placeholder={copy.teamCode} aria-label={copy.teamCode} data-team-code required />
+            <button class="btn btn-quiet" type="submit">{copy.teamJoin}</button>
+          </form>
+        </div>
+        <div data-team-on hidden>
+          <p class="walk-teamname" data-team-title></p>
+          <p class="walk-gaveup" data-team-gaveup hidden>{copy.gaveUp}</p>
+          <div class="walk-code"><span class="eyebrow">{copy.teamCodeShow}</span>
+            <b class="data" data-team-invite></b>
+            <button class="btn btn-quiet btn-sm" type="button" data-team-copy>{copy.copy}</button></div>
+          <ul class="walk-members" data-team-members></ul>
+          <div class="walk-actions">
+            <button class="btn btn-quiet btn-sm" type="button" data-team-leave>{copy.leave}</button>
+            <button class="btn btn-danger btn-sm" type="button" data-team-giveup hidden>{copy.giveUp}</button>
+          </div>
+        </div>
+        <p class="walk-msg" data-team-msg role="alert"></p>
+      </div>
+
+      <div class="walk-actions">
+        <button class="btn btn-primary btn-lg" type="button" data-go disabled>{copy.go}</button>
+        <a class="btn btn-quiet" data-board-link hidden>{copy.board}</a>
+      </div>
+    </div>
+  </div>
+
+  <!-- The game. -->
+  <div class="walk-game" data-stage="game" hidden>
+    <div class="walk-map" data-map></div>
+    <div class="walk-top">
+      <div class="walk-pill"><b data-g-name></b><span data-g-progress></span></div>
+      <p class="walk-weak" data-g-weak hidden></p>
+      <p class="walk-weak" data-g-toast hidden></p>
+    </div>
+    <div class="walk-next" data-g-next>
+      <p class="eyebrow" data-g-next-label></p>
+      <p class="walk-next-title" data-g-next-title></p>
+      <p class="walk-next-meta" data-g-next-meta></p>
+      <div class="walk-actions">
+        <button class="btn btn-primary btn-sm" type="button" data-g-open hidden>{copy.open}</button>
+        <a class="btn btn-quiet btn-sm" data-g-board hidden>{copy.board}</a>
+        <a class="btn btn-quiet btn-sm" data-g-app>{copy.getAppShort}</a>
+      </div>
+    </div>
+
+    <div class="walk-sheet" data-sheet hidden role="dialog" aria-modal="true">
+      <div class="walk-sheet-in">
+        <button class="walk-x" type="button" data-sheet-close aria-label={copy.close}>×</button>
+        <h2 class="text-xl" data-s-title></h2>
+        <p class="walk-body" data-s-body></p>
+        <div class="walk-media" data-s-media></div>
+        <a class="walk-app" data-s-app>{copy.getApp}</a>
+        <div class="walk-q" data-s-q hidden>
+          <p class="eyebrow">{copy.question} · <span data-s-worth></span></p>
+          <p class="walk-q-text" data-s-prompt></p>
+          <div class="walk-options" data-s-options hidden></div>
+          <input class="field-input" data-s-answer aria-label={copy.yourAnswer} placeholder={copy.yourAnswer} hidden />
+          <button class="btn btn-primary" type="button" data-s-check>{copy.check}</button>
+          <p class="walk-verdict" data-s-verdict role="status" aria-live="polite"></p>
+          <p class="walk-after" data-s-after hidden></p>
+        </div>
+        <div class="walk-hints" data-s-hints hidden>
+          <p class="eyebrow">{copy.hints}</p>
+          <ol data-s-hint-list></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/maplibre-gl/5.6.0/maplibre-gl.css" />
+<script type="application/json" data-walk-strings set:html={JSON.stringify(strings)}></script>
+
+<script>
+  import { db, configured, isAnonymous } from '../lib/supabase';
+  import { param, text } from '../lib/session';
+  import { TERMS_VERSION } from '../lib/terms';
+  import { Tracker, distanceM, bearing, compass, metres, browserKind, type Fix } from '../lib/walk';
+
+  // MapLibre from the CDN, for the reason TrailEditor gives: the bundler breaks
+  // its tile worker without a word.
+  const MAPLIBRE = 'https://cdnjs.cloudflare.com/ajax/libs/maplibre-gl/5.6.0/maplibre-gl.js';
+  async function loadMapLibre(): Promise<any> {
+    if ((window as any).maplibregl) return (window as any).maplibregl;
+    await new Promise<void>((resolve, reject) => {
+      const tag = document.createElement('script');
+      tag.src = MAPLIBRE; tag.crossOrigin = 'anonymous';
+      tag.onload = () => resolve(); tag.onerror = () => reject(new Error('maplibre failed to load'));
+      document.head.appendChild(tag);
+    });
+    return (window as any).maplibregl;
+  }
+
+  const S = JSON.parse(document.querySelector('[data-walk-strings]')!.textContent || '{}');
+  const q = <T extends Element = HTMLElement>(s: string) => document.querySelector(s) as T | null;
+  const fmt = (s: string, ...a: (string | number)[]) => a.reduce<string>((r, v, i) => r.replace(`{${i}}`, String(v)), s);
+  const stage = (name: string) => document.querySelectorAll<HTMLElement>('[data-stage]')
+    .forEach((el) => { el.hidden = el.dataset.stage !== name; });
+  const say = (sel: string, msg: string) => text(q(sel), msg);
+
+  if (!configured()) { stage('find'); throw new Error('not configured'); }
+  const client = db()!;
+  const SCORED = ['ctf', 'freefall'];
+  const MODE_NAMES: Record<string, Record<string, string>> = {
+    bg: { guide: 'Воден', freefall: 'Свободен', educational: 'Образователен', ctf: 'Състезание' },
+    en: { guide: 'Guided', freefall: 'Freefall', educational: 'Educational', ctf: 'Competition' },
+  };
+  const here = () => `${S.walkHref}?${new URLSearchParams(location.search)}`;
+  const appLink = (id: string) => `intent://join/${id}#Intent;scheme=artrail;package=com.alex.artrail;end`;
+
+  // ------------------------------------------------------------- the way in
+  let worldId = param('id');
+  const code = param('code');
+
+  q('[data-code-form]')?.addEventListener('submit', (e) => {
+    e.preventDefault();
+    const c = (q<HTMLInputElement>('[data-code-input]')!.value || '').trim();
+    if (c) location.href = `${S.walkHref}?code=${encodeURIComponent(c)}`;
+  });
+
+  // Who is here: an account, a guest who already chose to walk as one (in this
+  // tab), or somebody to ask.
+  let { data: { user } } = await client.auth.getUser();
+  const guestOk = (() => { try { return sessionStorage.getItem('artrail-guest-ok') === '1'; } catch { return false; } })();
+
+  if (!user || (isAnonymous(user) && !guestOk)) {
+    await gate();
+    ({ data: { user } } = await client.auth.getUser());
+  }
+
+  async function gate(): Promise<void> {
+    const next = encodeURIComponent(location.pathname + location.search);
+    q<HTMLAnchorElement>('[data-gate-create]')!.href = `${S.signupHref}?next=${next}`;
+    q<HTMLAnchorElement>('[data-gate-signin]')!.href = `${S.signinHref}?next=${next}`;
+    stage('gate');
+    return new Promise((resolve) => {
+      q('[data-gate-guest]')!.addEventListener('click', async () => {
+        // A guest session from before (this browser) is kept; it has its walk.
+        const { data } = await client.auth.getUser();
+        if (data.user && isAnonymous(data.user)) {
+          try { sessionStorage.setItem('artrail-guest-ok', '1'); } catch {}
+          return resolve();
+        }
+        q('[data-gate-choices]')!.hidden = true;
+        q('[data-gate-age]')!.hidden = false;
+      });
+      document.querySelectorAll<HTMLButtonElement>('[data-age]').forEach((b) => b.addEventListener('click', async () => {
+        const age = b.dataset.age;
+        if (age === '12') { say('[data-gate-msg]', S.age12Body); return; }
+        if (age === '13') { say('[data-gate-msg]', S.age13Body); return; }
+        if (!q<HTMLInputElement>('[data-gate-terms]')!.checked) { say('[data-gate-msg]', S.termsNeed); return; }
+        b.setAttribute('aria-busy', 'true');
+        const { error } = await client.auth.signInAnonymously();
+        if (!error) await client.rpc('accept_terms', { p_version: TERMS_VERSION, p_under14: false });
+        b.removeAttribute('aria-busy');
+        if (error) { say('[data-gate-msg]', S.failed); return; }
+        try { sessionStorage.setItem('artrail-guest-ok', '1'); } catch {}
+        resolve();
+      }));
+    });
+  }
+
+  const guest = isAnonymous(user);
+
+  if (!worldId && code) {
+    const { data, error } = await client.rpc('join_world', { p_code: code.trim() });
+    worldId = error ? null : (typeof data === 'string' ? data : data?.id ?? data?.world_id ?? null);
+  }
+  if (!worldId) { stage('find'); throw new Error('no trail'); }
+
+  // A public trail is joined from its card; a coded one was joined above.
+  const { data: role } = await client.rpc('my_worlds');
+  if (!(role ?? []).some((w: any) => w.id === worldId)) await client.rpc('join_listed', { p_world: worldId });
+
+  const summary = ((await client.rpc('trail_summary', { p_world: worldId })).data ?? [])[0];
+  if (!summary) { stage('find'); throw new Error('not visible'); }
+  const scored = SCORED.includes(summary.mode);
+  text(q('[data-trail-name]'), summary.name);
+  text(q('[data-trail-mode]'), MODE_NAMES[S.lang][summary.mode] ?? summary.mode);
+  text(q('[data-g-name]'), summary.name);
+  q<HTMLAnchorElement>('[data-g-app]')!.href = appLink(worldId);
+  q<HTMLAnchorElement>('[data-s-app]')!.href = appLink(worldId);
+  for (const sel of ['[data-board-link]', '[data-g-board]']) {
+    const a = q<HTMLAnchorElement>(sel)!; a.href = `${S.boardHref}?id=${encodeURIComponent(worldId)}`; a.hidden = !scored;
+  }
+
+  // ------------------------------------------------------------- the lobby
+  stage('lobby');
+  let team: any = null;
+  let start: any = null;
+  let gpsReady = false;
+
+  async function loadStart() {
+    start = (await client.rpc('trail_start', { p_world: worldId })).data;
+    const card = q('[data-start-card]')!;
+    card.hidden = !start || start.start_mode === 'none' || start.started;
+    if (!card.hidden) {
+      const at = start.starts_at ? new Date(start.starts_at) : null;
+      text(q('[data-start-text]'), at && start.start_mode === 'auto'
+        ? fmt(S.startWaiting, at.toLocaleString(S.lang === 'bg' ? 'bg-BG' : 'en-GB', { dateStyle: 'medium', timeStyle: 'short' }))
+        : S.startManual);
+    }
+  }
+
+  async function loadTeam() {
+    if (!scored) return;
+    const card = q('[data-team-card]')!;
+    if (guest) { q('[data-account-card]')!.hidden = false;
+      q<HTMLAnchorElement>('[data-account-go]')!.href = `${S.signupHref}?next=${encodeURIComponent(here())}`; return; }
+    card.hidden = false;
+    team = (await client.rpc('my_team_detail', { p_world: worldId })).data;
+    q('[data-team-none]')!.hidden = !!team?.on_team;
+    q('[data-team-on]')!.hidden = !team?.on_team;
+    if (!team?.on_team) return;
+    text(q('[data-team-title]'), team.name);
+    text(q('[data-team-invite]'), team.invite_code);
+    q('[data-team-gaveup]')!.hidden = !team.gave_up;
+    q('[data-team-giveup]')!.hidden = !team.i_am_captain || team.gave_up;
+    const list = q('[data-team-members]')!;
+    list.replaceChildren(...team.members.map((m: any) => {
+      const li = document.createElement('li');
+      const name = document.createElement('span');
+      name.className = 'walk-mname';
+      name.textContent = m.name + (m.is_me ? ` (${S.you})` : '');
+      const tags = document.createElement('span');
+      tags.className = 'walk-mtags';
+      if (m.is_captain) { const t = document.createElement('b'); t.textContent = '★ ' + S.captain; tags.append(t); }
+      const g = document.createElement('span');
+      g.className = m.gps === true ? 'gps-ok' : m.gps === false ? 'gps-no' : 'gps-unknown';
+      g.textContent = m.gps === true ? S.gpsYes : m.gps === false ? S.gpsNo : S.gpsUnknown;
+      tags.append(g);
+      li.append(name, tags);
+      if (team.i_am_captain && !m.is_me && !team.gave_up) {
+        const mk = document.createElement('button'); mk.type = 'button'; mk.className = 'btn btn-quiet btn-sm'; mk.textContent = S.makeCaptain;
+        mk.addEventListener('click', async () => {
+          if (!confirm(fmt(S.makeConfirm, m.name))) return;
+          const { error } = await client.rpc('transfer_captain', { p_team: team.id, p_user: m.id });
+          say('[data-team-msg]', error ? S.failed : ''); loadTeam();
+        });
+        const rm = document.createElement('button'); rm.type = 'button'; rm.className = 'btn btn-quiet btn-sm'; rm.textContent = S.remove;
+        rm.addEventListener('click', async () => {
+          if (!confirm(fmt(S.removeConfirm, m.name))) return;
+          const { error } = await client.rpc('remove_member', { p_team: team.id, p_user: m.id });
+          say('[data-team-msg]', error ? S.failed : ''); loadTeam();
+        });
+        li.append(mk, rm);
+      }
+      return li;
+    }));
+    // Awaited: supabase-js sends a request only when it is awaited or then-ed.
+    if (gpsReady && !team.members.find((m: any) => m.is_me)?.gps) await client.rpc('set_gps_ready', { p_team: team.id, p_ok: true });
+  }
+
+  q('[data-team-create]')?.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const name = q<HTMLInputElement>('[data-team-name]')!.value.trim();
+    const { error } = await client.rpc('create_team', { p_world: worldId, p_name: name });
+    say('[data-team-msg]', error ? error.message : ''); loadTeam().then(paintGo);
+  });
+  q('[data-team-join]')?.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const c = q<HTMLInputElement>('[data-team-code]')!.value.trim();
+    const { error } = await client.rpc('join_team', { p_code: c });
+    say('[data-team-msg]', error ? error.message : ''); loadTeam().then(paintGo);
+  });
+  q('[data-team-copy]')?.addEventListener('click', async () => {
+    try { await navigator.clipboard.writeText(team?.invite_code ?? ''); text(q('[data-team-copy]'), S.copied); } catch {}
+  });
+  q('[data-team-leave]')?.addEventListener('click', async () => {
+    if (!team || !confirm(S.leaveConfirm)) return;
+    const { error } = await client.rpc('leave_team', { p_team: team.id });
+    say('[data-team-msg]', error ? (/hands over/.test(error.message) ? S.captainLeave : S.failed) : '');
+    loadTeam().then(paintGo);
+  });
+  q('[data-team-giveup]')?.addEventListener('click', async () => {
+    if (!team || !confirm(S.giveUpConfirm)) return;
+    const { error } = await client.rpc('give_up_team', { p_team: team.id });
+    say('[data-team-msg]', error ? S.failed : ''); loadTeam().then(paintGo);
+  });
+
+  // Location, settled before the start (YambolTrails' GpsStep).
+  async function checkGps(ask: boolean) {
+    const perm = await Tracker.permission();
+    if (perm === 'denied') return gpsShow('denied');
+    if (perm !== 'granted' && !ask) return;
+    text(q('[data-gps-ask]'), S.gpsChecking);
+    const r = await Tracker.once();
+    text(q('[data-gps-ask]'), S.gpsRetry);
+    if (typeof r === 'string') return gpsShow(r);
+    gpsReady = true;
+    say('[data-gps-text]', fmt(S.gpsOk, Math.round(r.accuracy)));
+    q('[data-gps-step]')!.classList.add('is-ok');
+    q('[data-gps-help]')!.hidden = true;
+    q('[data-gps-ask]')!.hidden = true; q('[data-gps-later]')!.hidden = true;
+    q('[data-lobby-rest]')!.classList.remove('is-dim');
+    if (team?.on_team) await client.rpc('set_gps_ready', { p_team: team.id, p_ok: true });
+    paintGo();
+  }
+  function gpsShow(state: string) {
+    gpsReady = false;
+    if (state === 'denied') {
+      say('[data-gps-text]', S.gpsDenied);
+      const help = q('[data-gps-help]')!; help.hidden = false; text(help, S.steps[browserKind()]);
+    } else say('[data-gps-text]', S.gpsOff);
+    if (team?.on_team) void client.rpc('set_gps_ready', { p_team: team.id, p_ok: false }).then(() => {});
+    paintGo();
+  }
+  q('[data-gps-ask]')?.addEventListener('click', () => checkGps(true));
+  q('[data-gps-later]')?.addEventListener('click', () => q('[data-lobby-rest]')!.classList.remove('is-dim'));
+  q('[data-lobby-rest]')!.classList.add('is-dim');
+
+  function paintGo() {
+    const started = !start || start.started;
+    const teamOk = !scored || (!guest && team?.on_team && !team.gave_up);
+    q<HTMLButtonElement>('[data-go]')!.disabled = !(started && teamOk && !start?.ended);
+  }
+
+  await Promise.all([loadStart(), loadTeam()]);
+  await checkGps(false);
+  paintGo();
+
+  // Waiting for the start: look again every 10 s, and the team with it.
+  const lobbyTimer = window.setInterval(async () => {
+    if (!q('[data-stage="lobby"]')!.hidden) { await Promise.all([loadStart(), loadTeam()]); paintGo(); }
+  }, 10000);
+
+  q('[data-go]')?.addEventListener('click', () => { clearInterval(lobbyTimer); startGame(); });
+
+  // -------------------------------------------------------------- the game
+  type Stop = { id: string; lat: number; lng: number; radius: number; step: number | null; title: string; body: string; colour: string };
+  let stops: Stop[] = [];
+  let done = new Set<string>();
+  let opened: string | null = null;
+  let tracker: Tracker;
+  let map: any, ml: any, meMarker: any;
+  const pins = new Map<string, any>();
+  let fetchedAt: Fix | null = null;
+  const ordered = ['ctf', 'guide'].includes(summary.mode);
+
+  const loc = (c: any) => c?.[S.lang] ?? c?.bg ?? c?.en ?? {};
+
+  async function loadStops(fix: Fix) {
+    const { data } = await client.rpc('markers_near', { p_world_id: worldId, p_lat: fix.lat, p_lng: fix.lng, p_radius_m: 5000 });
+    stops = (data ?? []).filter((m: any) => m.status === 'published').map((m: any) => ({
+      id: m.id, lat: m.lat, lng: m.lng, radius: m.radius_m ?? 100, step: m.step,
+      title: loc(m.content).title || '—', body: loc(m.content).body || '', colour: m.colour_hex || '#0066cc',
+    }));
+    fetchedAt = fix;
+    await loadDone();
+    drawPins();
+  }
+
+  async function loadDone() {
+    const ids = new Set<string>();
+    const { data: prog } = await client.rpc('my_progress', { p_world: worldId });
+    (prog ?? []).forEach((p: any) => ids.add(p.marker_id));
+    const { data: visits } = await client.from('stop_visits').select('marker_id').in('marker_id', stops.map((s) => s.id));
+    (visits ?? []).forEach((v: any) => ids.add(v.marker_id));
+    done = ids;
+  }
+
+  function nextStop(fix: Fix | null): Stop | null {
+    const left = stops.filter((s) => !done.has(s.id));
+    if (!left.length) return null;
+    if (ordered) return left.sort((a, b) => (a.step ?? 1e9) - (b.step ?? 1e9))[0];
+    if (!fix) return left[0];
+    return left.sort((a, b) => distanceM(fix, a) - distanceM(fix, b))[0];
+  }
+
+  function drawPins() {
+    if (!map) return;
+    for (const s of stops) {
+      let pin = pins.get(s.id);
+      if (!pin) {
+        const el = document.createElement('button');
+        el.type = 'button'; el.className = 'walk-pin'; el.setAttribute('aria-label', s.title);
+        el.addEventListener('click', () => { if (opened !== s.id) openStop(s, false); });
+        pin = new ml.Marker({ element: el, anchor: 'bottom' }).setLngLat([s.lng, s.lat]).addTo(map);
+        pins.set(s.id, pin);
+      }
+      const el = pin.getElement() as HTMLElement;
+      el.style.setProperty('--pin', s.colour);
+      el.classList.toggle('is-done', done.has(s.id));
+    }
+    paintNext();
+  }
+
+  function paintNext() {
+    const fix = tracker?.last ?? null;
+    const n = nextStop(fix);
+    text(q('[data-g-progress]'), ' · ' + fmt(S.found, done.size, stops.length) + (team?.on_team ? ' · ' + fmt(S.points, team.points ?? 0) : ''));
+    pins.forEach((p, id) => (p.getElement() as HTMLElement).classList.toggle('is-next', n?.id === id));
+    if (!n) {
+      text(q('[data-g-next-label]'), ''); text(q('[data-g-next-title]'), S.allDone); text(q('[data-g-next-meta]'), '');
+      q('[data-g-open]')!.hidden = true; return;
+    }
+    const idx = stops.slice().sort((a, b) => (a.step ?? 1e9) - (b.step ?? 1e9)).indexOf(n) + 1;
+    text(q('[data-g-next-label]'), ordered ? fmt(S.nextOf, idx, stops.length) : S.nearest);
+    text(q('[data-g-next-title]'), n.title);
+    if (fix) {
+      const d = distanceM(fix, n);
+      text(q('[data-g-next-meta]'), d <= n.radius ? S.here : fmt(S.away, metres(d), compass(bearing(fix, n), S.compass)));
+    }
+    q('[data-g-open]')!.hidden = !(fix && distanceM(fix, n) <= n.radius + fix.accuracy) && !done.has(n.id);
+    (q('[data-g-open]') as HTMLElement).onclick = () => openStop(n, false);
+  }
+
+  let toastTimer = 0;
+  function toast(msg: string) {
+    const t = q('[data-g-toast]')!; text(t, msg); t.hidden = false;
+    clearTimeout(toastTimer); toastTimer = window.setTimeout(() => (t.hidden = true), 5000);
+  }
+
+  // A stop reached: the server decides (record_visit), then it opens.
+  const refused = new Map<string, number>();
+  async function arrive(id: string, fix: Fix) {
+    if (opened === id || done.has(id)) return;
+    if ((refused.get(id) ?? 0) > Date.now()) return;
+    const { data, error } = await client.rpc('record_visit', {
+      p_marker: id, p_via: 'map', p_lat: fix.lat, p_lng: fix.lng, p_accuracy: fix.accuracy, p_mock: false });
+    if (error || data !== 'ok') {
+      refused.set(id, Date.now() + 60000);
+      toast(fmt(S.visitNo, S.pos[data as string] ?? S.failed));
+      return;
+    }
+    done.add(id);
+    drawPins();
+    const s = stops.find((x) => x.id === id);
+    if (s) openStop(s, true);
+  }
+
+  async function startGame() {
+    stage('game');
+    ml = await loadMapLibre();
+    map = new ml.Map({ container: q('[data-map]'), style: 'https://tiles.openfreemap.org/styles/liberty',
+                       center: [26.5035, 42.4842], zoom: 15, attributionControl: { compact: true } });
+    const me = document.createElement('div'); me.className = 'walk-me';
+    meMarker = new ml.Marker({ element: me });
+    let centred = false;
+
+    tracker = new Tracker(() => stops, async (fix) => {
+      meMarker.setLngLat([fix.lng, fix.lat]).addTo(map);
+      if (!centred) { map.jumpTo({ center: [fix.lng, fix.lat], zoom: 16 }); centred = true; }
+      const weak = q('[data-g-weak]')!;
+      weak.hidden = fix.accuracy <= 50; text(weak, fmt(S.weak, Math.round(fix.accuracy)));
+      if (!fetchedAt || distanceM(fetchedAt, fix) > 300) await loadStops(fix);
+      paintNext();
+    }, arrive, (state) => {
+      if (state === 'denied' || state === 'unavailable') toast(state === 'denied' ? S.gpsDenied : S.gpsOff);
+    });
+    tracker.start();
+
+    // Teammates' solves, the next stop on a one-at-a-time trail, and the
+    // team's points: asked again every 10 seconds while the game is open.
+    window.setInterval(async () => {
+      if (document.hidden || !tracker.last) return;
+      if (scored) team = (await client.rpc('my_team_detail', { p_world: worldId })).data;
+      await loadStops(tracker.last);
+    }, 10000);
+  }
+
+  // ------------------------------------------------------------- a stop
+  async function openStop(s: Stop, arrived: boolean) {
+    opened = s.id;
+    const sheet = q('[data-sheet]')!; sheet.hidden = false;
+    text(q('[data-s-title]'), s.title); text(q('[data-s-body]'), s.body);
+    q('[data-s-q]')!.hidden = true; q('[data-s-hints]')!.hidden = true;
+    q('[data-s-media]')!.replaceChildren();
+    say('[data-s-verdict]', ''); q('[data-s-after]')!.hidden = true;
+
+    // The contents only at the stop, as in the app: the text is readable from
+    // anywhere, the question and media wait until you are there.
+    const fix = tracker.last;
+    const atIt = arrived || done.has(s.id) || (fix && distanceM(fix, s) <= s.radius + fix.accuracy);
+    if (!atIt) return;
+
+    const { data: d } = await client.rpc('marker_detail', { p_marker: s.id });
+    drawMedia(d?.media ?? []);
+    if (d?.task) drawTask(s, d.task);
+    if (d?.hints?.length) drawHints(s, d.hints);
+  }
+
+  q('[data-sheet-close]')?.addEventListener('click', () => {
+    q('[data-sheet]')!.hidden = true;
+    if (opened) tracker?.forget(opened);
+    opened = null; paintNext();
+  });
+  document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && !q('[data-sheet]')!.hidden) (q('[data-sheet-close]') as HTMLElement).click(); });
+
+  function mediaUrl(path: string) {
+    if (/^https?:\/\//.test(path)) return path;
+    const base = (import.meta.env.PUBLIC_SUPABASE_URL as string) || (window as any).AR_TRAIL_CONFIG?.SUPABASE_URL || '';
+    return `${base}/storage/v1/object/public/marker-media/${path.split('/').map(encodeURIComponent).join('/')}`;
+  }
+
+  function drawMedia(media: any[]) {
+    const box = q('[data-s-media]')!;
+    for (const m of media) {
+      const url = mediaUrl(m.path);
+      let el: HTMLElement;
+      if (m.kind === 'image' || m.kind === 'photo') { const i = document.createElement('img'); i.src = url; i.alt = ''; i.loading = 'lazy'; el = i; }
+      else if (m.kind === 'audio') { const a = document.createElement('audio'); a.controls = true; a.src = url; el = a; }
+      else if (m.kind === 'video' && !/youtu|vimeo/.test(url)) { const v = document.createElement('video'); v.controls = true; v.src = url; v.playsInline = true; el = v; }
+      else { const a = document.createElement('a'); a.href = url; a.target = '_blank'; a.rel = 'noopener'; a.textContent = url.replace(/^https?:\/\//, ''); el = a; }
+      box.append(el);
+    }
+  }
+
+  function drawTask(s: Stop, task: any) {
+    q('[data-s-q]')!.hidden = false;
+    // Points only where something is scored, as the app shows them.
+    text(q('[data-s-worth]'), scored ? fmt(S.worth, task.points ?? 0) : '');
+    q('[data-s-worth]')!.parentElement!.firstChild!.textContent = scored ? `${S.question} · ` : S.question;
+    text(q('[data-s-prompt]'), task.prompt?.[S.lang] || task.prompt?.bg || task.prompt?.en || '');
+    const opts = q('[data-s-options]')!, input = q<HTMLInputElement>('[data-s-answer]')!;
+    const chosen = new Set<number>();
+    opts.hidden = task.kind !== 'choice'; input.hidden = task.kind === 'choice';
+    opts.replaceChildren(...(task.options ?? []).map((o: any, i: number) => {
+      const b = document.createElement('button'); b.type = 'button'; b.className = 'walk-opt';
+      b.textContent = o?.[S.lang] || o?.bg || o?.en || String(o);
+      b.addEventListener('click', () => { chosen.has(i) ? chosen.delete(i) : chosen.add(i); b.classList.toggle('is-on', chosen.has(i)); });
+      return b;
+    }));
+    const check = q<HTMLButtonElement>('[data-s-check]')!;
+    check.onclick = async () => {
+      const submitted = task.kind === 'choice' ? [...chosen].sort().join(',') : input.value.trim();
+      if (!submitted) return;
+      const fix = tracker.last;
+      check.setAttribute('aria-busy', 'true');
+      const { data, error } = await client.rpc('check_answer', { p_marker: s.id, p_submitted: submitted,
+        p_lat: fix?.lat ?? null, p_lng: fix?.lng ?? null, p_accuracy: fix?.accuracy ?? null, p_mock: false, p_source: 'web' });
+      check.removeAttribute('aria-busy');
+      if (error) { say('[data-s-verdict]', /not started/.test(error.message) ? S.notStarted : /ended/.test(error.message) ? S.ended
+                                         : /given up/.test(error.message) ? S.pos.gave_up : S.failed); return; }
+      say('[data-s-verdict]', verdictText(data));
+      // The afterword is kept per language, like the stop's own words.
+      const a0 = data?.after;
+      const after: string = typeof a0 === 'string' ? a0 : (a0?.[S.lang] || a0?.bg || a0?.en || '');
+      if (after) { const a = q('[data-s-after]')!; a.hidden = false; text(a, after); }
+      if (data?.verdict === 'correct' || data?.skipped) { done.add(s.id); drawPins(); }
+    };
+  }
+
+  function verdictText(r: any): string {
+    if (!r) return S.failed;
+    if (r.already) return S.v.already;
+    switch (r.verdict) {
+      case 'correct': return r.points ? fmt(S.v.correct, r.points) : S.v.correct0;
+      case 'incorrect': return r.skipped ? S.v.skipped : r.deducted ? fmt(S.v.deducted, r.deducted) : S.v.incorrect;
+      case 'wait': return fmt(S.v.wait, r.seconds_left ?? 0);
+      case 'position': return fmt(S.v.position, S.pos[r.problem] ?? r.problem);
+      default: return S.v[r.verdict] ?? S.failed;
+    }
+  }
+
+  function drawHints(s: Stop, hints: any[]) {
+    q('[data-s-hints]')!.hidden = false;
+    q('[data-s-hint-list]')!.replaceChildren(...hints.map((h: any) => {
+      const li = document.createElement('li');
+      if (h.revealed) { li.textContent = h.body ?? ''; return li; }
+      const b = document.createElement('button'); b.type = 'button'; b.className = 'btn btn-quiet btn-sm';
+      b.textContent = fmt(S.hintFor, h.cost ?? 0);
+      b.addEventListener('click', async () => {
+        if (!confirm(fmt(S.hintConfirm, h.cost ?? 0))) return;
+        const { data, error } = await client.rpc('reveal_hint', { p_hint: h.id });
+        if (error) { li.textContent = S.failed; return; }
+        li.textContent = data?.body ?? '';
+      });
+      li.append(b); return li;
+    }));
+  }
+</script>
+
+<style>
+  .walk-page { max-width: 44rem; margin: 0 auto; padding: 2rem 1rem 4rem; }
+  .walk-card { padding: 1.25rem; border-radius: 22px; background: var(--surface); border: 1px solid var(--line); margin-top: 1rem; }
+  .walk-card[hidden], .walk-page [hidden] { display: none !important; }
+  .walk-lede { margin-top: .5rem; color: var(--ink-dim); }
+  .walk-actions { display: flex; flex-wrap: wrap; gap: .5rem; margin-top: 1rem; align-items: center; }
+  .walk-row { display: flex; gap: .5rem; margin-top: .75rem; }
+  .walk-row .field-input { flex: 1; min-width: 0; }
+  .walk-msg { margin-top: .75rem; color: var(--alert); min-height: 1.25em; }
+  .walk-age { margin-top: 1rem; }
+  .walk-tick { display: flex; gap: .5rem; align-items: flex-start; margin-top: .75rem; font-size: .9rem; }
+  .walk-help { margin-top: .5rem; padding: .75rem 1rem; border-radius: 14px; background: var(--lamp-wash); color: var(--ink); font-size: .9rem; }
+  .walk-gps.is-ok { border-color: color-mix(in srgb, var(--tier-1) 50%, transparent); }
+  .walk-rest { transition: opacity .3s ease; }
+  .walk-rest.is-dim { opacity: .45; }
+  .walk-head { margin-bottom: .5rem; }
+  .walk-teamname { font-size: 1.15rem; font-weight: 600; }
+  .walk-gaveup { margin-top: .25rem; color: var(--alert); }
+  .walk-code { display: flex; align-items: center; gap: .75rem; flex-wrap: wrap; margin-top: .75rem; }
+  .walk-code b { font-size: 1.4rem; letter-spacing: .15em; color: var(--signal); }
+  .walk-members { margin-top: .75rem; display: grid; gap: .375rem; }
+  /* Rows, options and media are made by the script, so they carry no scope:
+     :global, inside the page's own containers. */
+  .walk-members :global(li) { display: flex; flex-wrap: wrap; align-items: center; gap: .5rem; padding: .5rem .75rem; border-radius: 14px; background: var(--surface-2); }
+  .walk-members :global(.walk-mname) { flex: 1; min-width: 8rem; }
+  .walk-members :global(.walk-mtags) { display: flex; gap: .5rem; font-size: .8rem; }
+  .walk-members :global(.walk-mtags b) { color: var(--lamp); font-weight: 600; }
+  .walk-members :global(.gps-ok) { color: var(--tier-1); }
+  .walk-members :global(.gps-no) { color: var(--alert); }
+  .walk-members :global(.gps-unknown) { color: var(--ink-faint); }
+
+  .walk-game { position: fixed; inset: 64px 0 0 0; z-index: 30; background: var(--ground); }
+  .walk-map { position: absolute; inset: 0; }
+  .walk-top { position: absolute; top: .75rem; left: .75rem; right: .75rem; display: grid; gap: .5rem; justify-items: start; pointer-events: none; }
+  .walk-pill, .walk-weak { pointer-events: auto; padding: .5rem .875rem; border-radius: 999px; background: color-mix(in srgb, var(--surface) 92%, transparent);
+    border: 1px solid var(--line); box-shadow: var(--shadow-soft); font-size: .875rem; backdrop-filter: blur(12px); }
+  .walk-weak { color: var(--alert); border-radius: 14px; }
+  .walk-next { position: absolute; left: .75rem; right: .75rem; bottom: .75rem; max-width: 30rem; padding: 1rem 1.125rem; border-radius: 22px;
+    background: var(--surface); border: 1px solid var(--line); box-shadow: var(--shadow-lift); }
+  .walk-next-title { font-size: 1.15rem; font-weight: 600; margin-top: .125rem; }
+  .walk-next-meta { color: var(--ink-dim); font-size: .9rem; }
+  .walk-next .walk-actions { margin-top: .625rem; }
+
+  .walk-sheet { position: absolute; inset: 0; z-index: 5; display: flex; align-items: flex-end; justify-content: center; background: rgba(0, 0, 0, .35); }
+  .walk-sheet-in { position: relative; width: 100%; max-width: 40rem; max-height: 85%; overflow: auto; padding: 1.5rem 1.25rem 2rem;
+    border-radius: 24px 24px 0 0; background: var(--surface); }
+  .walk-x { position: absolute; top: .5rem; right: .5rem; width: 44px; height: 44px; border-radius: 50%; font-size: 1.5rem; color: var(--ink-dim); }
+  .walk-x:hover { background: var(--surface-2); }
+  .walk-body { margin-top: .75rem; color: var(--ink-dim); white-space: pre-line; }
+  .walk-media { display: grid; gap: .75rem; margin-top: 1rem; }
+  .walk-media :global(img), .walk-media :global(video) { width: 100%; border-radius: 14px; }
+  .walk-media :global(audio) { width: 100%; }
+  .walk-media :global(a) { color: var(--signal); word-break: break-all; }
+  .walk-app { display: inline-block; margin-top: 1rem; color: var(--signal); font-size: .9rem; }
+  .walk-q { margin-top: 1.25rem; padding-top: 1rem; border-top: 1px solid var(--line-soft); display: grid; gap: .625rem; }
+  .walk-q-text { font-weight: 600; font-size: 1.05rem; }
+  .walk-options { display: grid; gap: .5rem; }
+  .walk-options :global(.walk-opt) { text-align: left; padding: .75rem 1rem; border-radius: 14px; border: 1px solid var(--line); background: var(--surface-2); }
+  .walk-options :global(.walk-opt.is-on) { border-color: var(--signal); background: var(--signal-wash); color: var(--signal); font-weight: 600; }
+  .walk-verdict { font-weight: 600; min-height: 1.25em; }
+  .walk-after { padding: .75rem 1rem; border-radius: 14px; background: var(--signal-wash); }
+  .walk-hints { margin-top: 1.25rem; }
+  .walk-hints ol { display: grid; gap: .5rem; margin-top: .5rem; padding-left: 1.25rem; list-style: decimal; }
+
+  :global(.walk-pin) { width: 26px; height: 34px; cursor: pointer; background: none; border: 0; padding: 0; }
+  :global(.walk-pin)::before { content: ""; display: block; width: 26px; height: 26px; border-radius: 50% 50% 50% 0; transform: rotate(-45deg);
+    background: var(--pin, #0066cc); border: 2px solid #fff; box-shadow: 0 2px 6px rgba(0,0,0,.35); }
+  :global(.walk-pin.is-done)::before { opacity: .45; }
+  :global(.walk-pin.is-next)::before { width: 32px; height: 32px; outline: 3px solid color-mix(in srgb, var(--pin, #0066cc) 40%, transparent); }
+  :global(.walk-me) { width: 18px; height: 18px; border-radius: 50%; background: #0066cc; border: 3px solid #fff; box-shadow: 0 0 0 6px rgba(0,102,204,.25); }
+</style>

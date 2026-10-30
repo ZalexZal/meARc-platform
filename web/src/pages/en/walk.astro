@@ -1,0 +1,9 @@
+---
+import Base from '../../layouts/Base.astro';
+import Walk from '../../components/Walk.astro';
+import { langFromUrl } from '../../i18n/ui';
+const lang = langFromUrl(Astro.url);
+---
+<Base title={(lang === 'bg' ? 'Разходка' : 'Walk') + ' — AR Trail'}>
+  <Walk lang={lang} />
+</Base>
