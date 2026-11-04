@@ -18,7 +18,7 @@ export function modeFrom(scored: boolean, ordered: boolean): Mode {
 }
 
 const WORDS = {
-  bg: { points: 'С точки', noPoints: 'Без точки', order: 'По ред', anyOrder: 'В какъвто ред искаш' },
+  bg: { points: 'С точки', noPoints: 'Без точки', order: 'По ред', anyOrder: 'Свободен ред' },
   en: { points: 'Points', noPoints: 'No points', order: 'In order', anyOrder: 'Any order' },
 } as const;
 

@@ -33,14 +33,14 @@ export const ui = {
     'play.need': 'Трябва ти телефон с приложението. Публичните маршрути наблизо са на един допир от списъка с маршрути; за частен маршрут ти трябва шестзнаковият код от създателя му.',
 
     'play.1.title': 'Пробвай демото',
-    'play.1.body': 'Приложението започва с кратък пробен маршрут около мястото, където си. Две минути, без да ходиш, и нищо от него не се брои. Може да го пуснеш пак от „Ти“.',
+    'play.1.body': 'Приложението започва с кратък пробен маршрут около мястото, където си. Две минути, без да ходиш, и нищо от него не се брои. Може да го пуснеш пак от „Профил“.',
 
     'play.2.title': 'Избери маршрут',
-    'play.2.body': '„Наблизо“ показва публичните маршрути около теб — докосни един, за да тръгнеш. За частен маршрут натисни „Присъедини се с код“ и напиши шестте знака, които са ти дали.',
+    'play.2.body': '„Наблизо“ показва публичните маршрути около теб — докосни един, за да тръгнеш. За частен маршрут натисни „Влез с код“ и напиши шестте знака, които са ти дали.',
 
     'play.3.title': 'Направи или влез в отбор',
-    'play.3.body': 'Маршрутите с точки се играят в отбори и искат профил — приложението го иска, когато влезеш в такъв маршрут. После, в Отбор: ако си пръв, дай име и прочети кода на отбора на останалите; ако не си, напиши техния. Колко души събира един отбор решава създателят на маршрута.',
-    'play.3.warn': 'Кодът на отбора не е кодът на маршрута. Кодът на маршрута е с малки букви и вкарва всички в една игра. Кодът на отбора е с главни и вкарва трима-четирима в един отбор.',
+    'play.3.body': 'Маршрутите с точки се играят в отбори и искат профил — приложението го иска, когато влезеш в такъв маршрут. После, в Отбор: ако си пръв, дай име и прочети кода на отбора на останалите; ако не си, напиши техния в „Влез с код“. Колко души събира един отбор решава създателят на маршрута.',
+    'play.3.warn': 'Всеки код се пише на едно място — „Влез с код“. Кодът на маршрута те води в маршрута; кодът на отбора — в маршрута и направо в отбора.',
 
     'play.4.title': 'Върви до спирката',
     'play.4.body': 'Картата показва къде са спирките и на колко си от тях. Като наближиш, включи камерата — знакът на спирката стои на самото място. Докосни го в камерата и спирката е твоя. Ако камерата не може да се ориентира, спирката се отваря и от картата.',
@@ -52,7 +52,7 @@ export const ui = {
     'play.6.body': 'Точките на отбора ти се появяват в класацията веднага. При равни точки печели по-бързото време. Отворените въпроси чакат човек да ги погледне и дотогава са отбелязани като чакащи.',
 
     'play.report.title': 'Ако нещо не е наред',
-    'play.report.body': 'Спирка в частен двор, на опасно място или с обидно съдържание — натисни Сигнал в панела на спирката и избери причина. Отива при хората, които водят маршрута. Скрий маха спирката само за теб.',
+    'play.report.body': 'Спирка в частен двор, на опасно място или с обидно съдържание — натисни „Докладвай проблем“ в панела на спирката и избери причина. Отива при хората, които водят маршрута. „Скрий от картата“ я маха само за теб.',
     'nav.games': 'Маршрути',
     'nav.board': 'Класация',
     'nav.signin': 'Вход',
@@ -417,11 +417,11 @@ export const ui = {
     'new.mode': 'Режим',
     'new.mode.guide': 'Без точки · По ред',
     'new.mode.guide.body': 'Обиколка по ред. Без точки, без класация, без отбори.',
-    'new.mode.freefall': 'С точки · В какъвто ред искаш',
+    'new.mode.freefall': 'С точки · Свободен ред',
     'new.mode.freefall.body': 'Игра без ред. Спирки из целия град, всяка със своя стойност. Точки, класация, отбори и подсказки.',
     'new.mode.ctf': 'С точки · По ред',
     'new.mode.ctf.body': 'Игра по ред, спирка след спирка. Точки, класация, отбори и подсказки.',
-    'new.mode.educational': 'Без точки · В какъвто ред искаш',
+    'new.mode.educational': 'Без точки · Свободен ред',
     'new.mode.educational.body': 'В какъвто ред искаш, без точки и класация. Само за учене.',
     'new.kind.games': 'Игри',
     'new.kind.guides': 'Обиколки',
@@ -741,14 +741,14 @@ export const ui = {
     'play.need': 'You need a phone with the app. Public trails near you are one tap away in the app’s trail list; a private trail needs the six-character code from whoever made it.',
 
     'play.1.title': 'Try the demo',
-    'play.1.body': 'The app starts with a short practice trail around wherever you are. Two minutes, no walking, and nothing in it counts. Replay it any time from You.',
+    'play.1.body': 'The app starts with a short practice trail around wherever you are. Two minutes, no walking, and nothing in it counts. Replay it any time from Profile.',
 
     'play.2.title': 'Pick a trail',
     'play.2.body': 'Near you lists the public trails around you — tap one to walk it. For a private trail, tap Join with a code and type the six characters you were given.',
 
     'play.3.title': 'Make a team, or join one',
     'play.3.body': 'Trails with points are played in teams and need an account — the app asks for one when you join such a trail. Then, under Team: if you are first, give it a name and read its team code out; if not, type theirs. How many people a team holds is set by whoever made the trail.',
-    'play.3.warn': 'The team code is not the trail code. The trail code is lower case and puts everybody in the same game. The team code is upper case and puts three or four of you on the same team.',
+    'play.3.warn': 'Every code goes in the same place — Join with a code. A trail code takes you to the trail; a team code takes you to the trail and straight onto that team.',
 
     'play.4.title': 'Walk to a stop',
     'play.4.body': 'The map shows where the stops are and how far off you are. When you get close, switch to the camera — the stop’s sign is standing on the spot itself. Tap it in the camera and the stop is yours. If the camera cannot find its bearings, the stop opens from the map too.',
@@ -760,7 +760,7 @@ export const ui = {
     'play.6.body': 'Your team’s points appear on the board straight away. Level scores are split by the faster time. Open questions wait for a person to read them and are marked as pending until then.',
 
     'play.report.title': 'If something is wrong',
-    'play.report.body': 'A stop in somebody’s garden, somewhere unsafe, or with offensive content — press Report on the stop and pick a reason. It goes to the people running the trail. Hide only takes the stop off your own map.',
+    'play.report.body': 'A stop in somebody’s garden, somewhere unsafe, or with offensive content — press Report a problem on the stop and pick a reason. It goes to the people running the trail. Hide from map only takes it off your own map.',
     'nav.games': 'Trails',
     'nav.board': 'Leaderboard',
     'nav.signin': 'Sign in',
