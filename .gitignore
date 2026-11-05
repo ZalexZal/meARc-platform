@@ -18,3 +18,5 @@ web/config.local.js
 [Mm]emoryCaptures/
 Packages/
 ProjectSettings/
+tests/lab/shots/
+web/.check-lab.mjs
