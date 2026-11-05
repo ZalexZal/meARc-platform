@@ -4,7 +4,7 @@
 
 ## Status (5 Nov)
 
-**Website: merged to main and live** (commit `634bcda`, deployed on artrails.netlify.app), except the "one code box" wording on How to play, which waits for the app. **App: lab APK build running; phone test pending.**
+**Website: merged to main and live** (commit `634bcda`, deployed on artrails.netlify.app), except the "one code box" wording on How to play, which waits for the app. **App: lab APK built 5 Nov (`AR-Trails/Build/ARTrail.apk`, com.alex.artrail.lab 0.6.4-lab, release-signed); phone test pending.** Live site: viewer suite 41/41.
 
 ## What is in it
 
