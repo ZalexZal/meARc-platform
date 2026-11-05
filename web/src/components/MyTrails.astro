@@ -16,6 +16,7 @@ const strings = {
   code: t('mine.code'), copy: t('pub.copy'), copied: t('pub.copied'),
   edit: t('mine.edit'),
   board: t('mine.board'),
+  viewLabel: lang === 'bg' ? 'Страница' : 'Trail page', viewHref: href('/view'),
   published: t('ed.published'),
   draft: t('ed.draft'),
   pending: t('acct.pending'),
@@ -53,11 +54,21 @@ const strings = {
 
 // Grouped by what they are: a game keeps score and a walk does not, which is
 // the first thing a creator is actually choosing between.
-const modes = [
-  { value: 'ctf', label: t('new.mode.ctf'), body: t('new.mode.ctf.body') },
-  { value: 'freefall', label: t('new.mode.freefall'), body: t('new.mode.freefall.body') },
-  { value: 'guide', label: t('new.mode.guide'), body: t('new.mode.guide.body') },
-  { value: 'educational', label: t('new.mode.educational'), body: t('new.mode.educational.body') },
+// The mode is two questions (lib/modes.ts), asked as two questions.
+const ask = lang === 'bg' ? {
+  scored: 'Броят ли се точки?', scoredYes: 'С точки', scoredYesBody: 'Отбори, класиране и подсказки срещу точки.',
+  scoredNo: 'Без точки', scoredNoBody: 'Разходка и учене. Никой не се състезава.',
+  ordered: 'Спирките по ред ли са?', orderedYes: 'По ред', orderedYesBody: 'Всяка спирка води към следващата.',
+  orderedNo: 'Свободен ред', orderedNoBody: 'Всеки тръгва откъдето му е удобно.',
+} : {
+  scored: 'Does it keep points?', scoredYes: 'Points', scoredYesBody: 'Teams, a leaderboard, and hints that cost points.',
+  scoredNo: 'No points', scoredNoBody: 'A walk to look and learn. Nobody competes.',
+  ordered: 'Do the stops go in order?', orderedYes: 'In order', orderedYesBody: 'Each stop leads to the next.',
+  orderedNo: 'Any order', orderedNoBody: 'Everyone starts wherever suits them.',
+};
+const questions = [
+  { name: 'scored', legend: ask.scored, opts: [['yes', ask.scoredYes, ask.scoredYesBody], ['no', ask.scoredNo, ask.scoredNoBody]] },
+  { name: 'ordered', legend: ask.ordered, opts: [['yes', ask.orderedYes, ask.orderedYesBody], ['no', ask.orderedNo, ask.orderedNoBody]] },
 ];
 ---
 
@@ -103,18 +114,20 @@ const modes = [
           <input class="field" id="new-name" name="name" type="text" required maxlength="80"
                  placeholder={t('new.namePlaceholder')} data-new-name />
         </div>
-        <fieldset>
-          <legend class="field-name">{t('new.mode')}</legend>
-          <div class="mode-grid">
-            {modes.map((m) => (
-              <label class="mode-opt">
-                <input class="sr-only" type="radio" name="mode" value={m.value} checked={m.value === 'ctf'} />
-                <span class="mode-name">{m.label}</span>
-                <span class="mode-body">{m.body}</span>
-              </label>
-            ))}
-          </div>
-        </fieldset>
+        {questions.map((qn) => (
+          <fieldset>
+            <legend class="field-name">{qn.legend}</legend>
+            <div class="mode-grid">
+              {qn.opts.map(([value, label, body]) => (
+                <label class="mode-opt">
+                  <input class="sr-only" type="radio" name={qn.name} value={value} checked={value === 'yes'} />
+                  <span class="mode-name">{label}</span>
+                  <span class="mode-body">{body}</span>
+                </label>
+              ))}
+            </div>
+          </fieldset>
+        ))}
         <p class="hidden" data-create-error role="alert"></p>
         <div class="flex flex-wrap items-center gap-3">
           <button class="btn btn-primary btn-lg" type="submit" data-create-submit>{t('mine.createGo')}</button>
@@ -132,6 +145,7 @@ const modes = [
 
 <script>
   import { db } from '../lib/supabase';
+  import { modeFrom, modeLine, isScored } from '../lib/modes';
   import { requireUser, reveal, escapeHtml, text, count, who } from '../lib/session';
   import { levelOf, isPending, isListed, setLevel, unfinishedStops } from '../lib/publishing';
   import { busy, formError, formClear } from '../lib/form';
@@ -239,14 +253,14 @@ const modes = [
 
       ${w.join_code ? `<div class="mt-3 flex items-center gap-2">
         <span class="eyebrow">${escapeHtml(S.code)}</span>
-        <code class="data text-lg font-medium tracking-widest text-[var(--signal)]"
+        <code class="data text-lg font-medium uppercase tracking-widest text-[var(--signal)]"
               >${escapeHtml(w.join_code)}</code>
-        <button type="button" class="btn btn-ghost btn-sm" data-copy="${escapeHtml(w.join_code)}"
+        <button type="button" class="btn btn-ghost btn-sm" data-copy="${escapeHtml(String(w.join_code).toUpperCase())}"
                 >${escapeHtml(S.copy)}</button>
       </div>` : ''}
 
       <p class="data mt-3 text-xs text-[var(--ink-dim)]">
-        ${escapeHtml(count(w.marker_count, S.stop, S.stops))}
+        ${escapeHtml(modeLine(w.mode, S.lang))} \u00b7 ${escapeHtml(count(w.marker_count, S.stop, S.stops))}
         ${Number(w.pending) > 0 ? ` \u00b7 <span style="color:var(--lamp)">${w.pending} ${escapeHtml(S.pending)}</span>` : ''}
         ${owner ? '' : ` \u00b7 ${escapeHtml(S.roleEditor)}`}
       </p>
@@ -261,7 +275,8 @@ const modes = [
 
       <div class="mt-5 flex gap-2 pt-1">
         <a class="btn btn-primary btn-sm flex-1" href="${S.editHref}?id=${encodeURIComponent(w.id)}">${escapeHtml(S.edit)}</a>
-        <a class="btn btn-quiet btn-sm flex-1" href="${S.boardHref}?id=${encodeURIComponent(w.id)}">${escapeHtml(S.board)}</a>
+        ${isScored(w.mode) ? `<a class="btn btn-quiet btn-sm flex-1" href="${S.boardHref}?id=${encodeURIComponent(w.id)}">${escapeHtml(S.board)}</a>` : ''}
+        ${w.visibility !== 'private' && w.status !== 'draft' ? `<a class="btn btn-quiet btn-sm flex-1" href="${S.viewHref}?id=${encodeURIComponent(w.id)}">${escapeHtml(S.viewLabel)}</a>` : ''}
       </div>
     </li>`;
   }
@@ -325,7 +340,7 @@ const modes = [
     formClear(errorBox);
     const data = new FormData(form);
     const name = String(data.get('name') ?? '').trim();
-    const mode = String(data.get('mode') ?? 'guide');
+    const mode = modeFrom(data.get('scored') === 'yes', data.get('ordered') === 'yes');
     if (!name) {
       formError(errorBox, S.lang === 'bg' ? 'Дай име на маршрута.' : 'Give the trail a name.', nameField);
       return;
@@ -454,8 +469,7 @@ const modes = [
   .new-form[hidden] { display: none; }
   @keyframes new-in { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
   .new-form-head { display: flex; align-items: center; justify-content: space-between; gap: 1rem; }
-  .mode-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: .625rem; }
-  @media (max-width: 900px) { .mode-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+  .mode-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .625rem; }
   @media (max-width: 480px) { .mode-grid { grid-template-columns: minmax(0, 1fr); } }
   .mode-opt {
     display: flex; flex-direction: column; gap: .25rem; padding: .875rem 1rem; cursor: pointer;

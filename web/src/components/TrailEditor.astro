@@ -60,9 +60,8 @@ const shapes = [
 
 const strings = {
   lang,
+  setOneByOne: t('ed.setOneByOne'), teamSize: t('ed.teamSize'), start: t('ed.start'),
   deleteConfirm: t('ed.deleteConfirm'), deleteNotOwner: t('ed.deleteNotOwner'),
-  modes: { ctf: t('new.mode.ctf'), freefall: t('new.mode.freefall'),
-           guide: t('new.mode.guide'), educational: t('new.mode.educational') },
   saved: t('ed.saved'), saving: t('ed.saving'),
   notYours: t('ed.notYours'), draft: t('ed.draft'), published: t('ed.published'),
   publish: t('ed.publish'), unpublish: t('ed.unpublish'),
@@ -135,47 +134,12 @@ const strings = {
     <div class="flex flex-wrap items-center gap-2">
       <div class="card flex items-center gap-2 px-3 py-2">
         <span class="eyebrow">{t('ed.code')}</span>
-        <code class="data text-xl font-medium tracking-widest text-[var(--signal)]"
+        <code class="data text-xl font-medium uppercase tracking-widest text-[var(--signal)]"
               data-trail-code></code>
         <button class="btn btn-ghost btn-sm" type="button" data-copy-code>{t('pub.copy')}</button>
         <button class="text-xs text-[var(--ink-faint)] underline-offset-2 hover:text-[var(--ink)] hover:underline"
                 type="button" data-rotate data-owner-only title={t('ed.rotateHint')}>{t('ed.rotate')}</button>
       </div>
-      <!-- Only ordered trails have a next marker to withhold, so this is
-           switched off and explained on the two that do not. -->
-      <label class="card flex items-center gap-2 px-3 py-2 text-xs" data-reveal-row data-owner-only>
-        <input type="checkbox" data-reveal />
-        <span>{t('ed.reveal')}</span>
-      </label>
-
-      <!-- Beside the code, because both are things you set once for the whole
-           trail and then read out to a room. -->
-      <label class="card flex items-center gap-2 px-3 py-2 text-xs" data-owner-only
-             title={t('ed.teamSizeHint')}>
-        <span class="eyebrow">{t('ed.teamSize')}</span>
-        <input class="data w-12 bg-transparent text-base font-medium text-[var(--ink)] outline-none"
-               data-team-size inputmode="numeric" maxlength="2" />
-      </label>
-
-      <!-- When a live event starts (0058): at once, by the board's Start, or at a time. -->
-      <label class="card flex flex-wrap items-center gap-2 px-3 py-2 text-xs" data-owner-only title={t('ed.startHint')}>
-        <span class="eyebrow">{t('ed.start')}</span>
-        <select class="bg-transparent text-sm font-medium text-[var(--ink)] outline-none" data-start-mode aria-label={t('ed.startHint')}>
-          <option value="none">{t('ed.startNone')}</option>
-          <option value="manual">{t('ed.startManual')}</option>
-          <option value="auto">{t('ed.startAuto')}</option>
-        </select>
-        <input type="datetime-local" class="bg-transparent text-sm text-[var(--ink)] outline-none" data-start-at hidden aria-label={t('ed.startAuto')} />
-      </label>
-
-      <!-- The creator's finish bonus (0056): XP for finishing, 0 to 500. -->
-      <label class="card flex items-center gap-2 px-3 py-2 text-xs" data-owner-only
-             title={t('ed.bonusHint')}>
-        <span class="eyebrow">{t('ed.bonus')}</span>
-        <input class="data w-14 bg-transparent text-base font-medium text-[var(--ink)] outline-none"
-               data-finish-bonus inputmode="numeric" maxlength="3" aria-label={t('ed.bonusHint')} />
-      </label>
-
       <!-- The same three rungs My trails offers. There used to be a Publish
            button here that wrote the same two columns with different words, so a
            trail could be "published" on one screen and "only me" on the other,
@@ -191,6 +155,48 @@ const strings = {
       </div>
     </div>
   </header>
+
+  <!-- The settings a trail has once, grouped and explained in the open. They
+       were five small boxes in the header with their help in tooltips, which
+       a phone never shows. A setting this trail cannot use is not drawn. -->
+  <details class="card trail-settings mt-6" data-owner-only data-settings>
+    <summary>
+      <span class="font-semibold">{t('ed.settings')}</span>
+      <span class="text-xs text-[var(--ink-dim)]" data-settings-sum></span>
+    </summary>
+    <div class="trail-settings-grid">
+      <div class="set-group" data-reveal-row>
+        <p class="eyebrow">{t('ed.setHow')}</p>
+        <label class="set-check">
+          <input type="checkbox" data-reveal />
+          <span>{t('ed.reveal')}</span>
+        </label>
+        <p class="set-hint">{t('ed.revealHint')}</p>
+      </div>
+      <div class="set-group" data-team-row>
+        <p class="eyebrow">{t('ed.teamSize')}</p>
+        <input class="field data w-24" data-team-size inputmode="numeric" maxlength="2" aria-label={t('ed.teamSize')} />
+        <p class="set-hint">{t('ed.teamSizeHint')}</p>
+      </div>
+      <div class="set-group">
+        <p class="eyebrow">{t('ed.start')}</p>
+        <div class="flex flex-wrap gap-2">
+          <select class="field w-auto" data-start-mode aria-label={t('ed.start')}>
+            <option value="none">{t('ed.startNone')}</option>
+            <option value="manual">{t('ed.startManual')}</option>
+            <option value="auto">{t('ed.startAuto')}</option>
+          </select>
+          <input type="datetime-local" class="field w-auto" data-start-at hidden aria-label={t('ed.startAuto')} />
+        </div>
+        <p class="set-hint">{t('ed.startHint')}</p>
+      </div>
+      <div class="set-group">
+        <p class="eyebrow">{t('ed.bonus')}</p>
+        <input class="field data w-24" data-finish-bonus inputmode="numeric" maxlength="3" aria-label={t('ed.bonus')} />
+        <p class="set-hint">{t('ed.bonusHint')}</p>
+      </div>
+    </div>
+  </details>
 
   <div class="mt-8 grid gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.05fr)]">
     <!-- Choosing what to edit. Outside the tabs, because this is how a stop
@@ -719,6 +725,7 @@ const strings = {
 
 <script>
   import { db } from '../lib/supabase';
+  import { modeLine, isScored } from '../lib/modes';
   import { requireUser, reveal, param, escapeHtml, text, duration } from '../lib/session';
   import { levelOf, isPending, isListed, setLevel } from '../lib/publishing';
   import { inspectGlb, type GlbInfo, type GlbProblem } from '../lib/glb';
@@ -801,7 +808,7 @@ const strings = {
     location.href = S.lang === 'en' ? '/en/my-trails' : '/my-trails';
   });
   // The mode's name, not its database code - "ctf" is not a word.
-  text(q('[data-trail-mode]'), S.modes?.[owned.mode] ?? owned.mode);
+  text(q('[data-trail-mode]'), modeLine(owned.mode, S.lang));
   text(q('[data-trail-code]'), owned.join_code);
   q('[data-board-link]')!.setAttribute('href', `${S.boardHref}?id=${encodeURIComponent(worldId)}`);
 
@@ -846,9 +853,20 @@ const strings = {
   const revealRow = q('[data-reveal-row]') as HTMLElement;
 
   revealBox.checked = Boolean(settings.data?.reveal_one_at_a_time);
-  revealBox.disabled = !ordered;
-  revealRow.classList.toggle('opacity-50', !ordered);
-  if (!ordered) revealRow.title = S.revealOff;
+  // Not drawn where it cannot apply: no order, nothing to reveal; no points, no teams.
+  revealRow.hidden = !ordered;
+  (q('[data-team-row]') as HTMLElement).hidden = !isScored(settings.data?.mode ?? 'guide');
+  const paintSettings = () => {
+    const parts = [
+      ordered && revealBox.checked ? S.setOneByOne : '',
+      isScored(settings.data?.mode ?? 'guide') ? `${S.teamSize}: ${sizeBox.value}` : '',
+      `${S.start}: ${startMode.selectedOptions[0]?.textContent ?? ''}`,
+      Number(bonusBox.value) > 0 ? `+${bonusBox.value} XP` : '',
+    ].filter(Boolean);
+    text(q('[data-settings-sum]'), parts.join(' · '));
+  };
+  paintSettings();
+  q('[data-settings]')!.addEventListener('change', () => setTimeout(paintSettings, 0));
 
   revealBox.addEventListener('change', async () => {
     const { error } = await client.from('worlds')
@@ -1923,7 +1941,7 @@ const strings = {
   q('[data-copy-code]')?.addEventListener('click', async (event) => {
     const button = event.currentTarget as HTMLElement;
     try {
-      await navigator.clipboard.writeText(q('[data-trail-code]')!.textContent!.trim());
+      await navigator.clipboard.writeText(q('[data-trail-code]')!.textContent!.trim().toUpperCase());
       text(button, S.copied);
       setTimeout(() => text(button, S.copy), 1400);
     } catch { /* the code is on screen; reading it out still works */ }
@@ -2926,4 +2944,15 @@ const strings = {
   .wiz-danger { display: flex; justify-content: flex-end; padding: 0 1.25rem 1rem; background: var(--surface); }
   .hide-xs { display: inline; }
   @media (max-width: 420px) { .hide-xs { display: none; } .wiz-next { min-width: 0; flex: 1; } }
+  .trail-settings { padding: 0; }
+  .trail-settings > summary { display: flex; flex-wrap: wrap; align-items: baseline; gap: .25rem .75rem; padding: 1rem 1.25rem; cursor: pointer; list-style: none; }
+  .trail-settings > summary::before { content: "▸"; color: var(--ink-faint); transition: transform .15s; }
+  .trail-settings[open] > summary::before { transform: rotate(90deg); }
+  .trail-settings > summary::-webkit-details-marker { display: none; }
+  .trail-settings-grid { display: grid; gap: 1.25rem 2rem; padding: 0 1.25rem 1.25rem; }
+  @media (min-width: 720px) { .trail-settings-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+  .set-group { display: grid; gap: .5rem; align-content: start; }
+  .set-group[hidden] { display: none; }
+  .set-check { display: flex; gap: .5rem; align-items: center; font-size: .9375rem; }
+  .set-hint { font-size: .8125rem; color: var(--ink-dim); line-height: 1.45; }
 </style>

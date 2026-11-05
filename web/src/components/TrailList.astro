@@ -7,11 +7,6 @@ interface Props { lang: Lang; }
 const { lang } = Astro.props;
 const t = useTranslations(lang);
 
-// Mode names come from the same three words the app uses, so a trail called
-// "Състезание" here is the one the phone also calls that.
-const modeNames = lang === 'bg'
-  ? { guide: 'Воден', freefall: 'Свободен', ctf: 'Състезание', educational: 'Учебен' }
-  : { guide: 'Guided', freefall: 'Freefall', ctf: 'Competition', educational: 'Educational' };
 ---
 
 <PageBand eyebrow={t('games.eyebrow')} title={t('games.title')}>
@@ -55,10 +50,10 @@ const modeNames = lang === 'bg'
   <script
     type="application/json"
     data-trails-strings
-    set:html={JSON.stringify({ modeNames, lang,
+    set:html={JSON.stringify({ lang,
       stop: t('n.stop'), stops: t('n.stops'),
       team: t('n.team'), teams: t('n.teams'),
-      openApp: t('games.openApp'), walkWeb: t('games.walkWeb'), walkHref: localise(lang)('/walk'),
+      openApp: t('games.openApp'), walkWeb: t('games.walkWeb'), walkHref: localise(lang)('/view'),
       map: t('games.map'), qr: t('games.qr'),
       qrHint: t('games.qrHint'), away: t('games.away'),
       locating: t('games.locating'), sorted: t('games.sorted'),
@@ -67,14 +62,13 @@ const modeNames = lang === 'bg'
 </section>
 
 <script>
-  import QRCode from 'qrcode';
   import { db, configured } from '../lib/supabase';
   import { count } from '../lib/session';
+  import { modeLine } from '../lib/modes';
 
   const strings = JSON.parse(
     document.querySelector('[data-trails-strings]')?.textContent || '{}'
   );
-  const modeNames = strings.modeNames ?? {};
   const labels = {
     stop: strings.stop ?? '', stops: strings.stops ?? '',
     team: strings.team ?? '', teams: strings.teams ?? '',
@@ -139,12 +133,9 @@ const modeNames = lang === 'bg'
 
     list.innerHTML = rows.map(({ trail, hasStart, away }) => {
       const id = escapeHtml(trail.id);
-      const mapHref = hasStart
-        ? `https://www.openstreetmap.org/?mlat=${trail.start_lat}&mlon=${trail.start_lng}#map=17/${trail.start_lat}/${trail.start_lng}`
-        : null;
       return `
       <li class="card flex flex-col p-6 ${trail.id === wanted ? 'ring-2 ring-[var(--signal)]' : ''}" id="trail-${id}">
-        <span class="eyebrow">${modeNames[trail.mode] ?? escapeHtml(trail.mode)}</span>
+        <span class="eyebrow">${modeLine(trail.mode, strings.lang)}</span>
         <h2 class="mt-2 text-xl">${escapeHtml(trail.name)}</h2>
         <p class="data mt-4 text-xs text-[var(--ink-dim)]">
           ${count(trail.stop_count, labels.stop, labels.stops)} · ${count(trail.team_count, labels.team, labels.teams)}${away != null ? ` · ${strings.away.replace('{0}', distance(away))}` : ''}
@@ -152,34 +143,14 @@ const modeNames = lang === 'bg'
         <div class="mt-6 flex flex-wrap gap-2">
           <a class="btn btn-primary" href="${appLink(trail.id)}">${strings.openApp}</a>
           <a class="btn btn-quiet" href="${strings.walkHref}?id=${encodeURIComponent(trail.id)}">${strings.walkWeb}</a>
-          ${mapHref ? `<a class="btn btn-quiet" href="${mapHref}" target="_blank" rel="noopener">${strings.map}</a>` : ''}
-          <button type="button" class="btn btn-ghost" data-qr="${id}" aria-expanded="false">${strings.qr}</button>
           <a class="ml-auto self-center text-xs text-[var(--ink-faint)] underline-offset-2 hover:text-[var(--alert)] hover:underline"
              href="mailto:zalex8623@gmail.com?subject=${encodeURIComponent(`${strings.reportSubject}: ${trail.name} (${trail.id})`)}">${strings.report}</a>
-        </div>
-        <div class="mt-5 hidden" data-qr-box="${id}">
-          <canvas class="rounded-lg bg-white p-2" width="220" height="220" aria-label="${strings.qr}"></canvas>
-          <p class="mt-2 text-xs text-[var(--ink-dim)]">${strings.qrHint}</p>
         </div>
       </li>`;
     }).join('');
 
-    list.querySelectorAll('[data-qr]').forEach((button) => {
-      button.addEventListener('click', () => toggleQr(button.getAttribute('data-qr'), button));
-    });
 
     only(list);
-  }
-
-  async function toggleQr(id, button) {
-    const box = list.querySelector(`[data-qr-box="${CSS.escape(id)}"]`);
-    if (!box) return;
-    const open = box.classList.toggle('hidden') === false;
-    button.setAttribute('aria-expanded', String(open));
-    if (open) {
-      await QRCode.toCanvas(box.querySelector('canvas'), pageFor(id),
-        { width: 220, margin: 1, errorCorrectionLevel: 'M' });
-    }
   }
 
   async function load() {

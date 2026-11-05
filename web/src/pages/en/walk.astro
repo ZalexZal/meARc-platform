@@ -1,9 +1,9 @@
 ---
-import Base from '../../layouts/Base.astro';
-import Walk from '../../components/Walk.astro';
-import { langFromUrl } from '../../i18n/ui';
-const lang = langFromUrl(Astro.url);
+// The website no longer plays a trail (the game is in the app). Old links to
+// /walk land on the trail's page instead.
 ---
-<Base title={(lang === 'bg' ? 'Разходка' : 'Walk') + ' — AR Trail'}>
-  <Walk lang={lang} />
-</Base>
+<!doctype html>
+<meta charset="utf-8" />
+<meta name="robots" content="noindex" />
+<script is:inline>location.replace('/en/view/' + location.search);</script>
+<a href="/en/view/">AR Trail</a>
