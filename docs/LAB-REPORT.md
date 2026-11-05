@@ -2,6 +2,10 @@
 
 4–5 November 2026. Branch `lab/overnight-2026-11-04` in both repos, as git worktrees in `~/Desktop/ARTrails-lab/`. Nothing pushed; the main checkouts are untouched (same commits, same uncommitted files).
 
+## Status (5 Nov)
+
+**Website: merged to main and live** (commit `634bcda`, deployed on artrails.netlify.app), except the "one code box" wording on How to play, which waits for the app. **App: lab APK build running; phone test pending.**
+
 ## What is in it
 
 | # | Change | Where | Verdict |

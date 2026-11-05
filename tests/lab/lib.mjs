@@ -9,7 +9,7 @@ const here = path.dirname(fileURLToPath(import.meta.url));
 const require = createRequire(path.join(here, '../../web/package.json'));
 const { chromium } = require('playwright');
 export const { createClient } = require('@supabase/supabase-js');
-export const BASE = 'http://localhost:4399';
+export const BASE = process.env.LAB_BASE || 'http://localhost:4399';
 export const SHOTS = path.join(here, 'shots');
 fs.mkdirSync(SHOTS, { recursive: true });
 
