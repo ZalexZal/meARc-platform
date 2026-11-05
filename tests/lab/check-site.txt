@@ -1,0 +1,438 @@
+
+-- home-bg phone light
+  FAIL  past the right edge: canvas.town-ground.town-base (right 1161 > 390) ; canvas.town-ground.town-live (right 1161 > 390) ; article.tile (right 578 > 390)
+  pass  font display loaded
+  pass  font body loaded
+  pass  font cyrillic loaded
+  pass  no element stuck invisible
+  pass  no empty text nodes
+  pass  no raw translation keys on screen
+  pass  all 27 internal links resolve
+  pass  every asset the page asked for was served
+  pass  no console errors
+
+-- home-bg desk light
+  FAIL  past the right edge: canvas.town-ground.town-base (right 4472 > 1440) ; canvas.town-ground.town-live (right 4472 > 1440)
+  pass  font display loaded
+  pass  font body loaded
+  pass  font cyrillic loaded
+  pass  no element stuck invisible
+  pass  no empty text nodes
+  pass  no raw translation keys on screen
+  pass  all 27 internal links resolve
+  pass  every asset the page asked for was served
+  pass  no console errors
+
+-- home-en phone light
+  FAIL  past the right edge: canvas.town-ground.town-base (right 1161 > 390) ; canvas.town-ground.town-live (right 1161 > 390) ; article.tile (right 578 > 390)
+  pass  font display loaded
+  pass  font body loaded
+  pass  no element stuck invisible
+  pass  no empty text nodes
+  pass  no raw translation keys on screen
+  pass  all 27 internal links resolve
+  pass  every asset the page asked for was served
+  pass  no console errors
+
+-- home-en desk light
+  FAIL  past the right edge: canvas.town-ground.town-base (right 4472 > 1440) ; canvas.town-ground.town-live (right 4472 > 1440)
+  pass  font display loaded
+  pass  font body loaded
+  pass  no element stuck invisible
+  pass  no empty text nodes
+  pass  no raw translation keys on screen
+  pass  all 27 internal links resolve
+  pass  every asset the page asked for was served
+  pass  no console errors
+
+-- trails-bg phone light
+  FAIL  past the right edge: canvas.town-ground.town-base (right 768 > 390) ; canvas.town-ground.town-live (right 768 > 390)
+  pass  font display loaded
+  pass  font body loaded
+  pass  font mono loaded
+  pass  font cyrillic loaded
+  pass  no element stuck invisible
+  pass  no empty text nodes
+  pass  no raw translation keys on screen
+  FAIL  dead links: intent://join/f3ee25b9-9273-4be7-bb85-057d44e55d64#Intent;scheme=artrail;package=com.alex.artrail;S.browser_fallback_url=http%3A%2F%2Flocalhost%3A4399%2Ftrails%3Ft%3Df3ee25b9-9273-4be7-bb85-057d44e55d64%26noapp%3D1;end -> no response ; intent://join/9232aef6-ae8b-48cd-9636-e1b85a2b1f4e#Intent;scheme=artrail;package=com.alex.artrail;S.browser_fallback_url=http%3A%2F%2Flocalhost%3A4399%2Ftrails%3Ft%3D9232aef6-ae8b-48cd-9636-e1b85a2b1f4e%26noapp%3D1;end -> no response ; intent://join/ad94367f-6f11-42f7-8d58-ce341302ab5c#Intent;scheme=artrail;package=com.alex.artrail;S.browser_fallback_url=http%3A%2F%2Flocalhost%3A4399%2Ftrails%3Ft%3Dad94367f-6f11-42f7-8d58-ce341302ab5c%26noapp%3D1;end -> no response
+  pass  every asset the page asked for was served
+  pass  trails page settled on the "list" state
+  pass  no console errors
+
+-- trails-bg desk light
+  FAIL  past the right edge: canvas.town-ground.town-base (right 2784 > 1440) ; canvas.town-ground.town-live (right 2784 > 1440)
+  pass  font display loaded
+  pass  font body loaded
+  pass  font mono loaded
+  pass  font cyrillic loaded
+  pass  no element stuck invisible
+  pass  no empty text nodes
+  pass  no raw translation keys on screen
+  FAIL  dead links: intent://join/f3ee25b9-9273-4be7-bb85-057d44e55d64#Intent;scheme=artrail;package=com.alex.artrail;S.browser_fallback_url=http%3A%2F%2Flocalhost%3A4399%2Ftrails%3Ft%3Df3ee25b9-9273-4be7-bb85-057d44e55d64%26noapp%3D1;end -> no response ; intent://join/9232aef6-ae8b-48cd-9636-e1b85a2b1f4e#Intent;scheme=artrail;package=com.alex.artrail;S.browser_fallback_url=http%3A%2F%2Flocalhost%3A4399%2Ftrails%3Ft%3D9232aef6-ae8b-48cd-9636-e1b85a2b1f4e%26noapp%3D1;end -> no response ; intent://join/ad94367f-6f11-42f7-8d58-ce341302ab5c#Intent;scheme=artrail;package=com.alex.artrail;S.browser_fallback_url=http%3A%2F%2Flocalhost%3A4399%2Ftrails%3Ft%3Dad94367f-6f11-42f7-8d58-ce341302ab5c%26noapp%3D1;end -> no response
+  pass  every asset the page asked for was served
+  pass  trails page settled on the "list" state
+  pass  no console errors
+
+-- trails-en phone light
+  FAIL  past the right edge: canvas.town-ground.town-base (right 768 > 390) ; canvas.town-ground.town-live (right 768 > 390)
+  pass  font display loaded
+  pass  font body loaded
+  pass  font mono loaded
+  pass  no element stuck invisible
+  pass  no empty text nodes
+  pass  no raw translation keys on screen
+  FAIL  dead links: intent://join/f3ee25b9-9273-4be7-bb85-057d44e55d64#Intent;scheme=artrail;package=com.alex.artrail;S.browser_fallback_url=http%3A%2F%2Flocalhost%3A4399%2Fen%2Ftrails%3Ft%3Df3ee25b9-9273-4be7-bb85-057d44e55d64%26noapp%3D1;end -> no response ; intent://join/9232aef6-ae8b-48cd-9636-e1b85a2b1f4e#Intent;scheme=artrail;package=com.alex.artrail;S.browser_fallback_url=http%3A%2F%2Flocalhost%3A4399%2Fen%2Ftrails%3Ft%3D9232aef6-ae8b-48cd-9636-e1b85a2b1f4e%26noapp%3D1;end -> no response ; intent://join/ad94367f-6f11-42f7-8d58-ce341302ab5c#Intent;scheme=artrail;package=com.alex.artrail;S.browser_fallback_url=http%3A%2F%2Flocalhost%3A4399%2Fen%2Ftrails%3Ft%3Dad94367f-6f11-42f7-8d58-ce341302ab5c%26noapp%3D1;end -> no response
+  pass  every asset the page asked for was served
+  pass  trails page settled on the "list" state
+  pass  no console errors
+
+-- trails-en desk light
+  FAIL  past the right edge: canvas.town-ground.town-base (right 2784 > 1440) ; canvas.town-ground.town-live (right 2784 > 1440)
+  pass  font display loaded
+  pass  font body loaded
+  pass  font mono loaded
+  pass  no element stuck invisible
+  pass  no empty text nodes
+  pass  no raw translation keys on screen
+  FAIL  dead links: intent://join/f3ee25b9-9273-4be7-bb85-057d44e55d64#Intent;scheme=artrail;package=com.alex.artrail;S.browser_fallback_url=http%3A%2F%2Flocalhost%3A4399%2Fen%2Ftrails%3Ft%3Df3ee25b9-9273-4be7-bb85-057d44e55d64%26noapp%3D1;end -> no response ; intent://join/9232aef6-ae8b-48cd-9636-e1b85a2b1f4e#Intent;scheme=artrail;package=com.alex.artrail;S.browser_fallback_url=http%3A%2F%2Flocalhost%3A4399%2Fen%2Ftrails%3Ft%3D9232aef6-ae8b-48cd-9636-e1b85a2b1f4e%26noapp%3D1;end -> no response ; intent://join/ad94367f-6f11-42f7-8d58-ce341302ab5c#Intent;scheme=artrail;package=com.alex.artrail;S.browser_fallback_url=http%3A%2F%2Flocalhost%3A4399%2Fen%2Ftrails%3Ft%3Dad94367f-6f11-42f7-8d58-ce341302ab5c%26noapp%3D1;end -> no response
+  pass  every asset the page asked for was served
+  pass  trails page settled on the "list" state
+  pass  no console errors
+
+-- signup-bg phone light
+  FAIL  past the right edge: canvas.town-ground.town-base (right 1318 > 390) ; canvas.town-ground.town-live (right 1318 > 390)
+  pass  font display loaded
+  pass  font body loaded
+  pass  font cyrillic loaded
+  pass  no element stuck invisible
+  pass  no empty text nodes
+  pass  no raw translation keys on screen
+  pass  all 28 internal links resolve
+  pass  every asset the page asked for was served
+  pass  no console errors
+
+-- signup-bg desk light
+  FAIL  past the right edge: canvas.town-ground.town-base (right 4302 > 1440) ; canvas.town-ground.town-live (right 4302 > 1440)
+  pass  font display loaded
+  pass  font body loaded
+  pass  font cyrillic loaded
+  pass  no element stuck invisible
+  pass  no empty text nodes
+  pass  no raw translation keys on screen
+  pass  all 28 internal links resolve
+  pass  every asset the page asked for was served
+  pass  no console errors
+
+-- signup-en phone light
+  FAIL  past the right edge: canvas.town-ground.town-base (right 1312 > 390) ; canvas.town-ground.town-live (right 1312 > 390)
+  pass  font display loaded
+  pass  font body loaded
+  pass  no element stuck invisible
+  pass  no empty text nodes
+  pass  no raw translation keys on screen
+  pass  all 28 internal links resolve
+  pass  every asset the page asked for was served
+  pass  no console errors
+
+-- signup-en desk light
+  FAIL  past the right edge: canvas.town-ground.town-base (right 4579 > 1440) ; canvas.town-ground.town-live (right 4579 > 1440)
+  pass  font display loaded
+  pass  font body loaded
+  pass  no element stuck invisible
+  pass  no empty text nodes
+  pass  no raw translation keys on screen
+  pass  all 28 internal links resolve
+  pass  every asset the page asked for was served
+  pass  no console errors
+
+-- signin-bg phone light
+  FAIL  past the right edge: canvas.town-ground.town-base (right 1134 > 390) ; canvas.town-ground.town-live (right 1134 > 390)
+  pass  font display loaded
+  pass  font body loaded
+  pass  font cyrillic loaded
+  pass  no element stuck invisible
+  pass  no empty text nodes
+  pass  no raw translation keys on screen
+  pass  all 27 internal links resolve
+  pass  every asset the page asked for was served
+  pass  no console errors
+
+-- signin-bg desk light
+  FAIL  past the right edge: canvas.town-ground.town-base (right 4104 > 1440) ; canvas.town-ground.town-live (right 4104 > 1440)
+  pass  font display loaded
+  pass  font body loaded
+  pass  font cyrillic loaded
+  pass  no element stuck invisible
+  pass  no empty text nodes
+  pass  no raw translation keys on screen
+  pass  all 27 internal links resolve
+  pass  every asset the page asked for was served
+  pass  no console errors
+
+-- terms-bg phone light
+  FAIL  past the right edge: canvas.town-ground.town-base (right 741 > 390) ; canvas.town-ground.town-live (right 741 > 390)
+  pass  font display loaded
+  pass  font body loaded
+  pass  font cyrillic loaded
+  pass  no element stuck invisible
+  pass  no empty text nodes
+  pass  no raw translation keys on screen
+  pass  all 25 internal links resolve
+  pass  every asset the page asked for was served
+  pass  no console errors
+
+-- terms-bg desk light
+  FAIL  past the right edge: canvas.town-ground.town-base (right 2782 > 1440) ; canvas.town-ground.town-live (right 2782 > 1440)
+  pass  font display loaded
+  pass  font body loaded
+  pass  font cyrillic loaded
+  pass  no element stuck invisible
+  pass  no empty text nodes
+  pass  no raw translation keys on screen
+  pass  all 25 internal links resolve
+  pass  every asset the page asked for was served
+  pass  no console errors
+
+-- privacy-en phone light
+  FAIL  past the right edge: canvas.town-ground.town-base (right 728 > 390) ; canvas.town-ground.town-live (right 728 > 390)
+  pass  font display loaded
+  pass  font body loaded
+  pass  no element stuck invisible
+  pass  no empty text nodes
+  pass  no raw translation keys on screen
+  pass  all 25 internal links resolve
+  pass  every asset the page asked for was served
+  pass  no console errors
+
+-- privacy-en desk light
+  FAIL  past the right edge: canvas.town-ground.town-base (right 2782 > 1440) ; canvas.town-ground.town-live (right 2782 > 1440)
+  pass  font display loaded
+  pass  font body loaded
+  pass  no element stuck invisible
+  pass  no empty text nodes
+  pass  no raw translation keys on screen
+  pass  all 25 internal links resolve
+  pass  every asset the page asked for was served
+  pass  no console errors
+
+-- home-bg phone dark
+  FAIL  past the right edge: canvas.town-ground.town-base (right 1161 > 390) ; canvas.town-ground.town-live (right 1161 > 390) ; article.tile (right 578 > 390)
+  pass  font display loaded
+  pass  font body loaded
+  pass  font cyrillic loaded
+  pass  no element stuck invisible
+  pass  no empty text nodes
+  pass  no raw translation keys on screen
+  pass  all 27 internal links resolve
+  pass  every asset the page asked for was served
+  pass  no console errors
+
+-- home-bg desk dark
+  FAIL  past the right edge: canvas.town-ground.town-base (right 4472 > 1440) ; canvas.town-ground.town-live (right 4472 > 1440)
+  pass  font display loaded
+  pass  font body loaded
+  pass  font cyrillic loaded
+  pass  no element stuck invisible
+  pass  no empty text nodes
+  pass  no raw translation keys on screen
+  pass  all 27 internal links resolve
+  pass  every asset the page asked for was served
+  pass  no console errors
+
+-- home-en phone dark
+  FAIL  past the right edge: canvas.town-ground.town-base (right 1161 > 390) ; canvas.town-ground.town-live (right 1161 > 390) ; article.tile (right 578 > 390)
+  pass  font display loaded
+  pass  font body loaded
+  pass  no element stuck invisible
+  pass  no empty text nodes
+  pass  no raw translation keys on screen
+  pass  all 27 internal links resolve
+  pass  every asset the page asked for was served
+  pass  no console errors
+
+-- home-en desk dark
+  FAIL  past the right edge: canvas.town-ground.town-base (right 4472 > 1440) ; canvas.town-ground.town-live (right 4472 > 1440)
+  pass  font display loaded
+  pass  font body loaded
+  pass  no element stuck invisible
+  pass  no empty text nodes
+  pass  no raw translation keys on screen
+  pass  all 27 internal links resolve
+  pass  every asset the page asked for was served
+  pass  no console errors
+
+-- trails-bg phone dark
+  FAIL  past the right edge: canvas.town-ground.town-base (right 768 > 390) ; canvas.town-ground.town-live (right 768 > 390)
+  pass  font display loaded
+  pass  font body loaded
+  pass  font mono loaded
+  pass  font cyrillic loaded
+  pass  no element stuck invisible
+  pass  no empty text nodes
+  pass  no raw translation keys on screen
+  FAIL  dead links: intent://join/f3ee25b9-9273-4be7-bb85-057d44e55d64#Intent;scheme=artrail;package=com.alex.artrail;S.browser_fallback_url=http%3A%2F%2Flocalhost%3A4399%2Ftrails%3Ft%3Df3ee25b9-9273-4be7-bb85-057d44e55d64%26noapp%3D1;end -> no response ; intent://join/9232aef6-ae8b-48cd-9636-e1b85a2b1f4e#Intent;scheme=artrail;package=com.alex.artrail;S.browser_fallback_url=http%3A%2F%2Flocalhost%3A4399%2Ftrails%3Ft%3D9232aef6-ae8b-48cd-9636-e1b85a2b1f4e%26noapp%3D1;end -> no response ; intent://join/ad94367f-6f11-42f7-8d58-ce341302ab5c#Intent;scheme=artrail;package=com.alex.artrail;S.browser_fallback_url=http%3A%2F%2Flocalhost%3A4399%2Ftrails%3Ft%3Dad94367f-6f11-42f7-8d58-ce341302ab5c%26noapp%3D1;end -> no response
+  pass  every asset the page asked for was served
+  pass  trails page settled on the "list" state
+  pass  no console errors
+
+-- trails-bg desk dark
+  FAIL  past the right edge: canvas.town-ground.town-base (right 2784 > 1440) ; canvas.town-ground.town-live (right 2784 > 1440)
+  pass  font display loaded
+  pass  font body loaded
+  pass  font mono loaded
+  pass  font cyrillic loaded
+  pass  no element stuck invisible
+  pass  no empty text nodes
+  pass  no raw translation keys on screen
+  FAIL  dead links: intent://join/f3ee25b9-9273-4be7-bb85-057d44e55d64#Intent;scheme=artrail;package=com.alex.artrail;S.browser_fallback_url=http%3A%2F%2Flocalhost%3A4399%2Ftrails%3Ft%3Df3ee25b9-9273-4be7-bb85-057d44e55d64%26noapp%3D1;end -> no response ; intent://join/9232aef6-ae8b-48cd-9636-e1b85a2b1f4e#Intent;scheme=artrail;package=com.alex.artrail;S.browser_fallback_url=http%3A%2F%2Flocalhost%3A4399%2Ftrails%3Ft%3D9232aef6-ae8b-48cd-9636-e1b85a2b1f4e%26noapp%3D1;end -> no response ; intent://join/ad94367f-6f11-42f7-8d58-ce341302ab5c#Intent;scheme=artrail;package=com.alex.artrail;S.browser_fallback_url=http%3A%2F%2Flocalhost%3A4399%2Ftrails%3Ft%3Dad94367f-6f11-42f7-8d58-ce341302ab5c%26noapp%3D1;end -> no response
+  pass  every asset the page asked for was served
+  pass  trails page settled on the "list" state
+  pass  no console errors
+
+-- trails-en phone dark
+  FAIL  past the right edge: canvas.town-ground.town-base (right 768 > 390) ; canvas.town-ground.town-live (right 768 > 390)
+  pass  font display loaded
+  pass  font body loaded
+  pass  font mono loaded
+  pass  no element stuck invisible
+  pass  no empty text nodes
+  pass  no raw translation keys on screen
+  FAIL  dead links: intent://join/f3ee25b9-9273-4be7-bb85-057d44e55d64#Intent;scheme=artrail;package=com.alex.artrail;S.browser_fallback_url=http%3A%2F%2Flocalhost%3A4399%2Fen%2Ftrails%3Ft%3Df3ee25b9-9273-4be7-bb85-057d44e55d64%26noapp%3D1;end -> no response ; intent://join/9232aef6-ae8b-48cd-9636-e1b85a2b1f4e#Intent;scheme=artrail;package=com.alex.artrail;S.browser_fallback_url=http%3A%2F%2Flocalhost%3A4399%2Fen%2Ftrails%3Ft%3D9232aef6-ae8b-48cd-9636-e1b85a2b1f4e%26noapp%3D1;end -> no response ; intent://join/ad94367f-6f11-42f7-8d58-ce341302ab5c#Intent;scheme=artrail;package=com.alex.artrail;S.browser_fallback_url=http%3A%2F%2Flocalhost%3A4399%2Fen%2Ftrails%3Ft%3Dad94367f-6f11-42f7-8d58-ce341302ab5c%26noapp%3D1;end -> no response
+  pass  every asset the page asked for was served
+  pass  trails page settled on the "list" state
+  pass  no console errors
+
+-- trails-en desk dark
+  FAIL  past the right edge: canvas.town-ground.town-base (right 2784 > 1440) ; canvas.town-ground.town-live (right 2784 > 1440)
+  pass  font display loaded
+  pass  font body loaded
+  pass  font mono loaded
+  pass  no element stuck invisible
+  pass  no empty text nodes
+  pass  no raw translation keys on screen
+  FAIL  dead links: intent://join/f3ee25b9-9273-4be7-bb85-057d44e55d64#Intent;scheme=artrail;package=com.alex.artrail;S.browser_fallback_url=http%3A%2F%2Flocalhost%3A4399%2Fen%2Ftrails%3Ft%3Df3ee25b9-9273-4be7-bb85-057d44e55d64%26noapp%3D1;end -> no response ; intent://join/9232aef6-ae8b-48cd-9636-e1b85a2b1f4e#Intent;scheme=artrail;package=com.alex.artrail;S.browser_fallback_url=http%3A%2F%2Flocalhost%3A4399%2Fen%2Ftrails%3Ft%3D9232aef6-ae8b-48cd-9636-e1b85a2b1f4e%26noapp%3D1;end -> no response ; intent://join/ad94367f-6f11-42f7-8d58-ce341302ab5c#Intent;scheme=artrail;package=com.alex.artrail;S.browser_fallback_url=http%3A%2F%2Flocalhost%3A4399%2Fen%2Ftrails%3Ft%3Dad94367f-6f11-42f7-8d58-ce341302ab5c%26noapp%3D1;end -> no response
+  pass  every asset the page asked for was served
+  pass  trails page settled on the "list" state
+  pass  no console errors
+
+-- signup-bg phone dark
+  FAIL  past the right edge: canvas.town-ground.town-base (right 1318 > 390) ; canvas.town-ground.town-live (right 1318 > 390)
+  pass  font display loaded
+  pass  font body loaded
+  pass  font cyrillic loaded
+  pass  no element stuck invisible
+  pass  no empty text nodes
+  pass  no raw translation keys on screen
+  pass  all 28 internal links resolve
+  pass  every asset the page asked for was served
+  pass  no console errors
+
+-- signup-bg desk dark
+  FAIL  past the right edge: canvas.town-ground.town-base (right 4302 > 1440) ; canvas.town-ground.town-live (right 4302 > 1440)
+  pass  font display loaded
+  pass  font body loaded
+  pass  font cyrillic loaded
+  pass  no element stuck invisible
+  pass  no empty text nodes
+  pass  no raw translation keys on screen
+  pass  all 28 internal links resolve
+  pass  every asset the page asked for was served
+  pass  no console errors
+
+-- signup-en phone dark
+  FAIL  past the right edge: canvas.town-ground.town-base (right 1312 > 390) ; canvas.town-ground.town-live (right 1312 > 390)
+  pass  font display loaded
+  pass  font body loaded
+  pass  no element stuck invisible
+  pass  no empty text nodes
+  pass  no raw translation keys on screen
+  pass  all 28 internal links resolve
+  pass  every asset the page asked for was served
+  pass  no console errors
+
+-- signup-en desk dark
+  FAIL  past the right edge: canvas.town-ground.town-base (right 4579 > 1440) ; canvas.town-ground.town-live (right 4579 > 1440)
+  pass  font display loaded
+  pass  font body loaded
+  pass  no element stuck invisible
+  pass  no empty text nodes
+  pass  no raw translation keys on screen
+  pass  all 28 internal links resolve
+  pass  every asset the page asked for was served
+  pass  no console errors
+
+-- signin-bg phone dark
+  FAIL  past the right edge: canvas.town-ground.town-base (right 1134 > 390) ; canvas.town-ground.town-live (right 1134 > 390)
+  pass  font display loaded
+  pass  font body loaded
+  pass  font cyrillic loaded
+  pass  no element stuck invisible
+  pass  no empty text nodes
+  pass  no raw translation keys on screen
+  pass  all 27 internal links resolve
+  pass  every asset the page asked for was served
+  pass  no console errors
+
+-- signin-bg desk dark
+  FAIL  past the right edge: canvas.town-ground.town-base (right 4104 > 1440) ; canvas.town-ground.town-live (right 4104 > 1440)
+  pass  font display loaded
+  pass  font body loaded
+  pass  font cyrillic loaded
+  pass  no element stuck invisible
+  pass  no empty text nodes
+  pass  no raw translation keys on screen
+  pass  all 27 internal links resolve
+  pass  every asset the page asked for was served
+  pass  no console errors
+
+-- terms-bg phone dark
+  FAIL  past the right edge: canvas.town-ground.town-base (right 741 > 390) ; canvas.town-ground.town-live (right 741 > 390)
+  pass  font display loaded
+  pass  font body loaded
+  pass  font cyrillic loaded
+  pass  no element stuck invisible
+  pass  no empty text nodes
+  pass  no raw translation keys on screen
+  pass  all 25 internal links resolve
+  pass  every asset the page asked for was served
+  pass  no console errors
+
+-- terms-bg desk dark
+  FAIL  past the right edge: canvas.town-ground.town-base (right 2782 > 1440) ; canvas.town-ground.town-live (right 2782 > 1440)
+  pass  font display loaded
+  pass  font body loaded
+  pass  font cyrillic loaded
+  pass  no element stuck invisible
+  pass  no empty text nodes
+  pass  no raw translation keys on screen
+  pass  all 25 internal links resolve
+  pass  every asset the page asked for was served
+  pass  no console errors
+
+-- privacy-en phone dark
+  FAIL  past the right edge: canvas.town-ground.town-base (right 728 > 390) ; canvas.town-ground.town-live (right 728 > 390)
+  pass  font display loaded
+  pass  font body loaded
+  pass  no element stuck invisible
+  pass  no empty text nodes
+  pass  no raw translation keys on screen
+  pass  all 25 internal links resolve
+  pass  every asset the page asked for was served
+  pass  no console errors
+
+-- privacy-en desk dark
+  FAIL  past the right edge: canvas.town-ground.town-base (right 2782 > 1440) ; canvas.town-ground.town-live (right 2782 > 1440)
+  pass  font display loaded
+  pass  font body loaded
+  pass  no element stuck invisible
+  pass  no empty text nodes
+  pass  no raw translation keys on screen
+  pass  all 25 internal links resolve
+  pass  every asset the page asked for was served
+  pass  no console errors
+
+-- reduced motion
+  pass  every stop is visible without scrolling
+  FAIL  route line not drawn with reduced motion: missing
+
+45 CHECK(S) FAILED

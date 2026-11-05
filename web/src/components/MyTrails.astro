@@ -16,6 +16,7 @@ const strings = {
   code: t('mine.code'), copy: t('pub.copy'), copied: t('pub.copied'),
   edit: t('mine.edit'),
   board: t('mine.board'),
+  viewLabel: lang === 'bg' ? 'Страница' : 'Trail page', viewHref: href('/view'),
   published: t('ed.published'),
   draft: t('ed.draft'),
   pending: t('acct.pending'),
@@ -144,7 +145,7 @@ const questions = [
 
 <script>
   import { db } from '../lib/supabase';
-  import { modeFrom } from '../lib/modes';
+  import { modeFrom, modeLine, isScored } from '../lib/modes';
   import { requireUser, reveal, escapeHtml, text, count, who } from '../lib/session';
   import { levelOf, isPending, isListed, setLevel, unfinishedStops } from '../lib/publishing';
   import { busy, formError, formClear } from '../lib/form';
@@ -252,14 +253,14 @@ const questions = [
 
       ${w.join_code ? `<div class="mt-3 flex items-center gap-2">
         <span class="eyebrow">${escapeHtml(S.code)}</span>
-        <code class="data text-lg font-medium tracking-widest text-[var(--signal)]"
+        <code class="data text-lg font-medium uppercase tracking-widest text-[var(--signal)]"
               >${escapeHtml(w.join_code)}</code>
-        <button type="button" class="btn btn-ghost btn-sm" data-copy="${escapeHtml(w.join_code)}"
+        <button type="button" class="btn btn-ghost btn-sm" data-copy="${escapeHtml(String(w.join_code).toUpperCase())}"
                 >${escapeHtml(S.copy)}</button>
       </div>` : ''}
 
       <p class="data mt-3 text-xs text-[var(--ink-dim)]">
-        ${escapeHtml(count(w.marker_count, S.stop, S.stops))}
+        ${escapeHtml(modeLine(w.mode, S.lang))} \u00b7 ${escapeHtml(count(w.marker_count, S.stop, S.stops))}
         ${Number(w.pending) > 0 ? ` \u00b7 <span style="color:var(--lamp)">${w.pending} ${escapeHtml(S.pending)}</span>` : ''}
         ${owner ? '' : ` \u00b7 ${escapeHtml(S.roleEditor)}`}
       </p>
@@ -274,7 +275,8 @@ const questions = [
 
       <div class="mt-5 flex gap-2 pt-1">
         <a class="btn btn-primary btn-sm flex-1" href="${S.editHref}?id=${encodeURIComponent(w.id)}">${escapeHtml(S.edit)}</a>
-        <a class="btn btn-quiet btn-sm flex-1" href="${S.boardHref}?id=${encodeURIComponent(w.id)}">${escapeHtml(S.board)}</a>
+        ${isScored(w.mode) ? `<a class="btn btn-quiet btn-sm flex-1" href="${S.boardHref}?id=${encodeURIComponent(w.id)}">${escapeHtml(S.board)}</a>` : ''}
+        ${w.visibility !== 'private' && w.status !== 'draft' ? `<a class="btn btn-quiet btn-sm flex-1" href="${S.viewHref}?id=${encodeURIComponent(w.id)}">${escapeHtml(S.viewLabel)}</a>` : ''}
       </div>
     </li>`;
   }

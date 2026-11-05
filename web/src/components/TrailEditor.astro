@@ -134,7 +134,7 @@ const strings = {
     <div class="flex flex-wrap items-center gap-2">
       <div class="card flex items-center gap-2 px-3 py-2">
         <span class="eyebrow">{t('ed.code')}</span>
-        <code class="data text-xl font-medium tracking-widest text-[var(--signal)]"
+        <code class="data text-xl font-medium uppercase tracking-widest text-[var(--signal)]"
               data-trail-code></code>
         <button class="btn btn-ghost btn-sm" type="button" data-copy-code>{t('pub.copy')}</button>
         <button class="text-xs text-[var(--ink-faint)] underline-offset-2 hover:text-[var(--ink)] hover:underline"
@@ -1941,7 +1941,7 @@ const strings = {
   q('[data-copy-code]')?.addEventListener('click', async (event) => {
     const button = event.currentTarget as HTMLElement;
     try {
-      await navigator.clipboard.writeText(q('[data-trail-code]')!.textContent!.trim());
+      await navigator.clipboard.writeText(q('[data-trail-code]')!.textContent!.trim().toUpperCase());
       text(button, S.copied);
       setTimeout(() => text(button, S.copy), 1400);
     } catch { /* the code is on screen; reading it out still works */ }
