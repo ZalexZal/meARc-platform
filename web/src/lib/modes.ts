@@ -1,5 +1,6 @@
 /**
- * The four modes are two yes/no questions: does it keep points, and do the
+ * The four modes are two yes/no questions: teams and standings (which is
+ * points), and do the
  * stops go in order. The database keeps the four old keys; people see the two
  * answers, never the key's name.
  *
@@ -18,8 +19,8 @@ export function modeFrom(scored: boolean, ordered: boolean): Mode {
 }
 
 const WORDS = {
-  bg: { points: 'С точки', noPoints: 'Без точки', order: 'По ред', anyOrder: 'Свободен ред' },
-  en: { points: 'Points', noPoints: 'No points', order: 'In order', anyOrder: 'Any order' },
+  bg: { points: 'Отбори и класиране', noPoints: 'Без отбори', order: 'По ред', anyOrder: 'Свободен ред' },
+  en: { points: 'Teams & standings', noPoints: 'No teams', order: 'In order', anyOrder: 'Any order' },
 } as const;
 
 /** "Points · In order": what the trail is, in the reader's words. */

@@ -56,13 +56,13 @@ const strings = {
 // the first thing a creator is actually choosing between.
 // The mode is two questions (lib/modes.ts), asked as two questions.
 const ask = lang === 'bg' ? {
-  scored: 'Броят ли се точки?', scoredYes: 'С точки', scoredYesBody: 'Отбори, класиране и подсказки срещу точки.',
-  scoredNo: 'Без точки', scoredNoBody: 'Разходка и учене. Никой не се състезава.',
+  scored: 'Отбори и класиране?', scoredYes: 'С отбори', scoredYesBody: 'За уроци и състезания: отбори, въпроси за точки, подсказки и класиране на живо.',
+  scoredNo: 'Без отбори', scoredNoBody: 'Разходка, обиколка или показ на сграда. Всеки върви сам, нищо не се брои.',
   ordered: 'Спирките по ред ли са?', orderedYes: 'По ред', orderedYesBody: 'Всяка спирка води към следващата.',
   orderedNo: 'Свободен ред', orderedNoBody: 'Всеки тръгва откъдето му е удобно.',
 } : {
-  scored: 'Does it keep points?', scoredYes: 'Points', scoredYesBody: 'Teams, a leaderboard, and hints that cost points.',
-  scoredNo: 'No points', scoredNoBody: 'A walk to look and learn. Nobody competes.',
+  scored: 'Teams and standings?', scoredYes: 'With teams', scoredYesBody: 'For lessons and competitions: teams, questions for points, hints and live standings.',
+  scoredNo: 'No teams', scoredNoBody: 'A walk, a tour or a building on show. Everyone walks alone, nothing is counted.',
   ordered: 'Do the stops go in order?', orderedYes: 'In order', orderedYesBody: 'Each stop leads to the next.',
   orderedNo: 'Any order', orderedNoBody: 'Everyone starts wherever suits them.',
 };
@@ -120,7 +120,7 @@ const questions = [
             <div class="mode-grid">
               {qn.opts.map(([value, label, body]) => (
                 <label class="mode-opt">
-                  <input class="sr-only" type="radio" name={qn.name} value={value} checked={value === 'yes'} />
+                  <input class="sr-only" type="radio" name={qn.name} value={value} checked={qn.name === 'scored' ? value === 'no' : value === 'yes'} />
                   <span class="mode-name">{label}</span>
                   <span class="mode-body">{body}</span>
                 </label>

@@ -20,7 +20,7 @@
    ========================================================================== */
 
 @theme {
-  --font-display: "Unbounded", "Segoe UI", system-ui, sans-serif;
+  --font-display: "Inter Tight", "Inter", "Segoe UI", system-ui, sans-serif;
   --font-body: "Onest", "Segoe UI", system-ui, sans-serif;
   --font-mono: "JetBrains Mono", ui-monospace, "Cascadia Mono", monospace;
 
@@ -937,7 +937,7 @@ input[type="file"].field::file-selector-button:hover { border-color: var(--ink-f
   }
 }
 
-/* Headline sizes, set once. Unbounded is wide, so it steps down early. */
+/* Headline sizes, set once. Inter Tight (since 6 Nov 2026: a calm, neutral face for a tool; Unbounded read playful). */
 .display-xl { font-size: clamp(2.5rem, 5.6vw, 5rem); line-height: 1.02; letter-spacing: -.03em; }
 .display-lg { font-size: clamp(2rem, 3.4vw, 3.125rem); line-height: 1.05; letter-spacing: -.025em; }
 .display-md { font-size: clamp(1.75rem, 2.6vw, 2.375rem); line-height: 1.08; letter-spacing: -.02em; }
@@ -1197,9 +1197,13 @@ input[type="radio"][aria-invalid="true"] { outline: 2px solid var(--alert); outl
 .cookie-bar p { flex: 1; color: var(--ink-dim); }
 .cookie-bar p strong { color: var(--ink); font-weight: 600; }
 .cookie-bar-actions { display: flex; align-items: center; gap: .25rem; flex-shrink: 0; }
+/* On a phone: one slim line - the lead and OK - so it never covers the page
+   it sits on (design scan, 6 Nov 2026). The full sentence is on Privacy. */
 @media (max-width: 560px) {
-  .cookie-bar { flex-direction: column; align-items: stretch; padding: 1rem; }
-  .cookie-bar-actions { justify-content: flex-end; }
+  .cookie-bar { gap: .75rem; padding: .5rem .5rem .5rem 1rem; border-radius: 16px; }
+  .cookie-bar p { font-size: .8125rem; }
+  .cookie-bar p > :not(strong) { display: none; }
+  .cookie-bar-actions .btn-ghost { display: none; }
 }
 /* On a wide screen a compact card in the corner, clear of the hero's words. */
 @media (min-width: 900px) {

@@ -18,7 +18,7 @@ const strings = {
   erased: t('cons.erased'), done: t('cons.done'), failed: t('err.generic'),
   linkSent: t('par.linkSent'), signedAs: t('par.signedAs'), none: t('par.none'), needEmail: t('err.email'),
   waiting: t('par.waiting'), agreedOn: t('par.agreedOn'), trails: t('par.trails'),
-  teams: t('par.teams'), walked: t('par.walked'), badges: t('par.badges'),
+  teams: t('par.teams'), walked: t('par.walked'),
   lastActive: t('par.lastActive'), never: t('par.never'), download: t('par.download'),
   code: t('par.code'), codeHow: t('par.codeHow'), expires: t('par.expires'),
   cancel: t('par.cancel'), needName: t('par.needName'),
@@ -142,7 +142,6 @@ const strings = {
       const facts = `
         <dl class="mt-4 grid grid-cols-2 gap-x-4 gap-y-2 text-sm sm:grid-cols-4">
           <div><dt class="text-xs text-[var(--ink-faint)]">${escapeHtml(S.walked)}</dt><dd class="data">${Number(r.walked)}</dd></div>
-          <div><dt class="text-xs text-[var(--ink-faint)]">${escapeHtml(S.badges)}</dt><dd class="data">${Number(r.badges)}</dd></div>
           <div class="col-span-2"><dt class="text-xs text-[var(--ink-faint)]">${escapeHtml(S.lastActive)}</dt><dd>${escapeHtml(when(r.last_active))}</dd></div>
           <div class="col-span-2 sm:col-span-4"><dt class="text-xs text-[var(--ink-faint)]">${escapeHtml(S.trails)}</dt><dd>${
             r.trails.length ? r.trails.map((x: any) => escapeHtml(x.name)).join(', ') : '—'}</dd></div>

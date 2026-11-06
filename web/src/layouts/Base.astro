@@ -39,7 +39,7 @@ const other = path.startsWith('/404')
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
       rel="stylesheet"
-      href="https://fonts.googleapis.com/css2?family=Unbounded:wght@400;600;800&family=Onest:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500&display=swap"
+      href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@500;600;700&family=Onest:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500&display=swap"
     />
 
     <meta property="og:title" content={pageTitle} />
@@ -70,7 +70,7 @@ const other = path.startsWith('/404')
     </button>
 
     <div class="cookie-bar" role="region" aria-label={t('cookie.privacy')} hidden data-cookie-bar>
-      <p><strong>{t('cookie.lead')}</strong> {t('cookie.body')}</p>
+      <p><strong>{t('cookie.lead')}</strong> <span>{t('cookie.body')}</span></p>
       <div class="cookie-bar-actions">
         <a class="btn btn-ghost btn-sm" href={href('/privacy')}>{t('cookie.privacy')}</a>
         <button class="btn btn-primary btn-sm" type="button" data-cookie-ok>{t('cookie.ok')}</button>

@@ -11,17 +11,14 @@ const href = localise(lang);
 // strings it shares with the rest of the site still come from t().
 const copy = {
   bg: {
-    overview: 'Преглед', badges: 'Значки', walked: 'Извървени маршрути',
+    overview: 'Преглед', walked: 'Извървени маршрути',
     settings: 'Настройки на профила', privacy: 'Поверителност и данни',
     since: 'Ходи от', guest: 'Гост',
     kTrails: 'извървени маршрута', kStops: 'намерени спирки',
-    kPoints: 'точки за отборите ти', kBadges: 'значки',
-    lvLevel: 'Ниво {0}', lvToNext: '{0} XP · още {1} до ниво {2}', lvTop: '{0} XP · най-високото ниво',
-    latest: 'Последни значки', noneYet: 'Още няма. Първата идва с първия завършен маршрут.',
-    allBadges: 'Всички значки',
+    kPoints: 'точки за отборите ти',
     colTrail: 'Маршрут', colTeam: 'Отбор', colStops: 'Спирки', colPoints: 'Точки',
     finished: 'завършен', ended: 'играта приключи', noTrails: 'Още не си ходил по маршрут.',
-    statsLater: 'Статистиката и значките ще се появят, щом сървърът бъде обновен.',
+    statsLater: 'Статистиката ще се появи, щом сървърът бъде обновен.',
     you: 'Ти', nameLabel: 'Име в класациите', save: 'Запази', saved: 'Запазено.',
     emailLabel: 'Имейл', emailNew: 'Нов имейл', change: 'Смени',
     emailSent: 'Изпратихме писмо за потвърждение. Смяната става, щом го потвърдиш.',
@@ -36,7 +33,7 @@ const copy = {
     blocked: 'Блокирани хора',
     blockedLede: 'Не виждаш маршрутите им и имената на отборите им, а те не могат да влизат в твоите маршрути. Блокираш от приложението, от класирането или от отговорите за преглед.',
     blockedNone: 'Не си блокирал никого.', unblock: 'Отблокирай', unblocked: 'Отблокиран.',
-    viaTrail: 'Създател на „{0}“', viaTeam: 'Създател на отбора „{0}“', viaPlayer: 'Играч от отбора „{0}“',
+    viaTrail: 'Създател на „{0}“', viaTeam: 'Създател на отбора „{0}“', viaPlayer: 'Член на отбора „{0}“',
     consentPending: 'Родителят ти още не се е съгласил. Писахме на {0}. Дотогава не можеш да влизаш в маршрути.',
     consentResend: 'Изпрати писмото пак', consentResent: 'Изпратено пак.',
     consentNeeded: 'На 13 години си, затова родител или настойник трябва да се съгласи, преди да влизаш в маршрути. Напиши имейла му или код от родителския му профил.',
@@ -45,17 +42,14 @@ const copy = {
     badCode: 'Този код не работи. Помоли родителя си за нов.',
   },
   en: {
-    overview: 'Overview', badges: 'Badges', walked: 'Trails walked',
+    overview: 'Overview', walked: 'Trails walked',
     settings: 'Account settings', privacy: 'Privacy and data',
     since: 'Walking since', guest: 'Guest',
     kTrails: 'trails walked', kStops: 'stops found',
-    kPoints: 'points for your teams', kBadges: 'badges',
-    lvLevel: 'Level {0}', lvToNext: '{0} XP · {1} more to level {2}', lvTop: '{0} XP · the top level',
-    latest: 'Latest badges', noneYet: 'None yet. The first comes with your first finished trail.',
-    allBadges: 'All badges',
+    kPoints: 'points for your teams',
     colTrail: 'Trail', colTeam: 'Team', colStops: 'Stops', colPoints: 'Points',
     finished: 'finished', ended: 'game over', noTrails: 'You have not walked a trail yet.',
-    statsLater: 'Your numbers and badges will appear once the server is updated.',
+    statsLater: 'Your numbers will appear once the server is updated.',
     you: 'You', nameLabel: 'Name on leaderboards', save: 'Save', saved: 'Saved.',
     emailLabel: 'Email', emailNew: 'New email', change: 'Change',
     emailSent: 'We sent a confirmation email. The change happens once you confirm it.',
@@ -70,7 +64,7 @@ const copy = {
     blocked: 'Blocked people',
     blockedLede: 'You don’t see their trails or their team names, and they can’t join your trails. You block people from the app, from a leaderboard, or from the answers you review.',
     blockedNone: 'You haven’t blocked anyone.', unblock: 'Unblock', unblocked: 'Unblocked.',
-    viaTrail: 'Creator of “{0}”', viaTeam: 'Founder of team “{0}”', viaPlayer: 'A player from team “{0}”',
+    viaTrail: 'Creator of “{0}”', viaTeam: 'Founder of team “{0}”', viaPlayer: 'A member of team “{0}”',
     consentPending: 'Your parent hasn’t agreed yet. We wrote to {0}. Until they do, you can’t join trails.',
     consentResend: 'Send the email again', consentResent: 'Sent again.',
     consentNeeded: 'You’re 13, so a parent or guardian has to agree before you join trails. Write their email, or a code from their parent account.',
@@ -80,57 +74,9 @@ const copy = {
   },
 }[lang];
 
-// The eleven, in the order the screens show them. The rule is written for the
-// person reading it; the check behind it lives in my_profile() on the server.
-const badges = {
-  bg: {
-    first_trail: ['Първи маршрут', 'Завърши всички спирки на който и да е маршрут.'],
-    guided: ['Воден път', 'Завърши маршрут без точки, по ред.'],
-    flag_runner: ['Флагоносец', 'Завърши маршрут с точки, по ред, с отбора си.'],
-    free_roamer: ['Свободен скитник', 'Завърши маршрут, в който спирките са в какъвто ред искаш.'],
-    scholar: ['Отличник', 'Завърши образователен маршрут.'],
-    flawless: ['Безупречен', 'Отборът ти отговаря правилно на всеки въпрос от първия път, без подсказки и без пропуски.'],
-    trailblazer: ['Пионер', 'Завърши 3, после 5, после 10 маршрута.'],
-    team_player: ['Отборен играч', 'Влез в отбор, направен от друг, и завърши маршрут с него.'],
-    captain: ['Капитан', 'Направи отбор, в който влязат поне още двама.'],
-    summit: ['Връх', 'Отборът ти е първи, когато организаторът приключи играта.'],
-    sharp_eye: ['Остро око', 'Намери 10 спирки, като докоснеш знака им през камерата.'],
-  },
-  en: {
-    first_trail: ['First trail', 'Finish every stop on any trail.'],
-    guided: ['Guided walker', 'Finish a trail with no points, in order.'],
-    flag_runner: ['Flag runner', 'Finish a trail with points, in order, with your team.'],
-    free_roamer: ['Free roamer', 'Finish a trail whose stops go in any order.'],
-    scholar: ['Scholar', 'Finish an Educational trail.'],
-    flawless: ['Flawless', 'Your team answers every question right the first time, with no hints and no skips.'],
-    trailblazer: ['Trailblazer', 'Finish 3, then 5, then 10 trails.'],
-    team_player: ['Team player', 'Join a team somebody else made, and finish a trail with it.'],
-    captain: ['Captain', 'Make a team that at least two other people join.'],
-    summit: ['Summit', 'Your team is first on the board when the organiser ends the game.'],
-    sharp_eye: ['Sharp eye', 'Find 10 stops by tapping their marker in the camera.'],
-  },
-}[lang];
-
-const icons: Record<string, string> = {
-  first_trail: '<path d="M12 21s-6-5.6-6-10.2A6 6 0 0 1 18 10.8C18 15.4 12 21 12 21z"/><circle cx="12" cy="10.5" r="2.2"/>',
-  guided: '<path d="M4 18c3-6 5-9 8-9s5 3 8 9"/><circle cx="12" cy="5.5" r="1.8"/>',
-  flag_runner: '<path d="M6 21V4"/><path d="M6 4h11l-2.5 4L17 12H6"/>',
-  free_roamer: '<circle cx="12" cy="12" r="8"/><path d="M12 7v5l3 2"/>',
-  scholar: '<path d="M4 6.5C6.5 5 9.5 5 12 6.5 14.5 5 17.5 5 20 6.5V19c-2.5-1.5-5.5-1.5-8 0-2.5-1.5-5.5-1.5-8 0z"/><path d="M12 6.5V19"/>',
-  flawless: '<path d="M12 3l2.6 5.6 6 .6-4.5 4 1.3 6-5.4-3.1-5.4 3.1 1.3-6-4.5-4 6-.6z"/>',
-  trailblazer: '<path d="M5 19l4-9 4 5 3-4 3 8"/>',
-  team_player: '<circle cx="9" cy="8" r="3"/><circle cx="17" cy="9" r="2.4"/><path d="M3.5 19c.8-3.4 3-5 5.5-5s4.7 1.6 5.5 5"/><path d="M15 14.4c2.2-.3 4.2.9 5 3.6"/>',
-  captain: '<path d="M5 20V9l7-5 7 5v11"/><path d="M9 20v-6h6v6"/>',
-  summit: '<path d="M4 20h16"/><path d="M6 20l6-14 6 14"/><path d="M10 11l2-1.5 2 1.5"/>',
-  sharp_eye: '<rect x="4" y="5" width="16" height="12" rx="2"/><circle cx="12" cy="11" r="3"/><path d="M9 20h6"/>',
-};
-
-// The ones that are about winning wear the lamp's amber, the rest the signal.
-const gold = ['flag_runner', 'flawless', 'summit'];
 
 const strings = {
   ...copy, lang,
-  badgeText: badges, icons, gold,
   stop: t('n.stop'), stops: t('n.stops'), point: t('n.point'), points: t('n.points'),
   teamOne: t('n.team'), teamN: t('n.teams'),
   clearing: t('acct.clearing'), deleteCost: t('acct.deleteCost'), failed: t('err.generic'),
@@ -138,7 +84,6 @@ const strings = {
 
 const rail = [
   ['overview', copy.overview, '<circle cx="12" cy="8" r="3.5"/><path d="M5 20c1-4 3.8-6 7-6s6 2 7 6"/>'],
-  ['badges', copy.badges, '<circle cx="12" cy="10" r="6"/><path d="M9 15l-1.5 6L12 19l4.5 2L15 15"/>'],
   ['trails', copy.walked, '<path d="M5 19l4-9 4 5 3-4 3 8"/>'],
   ['settings', copy.settings, '<circle cx="12" cy="12" r="3"/><path d="M12 3v2M12 19v2M3 12h2M19 12h2M5.6 5.6l1.4 1.4M17 17l1.4 1.4M5.6 18.4 7 17M17 7l1.4-1.4"/>'],
   ['privacy', copy.privacy, '<rect x="5" y="10" width="14" height="10" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/>'],
@@ -188,43 +133,18 @@ const rail = [
           <p class="msg" data-needed-msg aria-live="polite"></p>
         </div>
 
-        <!-- The level (0056): XP from stops reached on other people's trails and
-             creators' finish bonuses. Hidden until my_level answers. -->
-        <div class="card level-card" data-level-card hidden>
-          <span class="level-n data" data-lv-n>1</span>
-          <div class="min-w-0 flex-1">
-            <p class="level-name"><span data-lv-label></span> · <b data-lv-name></b></p>
-            <div class="level-bar" aria-hidden="true"><span data-lv-bar></span></div>
-            <p class="level-xp data" data-lv-xp></p>
-          </div>
-        </div>
-
         <div class="kpis" data-kpis>
           <div class="kpi"><b data-k-trails>—</b><small>{copy.kTrails}</small></div>
           <div class="kpi"><b data-k-stops>—</b><small>{copy.kStops}</small></div>
           <div class="kpi"><b data-k-points>—</b><small>{copy.kPoints}</small></div>
-          <div class="kpi"><b data-k-badges>—</b><small>{copy.kBadges}</small></div>
         </div>
 
-        <div class="two">
+        <div>
           <div class="card panel-card">
             <h2 class="text-base">{copy.walked}</h2>
             <div class="table-wrap" data-trails-short></div>
           </div>
-          <div class="card panel-card">
-            <div class="flex items-baseline justify-between gap-3">
-              <h2 class="text-base">{copy.latest}</h2>
-              <a class="acct-link text-sm" href="#badges">{copy.allBadges}</a>
-            </div>
-            <div class="medals" data-latest></div>
-          </div>
         </div>
-      </div>
-
-      <!-- =================================================== badges -->
-      <div data-panel="badges" class="panel-stack" hidden>
-        <h1 class="text-2xl sm:text-3xl">{copy.badges}</h1>
-        <div class="badge-grid" data-badge-grid></div>
       </div>
 
       <!-- =================================================== trails -->
@@ -363,19 +283,11 @@ const rail = [
   .hero-me { display: flex; gap: 18px; align-items: center; }
   .face {
     width: 72px; height: 72px; border-radius: 50%; flex: none; display: grid; place-items: center;
-    font-family: var(--font-display); font-weight: 800; font-size: 1.4rem;
+    font-family: var(--font-display); font-weight: 700; font-size: 1.4rem;
     background: var(--signal); color: var(--signal-ink);
   }
 
-  .level-card { display: flex; align-items: center; gap: 16px; padding: 18px 20px; }
-  .level-card[hidden] { display: none; }
-  .level-n { flex: none; width: 52px; height: 52px; border-radius: 16px; display: grid; place-items: center; background: var(--signal); color: var(--signal-ink); font-size: 1.25rem; font-weight: 700; }
-  .level-name { font-size: .95rem; color: var(--ink-dim); }
-  .level-name b { color: var(--ink); font-weight: 600; }
-  .level-bar { height: 8px; margin: 8px 0 6px; border-radius: 999px; background: var(--surface-2); overflow: hidden; }
-  .level-bar span { display: block; height: 100%; width: 0; border-radius: inherit; background: var(--signal); transition: width .6s cubic-bezier(.2,.7,.2,1); }
-  .level-xp { font-size: .8rem; color: var(--ink-faint); }
-  .kpis { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; }
+  .kpis { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
   .kpi {
     background: var(--surface); border: 1px solid var(--line-soft); border-radius: 14px;
     padding: 14px 16px; display: grid; gap: 2px;
@@ -389,7 +301,6 @@ const rail = [
     border: 1px solid var(--lamp); background: var(--lamp-wash); color: var(--lamp);
     border-radius: 12px; padding: 10px 14px; font-size: 0.86rem;
   }
-  .badge-grid :global(.notice) { grid-column: 1 / -1; }
 
   /* Everything below that is drawn by the script, not the template, is reached
      through :global - Astro scopes a component's styles to the elements in its
@@ -408,32 +319,7 @@ const rail = [
   }
   .table-wrap :global(.tag.over) { background: var(--surface-2); color: var(--ink-dim); }
 
-  .medals { display: flex; flex-wrap: wrap; gap: 16px; }
-  .medals :global(.medal) { display: grid; justify-items: center; gap: 5px; width: 72px; text-align: center; }
-  .medals :global(.medal span) { font-size: 0.72rem; line-height: 1.2; color: var(--ink-dim); }
 
-  :global(.disc) {
-    --c: var(--signal); --w: var(--signal-wash);
-    width: 52px; height: 52px; border-radius: 50%; display: grid; place-items: center;
-    border: 2px solid var(--c); background: var(--w); color: var(--c); flex: none;
-  }
-  :global(.disc svg) { width: 24px; height: 24px; }
-  :global(.disc.gold), :global(.disc.tier-2) { --c: var(--lamp); --w: var(--lamp-wash); }
-  :global(.disc.tier-1) { --c: var(--tier-1); --w: var(--tier-1-wash); }
-  :global(.disc.tier-3) { --c: var(--tier-3); --w: var(--tier-3-wash); }
-  :global(.disc.locked) { --c: var(--ink-faint); border-style: dashed; background: transparent; border-color: var(--line); }
-
-  .badge-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 14px; }
-  :global(.bcard) {
-    display: grid; grid-template-columns: 52px minmax(0, 1fr); gap: 14px; align-items: start;
-    background: var(--surface); border: 1px solid var(--line-soft); border-radius: 16px; padding: 16px;
-  }
-  :global(.bcard h3) { font-size: 0.95rem; }
-  :global(.bcard p) { margin-top: 4px; font-size: 0.84rem; color: var(--ink-dim); }
-  :global(.bcard .meter) { margin-top: 10px; height: 5px; border-radius: 99px; background: var(--line-soft); overflow: hidden; }
-  :global(.bcard .meter i) { display: block; height: 100%; background: var(--signal); }
-  :global(.bcard .prog) { margin-top: 6px; font-family: var(--font-mono); font-size: 0.72rem; color: var(--ink-faint); }
-  :global(.bcard.locked h3) { color: var(--ink-dim); }
 
   .acct-field { display: grid; gap: 6px; }
   .acct-field label, .field-label { font-size: 0.82rem; color: var(--ink-dim); }
@@ -475,7 +361,6 @@ const rail = [
 
 <script>
   import { db, signOut, askParent, redeemParentCode } from '../lib/supabase';
-  import { myLevel, levelName, levelProgress } from '../lib/levels';
   import { requireUser, reveal, escapeHtml, text, count } from '../lib/session';
   import { busy, formError, formOk } from '../lib/form';
 
@@ -487,7 +372,7 @@ const rail = [
   const client = db()!;
 
   // --------------------------------------------------------------- tabs
-  const tabs = ['overview', 'badges', 'trails', 'settings', 'privacy'];
+  const tabs = ['overview', 'trails', 'settings', 'privacy'];
 
   function show(tab: string) {
     const wanted = tabs.includes(tab) ? tab : 'overview';
@@ -573,12 +458,6 @@ const rail = [
   }
 
   // ---------------------------------------------------------- the numbers
-  const medal = (key: string, earned: boolean, tier = 0) => {
-    const cls = !earned ? 'locked'
-      : key === 'trailblazer' ? `tier-${tier}`
-      : S.gold.includes(key) ? 'gold' : '';
-    return `<div class="disc ${cls}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true">${S.icons[key] ?? ''}</svg></div>`;
-  };
 
   function trailsTable(rows: any[], limit?: number) {
     if (!rows.length) return `<p class="text-sm text-[var(--ink-dim)]">${escapeHtml(S.noTrails)}</p>`;
@@ -609,60 +488,14 @@ const rail = [
     text(q('[data-k-trails]'), '—');
     text(q('[data-k-stops]'), rows.reduce((n: number, r: any) => n + Number(r.done || 0), 0));
     text(q('[data-k-points]'), rows.reduce((n: number, r: any) => n + Number(r.points || 0), 0));
-    text(q('[data-k-badges]'), '—');
-    q('[data-latest]')!.innerHTML = `<p class="text-sm text-[var(--ink-dim)]">${escapeHtml(S.statsLater)}</p>`;
-    q('[data-badge-grid]')!.innerHTML = `<p class="notice">${escapeHtml(S.statsLater)}</p>`;
   } else {
-    const list: any[] = profile.badges ?? [];
-    const earned = list.filter((b) => b.earned);
-
     text(q('[data-k-trails]'), profile.trails_walked ?? 0);
     text(q('[data-k-stops]'), profile.stops_found ?? 0);
     text(q('[data-k-points]'), profile.points ?? 0);
-    q('[data-k-badges]')!.innerHTML = `${earned.length}<span style="color:var(--ink-faint);font-size:.6em"> / ${list.length}</span>`;
 
     q('[data-trails-short]')!.innerHTML = trailsTable(profile.trails ?? [], 5);
     q('[data-trails-full]')!.innerHTML = trailsTable(profile.trails ?? []);
 
-    // After my_profile on purpose: that is where a finished trail is recorded,
-    // and with it the creator's finish bonus.
-    const lv = await myLevel(client);
-    if (lv) {
-      text(q('[data-lv-n]'), lv.level);
-      text(q('[data-lv-label]'), S.lvLevel.replace('{0}', String(lv.level)));
-      text(q('[data-lv-name]'), levelName(lv.level, S.lang));
-      (q('[data-lv-bar]') as HTMLElement).style.width = `${Math.round(levelProgress(lv) * 100)}%`;
-      text(q('[data-lv-xp]'), lv.next === null
-        ? S.lvTop.replace('{0}', String(lv.xp))
-        : S.lvToNext.replace('{0}', String(lv.xp)).replace('{1}', String(lv.next - lv.xp)).replace('{2}', String(lv.level + 1)));
-      q('[data-level-card]')?.removeAttribute('hidden');
-      // The header's menu drew the level before the finish was recorded.
-      window.dispatchEvent(new CustomEvent('artrail:level', { detail: lv }));
-    }
-
-    q('[data-latest]')!.innerHTML = earned.length
-      ? earned.slice(-4).reverse().map((b) => `<div class="medal">${medal(b.key, true, b.tier ?? 0)}
-          <span>${escapeHtml(S.badgeText[b.key]?.[0] ?? b.key)}</span></div>`).join('')
-      : `<p class="text-sm text-[var(--ink-dim)]">${escapeHtml(S.noneYet)}</p>`;
-
-    // Earned first, then the rest in their own order, so the page opens on
-    // what somebody has rather than on what they lack.
-    const ordered = [...earned, ...list.filter((b) => !b.earned)];
-
-    q('[data-badge-grid]')!.innerHTML = ordered.map((b) => {
-      const [title, rule] = S.badgeText[b.key] ?? [b.key, ''];
-      const tier = b.tier ?? 0;
-      const level = b.key === 'trailblazer' && tier > 0 ? ` · ${escapeHtml(S.level)} ${tier}` : '';
-      const target = Number(b.target ?? 0);
-      const progress = Number(b.progress ?? 0);
-      const showMeter = target > 1 && !(b.key === 'trailblazer' && tier === 3) && !(b.earned && b.key !== 'trailblazer');
-      const pct = target ? Math.min(100, Math.round((progress / target) * 100)) : 0;
-      return `<div class="bcard ${b.earned ? '' : 'locked'}">
-        ${medal(b.key, b.earned, tier)}
-        <div><h3>${escapeHtml(title)}${level}</h3><p>${escapeHtml(rule)}</p>
-        ${showMeter ? `<div class="meter"><i style="width:${pct}%"></i></div><div class="prog">${progress} / ${target}</div>` : ''}
-        </div></div>`;
-    }).join('');
   }
 
   // ------------------------------------------------------------ settings

@@ -7,11 +7,11 @@ const { lang } = Astro.props;
 const t = useTranslations(lang);
 const href = localise(lang);
 
-const modes: { name: UIKey; body: UIKey; glyph: string }[] = [
-  { name: 'new.mode.guide', body: 'home.mode.guide', glyph: 'guided' },
-  { name: 'new.mode.freefall', body: 'home.mode.freefall', glyph: 'freefall' },
-  { name: 'new.mode.educational', body: 'home.mode.educational', glyph: 'educational' },
-  { name: 'new.mode.ctf', body: 'home.mode.ctf', glyph: 'ctf' },
+// Who it is for (6 Nov 2026): the three audiences, each with its drawing.
+const modes: { label: UIKey; name: UIKey; body: UIKey; glyph: string }[] = [
+  { label: 'home.aud.school.label', name: 'home.aud.school.title', body: 'home.aud.school.body', glyph: 'ctf' },
+  { label: 'home.aud.tour.label', name: 'home.aud.tour.title', body: 'home.aud.tour.body', glyph: 'guided' },
+  { label: 'home.aud.estate.label', name: 'home.aud.estate.title', body: 'home.aud.estate.body', glyph: 'building' },
 ];
 
 // The builder's five steps, in its own words, so the page and the tool agree.
@@ -80,6 +80,17 @@ const safe: { title: UIKey; body: UIKey; icon: string }[] = [
                 <path class="pop" style="transition-delay:0.675s" d="M119.5 16 l3 3 5.5-6" style="stroke:var(--map-blue-ink)" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" />
               </svg>
             )}
+            {m.glyph === 'building' && (
+              <svg class="glyph" viewBox="0 0 160 84" fill="none" aria-hidden="true">
+                <path d="M14 78 H 146" stroke="currentColor" stroke-width="2" stroke-dasharray="4 5" opacity=".35" />
+                <path class="draw" pathLength="1" d="M52 78 V 22 L 80 8 L 108 22 V 78" stroke="currentColor" stroke-width="2.2" stroke-linejoin="round" />
+                <g class="pop" style="transition-delay:0.55s" fill="currentColor" opacity=".55">
+                  <rect x="62" y="30" width="10" height="9" rx="1.5" /><rect x="88" y="30" width="10" height="9" rx="1.5" />
+                  <rect x="62" y="46" width="10" height="9" rx="1.5" /><rect x="88" y="46" width="10" height="9" rx="1.5" />
+                </g>
+                <rect class="pop" style="transition-delay:0.7s" x="74" y="62" width="12" height="16" rx="2" fill="currentColor" />
+              </svg>
+            )}
             {m.glyph === 'ctf' && (
               <svg class="glyph" viewBox="0 0 160 84" fill="none" aria-hidden="true">
                 <rect class="bar" style="transition-delay:0.25s" x="30" y="30" width="28" height="48" rx="6" fill="currentColor" opacity=".55" />
@@ -88,6 +99,7 @@ const safe: { title: UIKey; body: UIKey; icon: string }[] = [
                 <text class="pop" style="transition-delay:0.55s" x="80" y="32" text-anchor="middle" font-family="JetBrains Mono, monospace" font-size="12" font-weight="600" fill="#2a1604">1</text>
               </svg>
             )}
+            <p class="eyebrow tile-label">{t(m.label)}</p>
             <h3>{t(m.name)}</h3>
             <p>{t(m.body)}</p>
           </article>
@@ -207,8 +219,9 @@ const safe: { title: UIKey; body: UIKey; icon: string }[] = [
   .head h2 { margin-top: .875rem; }
   .head .lede { margin-top: 1.25rem; }
 
-  .modes { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 1.125rem; margin-top: 3.5rem; }
+  .modes { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 1.125rem; margin-top: 3.5rem; }
   @media (max-width: 1099px) { .modes { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+  .tile-label { margin-bottom: .25rem; }
   @media (max-width: 640px) {
     .modes {
       display: flex; gap: .75rem; margin: 2rem -1.25rem 0; padding: 0 1.25rem .5rem;

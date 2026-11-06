@@ -123,7 +123,7 @@ const strings = {
       <h1 class="mt-2 truncate text-2xl sm:text-3xl" data-trail-name></h1>
       <p class="mt-1 flex flex-wrap items-center gap-x-3 text-xs">
         <span class="eyebrow" data-trail-mode></span>
-        <span class="eyebrow" data-trail-status></span>
+        <span class="eyebrow trail-status" data-trail-status></span>
       </p>
       <p class="mt-2 hidden max-w-md text-sm text-[var(--ink-dim)]" data-you-edit>{t('ed.youEdit')}</p>
       <!-- Who else has this trail open right now. Realtime presence: gone the
@@ -156,10 +156,19 @@ const strings = {
     </div>
   </header>
 
+  <!-- The trail in four tabs (design scan, 6 Nov 2026). It was one long page:
+       the stops, then editors, review, standings and delete, all at once. -->
+  <nav class="tabs ed-tabs mt-6" role="tablist" aria-label={t('ed.stops')} data-ed-tabs>
+    <button class="tab" type="button" role="tab" data-ed-tab="stops">{t('ed.stops')}</button>
+    <button class="tab" type="button" role="tab" data-ed-tab="share">{lang === 'bg' ? 'Споделяне' : 'Sharing'}</button>
+    <button class="tab" type="button" role="tab" data-ed-tab="results">{lang === 'bg' ? 'Резултати' : 'Results'}</button>
+    <button class="tab" type="button" role="tab" data-ed-tab="settings" data-owner-only>{lang === 'bg' ? 'Настройки' : 'Settings'}</button>
+  </nav>
+
   <!-- The settings a trail has once, grouped and explained in the open. They
        were five small boxes in the header with their help in tooltips, which
        a phone never shows. A setting this trail cannot use is not drawn. -->
-  <details class="card trail-settings mt-6" data-owner-only data-settings>
+  <details class="card trail-settings mt-6" data-owner-only data-settings data-ed-panel="settings" open>
     <summary>
       <span class="font-semibold">{t('ed.settings')}</span>
       <span class="text-xs text-[var(--ink-dim)]" data-settings-sum></span>
@@ -190,15 +199,10 @@ const strings = {
         </div>
         <p class="set-hint">{t('ed.startHint')}</p>
       </div>
-      <div class="set-group">
-        <p class="eyebrow">{t('ed.bonus')}</p>
-        <input class="field data w-24" data-finish-bonus inputmode="numeric" maxlength="3" aria-label={t('ed.bonus')} />
-        <p class="set-hint">{t('ed.bonusHint')}</p>
-      </div>
     </div>
   </details>
 
-  <div class="mt-8 grid gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.05fr)]">
+  <div class="mt-8 grid gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.05fr)]" data-ed-panel="stops">
     <!-- Choosing what to edit. Outside the tabs, because this is how a stop
          gets picked and it cannot live inside one of the things being picked. -->
     <div class="lg:sticky lg:top-20 lg:self-start">
@@ -667,7 +671,7 @@ const strings = {
     </div>
   </div>
 
-  <section class="mt-14" data-editors>
+  <section class="mt-8" data-editors data-ed-panel="share">
     <h2 class="text-lg">{t('ed.editors')}</h2>
     <p class="mt-2 max-w-2xl text-sm text-[var(--ink-dim)]">{t('ed.editorsLede')}</p>
     <ul class="mt-4 max-w-2xl" data-editor-list></ul>
@@ -688,7 +692,7 @@ const strings = {
     <button type="button" class="btn btn-quiet btn-sm mt-4 hidden" data-editor-leave>{t('ed.leave')}</button>
   </section>
 
-  <section class="mt-14">
+  <section class="mt-8" data-ed-panel="results">
     <h2 class="text-lg">
       {t('ed.review')}
       <span class="data ml-1 text-sm" data-review-count style="color:var(--lamp)"></span>
@@ -697,7 +701,7 @@ const strings = {
     <ul class="mt-4 space-y-3" data-review></ul>
   </section>
 
-  <section class="mt-14">
+  <section class="mt-14" data-ed-panel="results" data-board-section>
     <div class="flex items-center justify-between gap-3">
       <h2 class="text-lg">{t('ed.board')}</h2>
       <a class="text-sm text-[var(--signal)] underline-offset-2 hover:underline" data-board-link>{t('games.open')}</a>
@@ -709,7 +713,7 @@ const strings = {
   <!-- There was no way to remove a trail at all: My trails could only hide
        one. The owner may delete their own row (worlds_delete_owner), and the
        markers, teams and scores go with it. -->
-  <section class="mt-14 border-t border-[var(--line)] pt-8" data-delete-trail data-owner-only>
+  <section class="mt-14 border-t border-[var(--line)] pt-8" data-delete-trail data-owner-only data-ed-panel="settings">
     <h2 class="text-lg">{t('ed.deleteTitle')}</h2>
     <p class="mt-2 max-w-xl text-sm text-[var(--ink-dim)]">{t('ed.deleteBody')}</p>
     <button type="button" class="btn btn-danger-quiet mt-4" data-delete-trail-btn>{t('ed.deleteButton')}</button>
@@ -816,7 +820,7 @@ const strings = {
   // dropping and recreating the function, and nothing else wanted them.
   const sizeBox = q('[data-team-size]') as HTMLInputElement;
   const settings = await client.from('worlds')
-    .select('team_size,reveal_one_at_a_time,mode,finish_bonus_xp,start_mode,starts_at').eq('id', worldId).single();
+    .select('team_size,reveal_one_at_a_time,mode,start_mode,starts_at').eq('id', worldId).single();
   sizeBox.value = String(settings.data?.team_size ?? 4);
   // The start: datetime-local speaks the browser's own time zone, so it is
   // turned into an instant here, and back for display.
@@ -843,14 +847,32 @@ const strings = {
   startMode.addEventListener('change', saveStart);
   startAt.addEventListener('change', saveStart);
 
-  const bonusBox = q('[data-finish-bonus]') as HTMLInputElement;
-  bonusBox.value = String(settings.data?.finish_bonus_xp ?? 0);
 
   // ctf and guide are the ordered pair; the other two have no next marker, so
   // there is nothing for this switch to withhold.
   const ordered = ['ctf', 'guide'].includes(settings.data?.mode ?? 'guide');
   const revealBox = q('[data-reveal]') as HTMLInputElement;
   const revealRow = q('[data-reveal-row]') as HTMLElement;
+
+  // ---------------------------------------------------------------- tabs
+  // Which part of the trail is on screen. Kept in the address (#share...) so a
+  // reload or a shared link opens the same tab. Standings only exist on a
+  // trail with teams.
+  (q('[data-board-section]') as HTMLElement).hidden = !isScored(settings.data?.mode ?? 'guide');
+  const edTabs = Array.from(document.querySelectorAll<HTMLButtonElement>('[data-ed-tab]'));
+  const showTab = (name: string) => {
+    if (!edTabs.some((b) => b.dataset.edTab === name && !b.hidden && b.offsetParent !== null)) name = 'stops';
+    edTabs.forEach((b) => b.setAttribute('aria-selected', String(b.dataset.edTab === name)));
+    document.querySelectorAll<HTMLElement>('[data-ed-panel]').forEach((el) => {
+      el.classList.toggle('ed-off', el.dataset.edPanel !== name);
+    });
+    if (name === 'stops') window.dispatchEvent(new Event('resize')); // the map measures itself
+  };
+  edTabs.forEach((b) => b.addEventListener('click', () => {
+    history.replaceState(null, '', `${location.pathname}${location.search}#${b.dataset.edTab}`);
+    showTab(b.dataset.edTab!);
+  }));
+  showTab(location.hash.slice(1) || 'stops');
 
   revealBox.checked = Boolean(settings.data?.reveal_one_at_a_time);
   // Not drawn where it cannot apply: no order, nothing to reveal; no points, no teams.
@@ -861,7 +883,6 @@ const strings = {
       ordered && revealBox.checked ? S.setOneByOne : '',
       isScored(settings.data?.mode ?? 'guide') ? `${S.teamSize}: ${sizeBox.value}` : '',
       `${S.start}: ${startMode.selectedOptions[0]?.textContent ?? ''}`,
-      Number(bonusBox.value) > 0 ? `+${bonusBox.value} XP` : '',
     ].filter(Boolean);
     text(q('[data-settings-sum]'), parts.join(' · '));
   };
@@ -893,18 +914,6 @@ const strings = {
     sizeBox.value = String(wanted);
   });
 
-  // The same way: 0 to 500, as the database checks too.
-  bonusBox.addEventListener('change', async () => {
-    const wanted = Math.round(Number(bonusBox.value || 0));
-    if (!Number.isFinite(wanted) || wanted < 0 || wanted > 500) {
-      const current = await client.from('worlds').select('finish_bonus_xp').eq('id', worldId).single();
-      bonusBox.value = String(current.data?.finish_bonus_xp ?? 0);
-      return;
-    }
-    const { error } = await client.from('worlds').update({ finish_bonus_xp: wanted }).eq('id', worldId);
-    if (error) { alert(error.message); return; }
-    bonusBox.value = String(wanted);
-  });
 
   // The row as the server last described it. Every level change reloads it
   // rather than predicting it, because request_listing can refuse.
@@ -1159,7 +1168,8 @@ const strings = {
     if (kind === 'exact' && !val('accepted')) {
       items.push({ label: S.miss.accepted, panel: 'question', field: 'accepted', required: true });
     }
-    if (!val('titleEn')) items.push({ label: S.miss.titleEn, panel: 'basics', field: 'titleEn', required: false });
+    // Only what a stop cannot do without. The English title used to sit here
+    // as "optional", which is a nag, not a missing piece (scan, 6 Nov 2026).
     return items;
   }
 
@@ -2944,6 +2954,9 @@ const strings = {
   .wiz-danger { display: flex; justify-content: flex-end; padding: 0 1.25rem 1rem; background: var(--surface); }
   .hide-xs { display: inline; }
   @media (max-width: 420px) { .hide-xs { display: none; } .wiz-next { min-width: 0; flex: 1; } }
+  .trail-status:not(:empty)::before { content: "·"; margin-right: .75rem; color: var(--ink-faint); }
+  .ed-tabs { width: fit-content; max-width: 100%; overflow-x: auto; }
+  .ed-off { display: none !important; }
   .trail-settings { padding: 0; }
   .trail-settings > summary { display: flex; flex-wrap: wrap; align-items: baseline; gap: .25rem .75rem; padding: 1rem 1.25rem; cursor: pointer; list-style: none; }
   .trail-settings > summary::before { content: "▸"; color: var(--ink-faint); transition: transform .15s; }

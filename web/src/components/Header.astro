@@ -54,16 +54,20 @@ const current = (to: string) => !to.includes('#') && here === to;
         <nav class="menu-pop" aria-label={t('nav.menu')}>
           {links.map((l) => <a href={href(l.to)}>{t(l.label)}</a>)}
           <a href={href('/signin')} data-auth-out hidden class="strong">{t('nav.signin')}</a>
+          <!-- On a phone the theme and the language live here, not in the bar. -->
+          <span class="menu-rule phone-only" aria-hidden="true"></span>
+          <button type="button" data-theme-toggle class="menu-row phone-only">{t('nav.theme')}</button>
+          <a href={otherHref} class="menu-row phone-only" hreflang={lang === 'bg' ? 'en' : 'bg'}>{lang === 'bg' ? 'English' : 'Български'}</a>
         </nav>
       </details>
 
-      <button type="button" data-theme-toggle class="icon-btn" aria-label={t('nav.theme')}>
+      <button type="button" data-theme-toggle class="icon-btn wide-only" aria-label={t('nav.theme')}>
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true">
           <path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8Z" stroke-linejoin="round" />
         </svg>
       </button>
 
-      <a href={otherHref} class="icon-btn lang" aria-label={t('nav.lang')} hreflang={lang === 'bg' ? 'en' : 'bg'}>
+      <a href={otherHref} class="icon-btn lang wide-only" aria-label={t('nav.lang')} hreflang={lang === 'bg' ? 'en' : 'bg'}>
         {lang === 'bg' ? 'EN' : 'BG'}
       </a>
 
@@ -85,11 +89,6 @@ const current = (to: string) => !to.includes('#') && here === to;
           </svg>
         </button>
         <div class="me-pop" id="me-menu" role="menu" aria-label={t('nav.account')} hidden data-me-menu>
-          <!-- Your level (0056), filled in once my_level answers. -->
-          <div class="me-level" data-me-level data-lang={lang} data-label={t('nav.level')} hidden>
-            <p><span data-me-level-n></span> · <b data-me-level-name></b></p>
-            <span class="me-bar" aria-hidden="true"><span data-me-level-bar></span></span>
-          </div>
           <a role="menuitem" href={href('/account')}>{t('nav.profile')}</a>
           <a role="menuitem" href={href('/account#settings')}>{t('nav.settings')}</a>
           <a role="menuitem" href={href('/my-trails')}>{t('nav.mine')}</a>
@@ -103,7 +102,6 @@ const current = (to: string) => !to.includes('#') && here === to;
 <script>
   import { who } from '../lib/session';
   import { signOut, db } from '../lib/supabase';
-  import { myLevel, levelName, levelProgress, type Level } from '../lib/levels';
 
   // A tap anywhere else closes the phone menu, the way a menu is expected to.
   const menu = document.querySelector('[data-menu]') as HTMLDetailsElement | null;
@@ -170,23 +168,6 @@ const current = (to: string) => !to.includes('#') && here === to;
     document.querySelectorAll('[data-me-initials]').forEach((el) => (el.textContent = initials));
     if (name) document.querySelectorAll('[data-me-name]').forEach((el) => (el.textContent = name));
 
-    // Read when the page opens and again each time the menu does: a finish
-    // recorded by the page underneath (the account page's my_profile) moves the
-    // level after the header has drawn it.
-    const box = document.querySelector<HTMLElement>('[data-me-level]');
-    const client = db();
-    const paintLevel = async (known?: Level) => {
-      const lv = known ?? (client && box ? await myLevel(client) : null);
-      if (!lv || !box) return;
-      const lang = box.dataset.lang === 'en' ? 'en' : 'bg';
-      box.querySelector('[data-me-level-n]')!.textContent = (box.dataset.label ?? '{0}').replace('{0}', String(lv.level));
-      box.querySelector('[data-me-level-name]')!.textContent = levelName(lv.level, lang);
-      box.querySelector<HTMLElement>('[data-me-level-bar]')!.style.width = `${Math.round(levelProgress(lv) * 100)}%`;
-      box.hidden = false;
-    };
-    paintLevel();
-    meButton?.addEventListener('click', () => { if (!meMenu?.hidden) paintLevel(); });
-    addEventListener('artrail:level', (e) => paintLevel((e as CustomEvent<Level>).detail));
   }
 </script>
 
@@ -251,6 +232,13 @@ const current = (to: string) => !to.includes('#') && here === to;
   .menu-pop a { padding: .875rem .75rem; border-radius: 14px; font-size: 15px; }
   .menu-pop a:hover { background: var(--surface-2); }
   .menu-pop a.strong { color: var(--signal); font-weight: 600; }
+  .menu-row { display: block; width: 100%; text-align: left; padding: .875rem .75rem; border-radius: 14px; font-size: 15px; color: var(--ink); }
+  .menu-row:hover { background: var(--surface-2); }
+  .menu-rule { display: block; height: 1px; margin: .25rem .75rem; background: var(--line-soft); }
+  /* Phones: theme and language in the menu, so the bar keeps logo, menu and
+     one button (design scan, 6 Nov 2026). */
+  @media (max-width: 639px) { .wide-only { display: none !important; } }
+  @media (min-width: 640px) { .phone-only { display: none !important; } }
 
   .hide-sm { display: none; }
   @media (min-width: 640px) { .hide-sm { display: inline-flex; } }
@@ -266,7 +254,7 @@ const current = (to: string) => !to.includes('#') && here === to;
   .me-face {
     width: 34px; height: 34px; border-radius: 50%; flex: none; display: grid; place-items: center;
     background: var(--signal); color: var(--signal-ink);
-    font-family: var(--font-display); font-weight: 800; font-size: .72rem;
+    font-family: var(--font-display); font-weight: 700; font-size: .72rem;
   }
   .me-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .me-caret { flex: none; color: var(--ink-dim); transition: transform .2s ease; }
@@ -284,9 +272,6 @@ const current = (to: string) => !to.includes('#') && here === to;
     box-shadow: 0 24px 50px -24px rgba(0, 0, 0, .55);
   }
   .me-pop[hidden] { display: none; }
-  .me-level { padding: .5rem .75rem .75rem; margin-bottom: .25rem; border-bottom: 1px solid var(--line-soft); font-size: 13px; color: var(--ink-dim); }
-  .me-level[hidden] { display: none; }
-  .me-level b { color: var(--ink); font-weight: 600; }
   .me-bar { display: block; height: 4px; margin-top: 6px; border-radius: 999px; background: var(--surface-2); overflow: hidden; }
   .me-bar span { display: block; height: 100%; width: 0; background: var(--signal); border-radius: inherit; }
   .me-pop a, .me-pop button {

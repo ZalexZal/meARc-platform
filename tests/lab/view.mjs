@@ -14,7 +14,7 @@ for (const [w, h, tag] of [[1280, 900, 'desk'], [390, 844, 'phone']]) {
     await p.waitForURL(/\/view\//);
     check(`${t}: /walk redirects to /view with the id`, p.url().includes(`/view/?id=${CTF}`));
     await p.waitForSelector('[data-v-trail]:not([hidden])', { timeout: 15000 });
-    check(`${t}: mode line`, (await p.textContent('[data-v-mode]')) === 'С точки · По ред');
+    check(`${t}: mode line`, (await p.textContent('[data-v-mode]')) === 'Отбори и класиране · По ред');
     await p.waitForTimeout(3000);
     const stops = await p.$$eval('[data-v-stops] li', (l) => l.length);
     check(`${t}: stops listed and pinned`, stops > 0 && (await p.$$('.view-pin')).length === stops, `${stops}`);
@@ -28,7 +28,7 @@ for (const [w, h, tag] of [[1280, 900, 'desk'], [390, 844, 'phone']]) {
     await p.goto(`${BASE}/en/view/?id=${GUIDE}`);
     await p.waitForSelector('[data-v-trail]:not([hidden])', { timeout: 15000 });
     await p.waitForTimeout(1500);
-    check(`${t}: no points · in order, no board`, (await p.textContent('[data-v-mode]')) === 'No points · In order' && !(await p.isVisible('[data-v-board]')));
+    check(`${t}: no points · in order, no board`, (await p.textContent('[data-v-mode]')) === 'No teams · In order' && !(await p.isVisible('[data-v-board]')));
     await p.goto(`${BASE}/view/?id=00000000-0000-0000-0000-000000000000`);
     await p.waitForSelector('[data-v-none]:not([hidden])', { timeout: 15000 });
     check(`${t}: unknown trail says so`, true);
