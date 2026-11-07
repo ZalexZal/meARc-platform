@@ -14,10 +14,10 @@ const copy = {
     overview: 'Преглед', walked: 'Извървени маршрути',
     settings: 'Настройки на профила', privacy: 'Поверителност и данни',
     since: 'Ходи от', guest: 'Гост',
-    kTrails: 'извървени маршрута', kStops: 'намерени спирки',
+    kTrails: 'извървени маршрута', kStops: 'посетени спирки',
     kPoints: 'точки за отборите ти',
     colTrail: 'Маршрут', colTeam: 'Отбор', colStops: 'Спирки', colPoints: 'Точки',
-    finished: 'завършен', ended: 'играта приключи', noTrails: 'Още не си ходил по маршрут.',
+    finished: 'завършен', ended: 'маршрутът приключи', noTrails: 'Още не си ходил по маршрут.',
     statsLater: 'Статистиката ще се появи, щом сървърът бъде обновен.',
     you: 'Ти', nameLabel: 'Име в класациите', save: 'Запази', saved: 'Запазено.',
     emailLabel: 'Имейл', emailNew: 'Нов имейл', change: 'Смени',
@@ -45,10 +45,10 @@ const copy = {
     overview: 'Overview', walked: 'Trails walked',
     settings: 'Account settings', privacy: 'Privacy and data',
     since: 'Walking since', guest: 'Guest',
-    kTrails: 'trails walked', kStops: 'stops found',
+    kTrails: 'trails walked', kStops: 'stops visited',
     kPoints: 'points for your teams',
     colTrail: 'Trail', colTeam: 'Team', colStops: 'Stops', colPoints: 'Points',
-    finished: 'finished', ended: 'game over', noTrails: 'You have not walked a trail yet.',
+    finished: 'finished', ended: 'trail ended', noTrails: 'You have not walked a trail yet.',
     statsLater: 'Your numbers will appear once the server is updated.',
     you: 'You', nameLabel: 'Name on leaderboards', save: 'Save', saved: 'Saved.',
     emailLabel: 'Email', emailNew: 'New email', change: 'Change',
@@ -127,7 +127,7 @@ const rail = [
             <button type="button" class="btn btn-quiet btn-sm" data-needed-send>{copy.sendLink}</button>
           </div>
           <div class="row-input">
-            <input class="field-input uppercase tracking-widest" maxlength="12" autocomplete="off" placeholder={copy.parentCode} aria-label={copy.parentCode} data-needed-code />
+            <input class="field-input code uppercase tracking-widest" maxlength="12" autocomplete="off" placeholder={copy.parentCode} aria-label={copy.parentCode} data-needed-code />
             <button type="button" class="btn btn-quiet btn-sm" data-needed-use>{copy.useCode}</button>
           </div>
           <p class="msg" data-needed-msg aria-live="polite"></p>
@@ -136,7 +136,7 @@ const rail = [
         <div class="kpis" data-kpis>
           <div class="kpi"><b data-k-trails>—</b><small>{copy.kTrails}</small></div>
           <div class="kpi"><b data-k-stops>—</b><small>{copy.kStops}</small></div>
-          <div class="kpi"><b data-k-points>—</b><small>{copy.kPoints}</small></div>
+          <div class="kpi" data-k-points-box hidden><b data-k-points>—</b><small>{copy.kPoints}</small></div>
         </div>
 
         <div>
@@ -288,10 +288,12 @@ const rail = [
   }
 
   .kpis { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
+  .kpis.kpis-two { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .kpi {
     background: var(--surface); border: 1px solid var(--line-soft); border-radius: 14px;
     padding: 14px 16px; display: grid; gap: 2px;
   }
+  .kpi[hidden] { display: none; }
   .kpi b { font-family: var(--font-display); font-weight: 600; font-size: 1.55rem; font-variant-numeric: tabular-nums; }
   .kpi small { color: var(--ink-dim); font-size: 0.8rem; }
 
@@ -308,13 +310,13 @@ const rail = [
   .table-wrap { overflow-x: auto; }
   .table-wrap :global(table) { width: 100%; border-collapse: collapse; font-size: 0.86rem; }
   .table-wrap :global(th) {
-    text-align: left; font-family: var(--font-mono); font-weight: 400; font-size: 0.68rem;
-    letter-spacing: 0.1em; text-transform: uppercase; color: var(--ink-faint); padding: 0 8px 8px 0;
+    text-align: left; font-family: var(--font-body); font-weight: 500; font-size: 0.75rem;
+    letter-spacing: 0; color: var(--ink-faint); padding: 0 8px 8px 0;
   }
   .table-wrap :global(td) { padding: 10px 8px 10px 0; border-top: 1px solid var(--line-soft); vertical-align: top; }
-  .table-wrap :global(.num) { text-align: right; font-family: var(--font-mono); font-variant-numeric: tabular-nums; white-space: nowrap; }
+  .table-wrap :global(.num) { text-align: right; font-family: var(--font-body); font-variant-numeric: tabular-nums; white-space: nowrap; }
   .table-wrap :global(.tag) {
-    display: inline-block; margin-left: 6px; font-family: var(--font-mono); font-size: 0.64rem;
+    display: inline-block; margin-left: 6px; font-family: var(--font-body); font-size: 0.64rem;
     padding: 1px 6px; border-radius: 6px; background: var(--signal-wash); color: var(--signal);
   }
   .table-wrap :global(.tag.over) { background: var(--surface-2); color: var(--ink-dim); }
@@ -352,7 +354,9 @@ const rail = [
 
   @media (max-width: 860px) {
     .acct-grid { grid-template-columns: minmax(0, 1fr); gap: 20px; }
-    .rail { position: static; grid-auto-flow: column; grid-auto-columns: max-content; overflow-x: auto; }
+    /* Phones: the four sections as a 2 x 2 grid, every one visible, rather
+       than a row that ran off the edge (website sweep, 6 Nov 2026). */
+    .rail { position: static; grid-template-columns: 1fr 1fr; gap: 4px; }
     .rail hr { display: none; }
     .kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); }
     .two { grid-template-columns: minmax(0, 1fr); }
@@ -459,17 +463,27 @@ const rail = [
 
   // ---------------------------------------------------------- the numbers
 
+  // Teams and points only for someone who has walked a trail with teams:
+  // for everyone else they were a column of dashes and a zero (website
+  // sweep, 7 Nov 2026).
   function trailsTable(rows: any[], limit?: number) {
     if (!rows.length) return `<p class="text-sm text-[var(--ink-dim)]">${escapeHtml(S.noTrails)}</p>`;
     const shown = limit ? rows.slice(0, limit) : rows;
+    const teams = rows.some((r) => r.team);
     return `<table>
-      <thead><tr><th>${escapeHtml(S.colTrail)}</th><th>${escapeHtml(S.colTeam)}</th>
-        <th class="num">${escapeHtml(S.colStops)}</th><th class="num">${escapeHtml(S.colPoints)}</th></tr></thead>
+      <thead><tr><th>${escapeHtml(S.colTrail)}</th>${teams ? `<th>${escapeHtml(S.colTeam)}</th>` : ''}
+        <th class="num">${escapeHtml(S.colStops)}</th>${teams ? `<th class="num">${escapeHtml(S.colPoints)}</th>` : ''}</tr></thead>
       <tbody>${shown.map((r) => `<tr>
         <td>${escapeHtml(r.name)}${r.finished ? `<span class="tag">${escapeHtml(S.finished)}</span>` : ''}${r.ended ? `<span class="tag over">${escapeHtml(S.ended)}</span>` : ''}</td>
-        <td>${r.team ? escapeHtml(r.team) : '—'}</td>
+        ${teams ? `<td>${r.team ? escapeHtml(r.team) : '—'}</td>` : ''}
         <td class="num">${r.total == null ? Number(r.done) : `${Number(r.done)} / ${Number(r.total)}`}</td>
-        <td class="num">${r.team ? Number(r.points) : '—'}</td></tr>`).join('')}</tbody></table>`;
+        ${teams ? `<td class="num">${r.team ? Number(r.points) : '—'}</td>` : ''}</tr>`).join('')}</tbody></table>`;
+  }
+  function showPoints(rows: any[]) {
+    const on = rows.some((r) => r.team);
+    const box = q('[data-k-points-box]') as HTMLElement | null;
+    if (box) box.hidden = !on;
+    q('[data-kpis]')?.classList.toggle('kpis-two', !on);
   }
 
   const { data: profile, error: profileError } = await client.rpc('my_profile');
@@ -488,6 +502,7 @@ const rail = [
     text(q('[data-k-trails]'), '—');
     text(q('[data-k-stops]'), rows.reduce((n: number, r: any) => n + Number(r.done || 0), 0));
     text(q('[data-k-points]'), rows.reduce((n: number, r: any) => n + Number(r.points || 0), 0));
+    showPoints(rows);
   } else {
     text(q('[data-k-trails]'), profile.trails_walked ?? 0);
     text(q('[data-k-stops]'), profile.stops_found ?? 0);
@@ -495,6 +510,7 @@ const rail = [
 
     q('[data-trails-short]')!.innerHTML = trailsTable(profile.trails ?? [], 5);
     q('[data-trails-full]')!.innerHTML = trailsTable(profile.trails ?? []);
+    showPoints(profile.trails ?? []);
 
   }
 

@@ -1,0 +1,70 @@
+---
+// The app, to download: version, size and date from web/src/data/app.json,
+// which tools/publish-apk.sh writes with the APK itself. On a computer a QR
+// code carries the link to the phone.
+import QRCode from 'qrcode';
+import { useTranslations, type Lang } from '../i18n/ui';
+import app from '../data/app.json';
+import AppShot from './AppShot.astro';
+
+interface Props { lang: Lang; id?: string; }
+const { lang, id = 'app' } = Astro.props;
+const t = useTranslations(lang);
+const url = new URL('/ARTrail.apk', Astro.site).toString();
+const qr = await QRCode.toString(url, { type: 'svg', margin: 0, color: { dark: '#1d1d1f', light: '#ffffff' } });
+const mb = Math.round(app.bytes / 1048576);
+const date = new Date(app.date).toLocaleDateString(lang === 'bg' ? 'bg-BG' : 'en-GB', { day: 'numeric', month: 'long', year: 'numeric' });
+const meta = t('app.meta').replace('{0}', app.version).replace('{1}', String(mb)).replace('{2}', date);
+---
+<section class="get" id={id}>
+  <div class="get-inner">
+    <div class="get-copy">
+      <p class="eyebrow">{t('app.eyebrow')}</p>
+      <h2 class="display-lg">{t('app.title')}</h2>
+      <p class="lede">{t('app.lede')}</p>
+      <div class="get-row">
+        <a class="btn btn-primary btn-lg" href="/ARTrail.apk" download>{t('app.download')}</a>
+        <span class="get-meta data">{meta}</span>
+      </div>
+      <ol class="get-steps">
+        <li><span>1</span>{t('app.s1')}</li>
+        <li><span>2</span>{t('app.s2')}</li>
+        <li><span>3</span>{t('app.s3')}</li>
+      </ol>
+      <div class="get-qr">
+        <div class="qr" set:html={qr} aria-hidden="true"></div>
+        <p>{t('app.qr')}</p>
+      </div>
+    </div>
+    <div class="get-shots" aria-hidden="true">
+      <AppShot name="welcome" alt="" class="s1" />
+      <AppShot name="sheet" alt="" class="s2" />
+    </div>
+  </div>
+</section>
+
+<style>
+  .get { padding: 6rem 0; background: var(--surface-2); }
+  .get-inner { max-width: 76rem; margin: 0 auto; padding: 0 1.5rem; display: grid; gap: 3rem; align-items: center; }
+  @media (min-width: 900px) { .get-inner { grid-template-columns: minmax(0, 1.1fr) minmax(0, .9fr); } }
+  .get h2 { margin-top: .75rem; }
+  .get .lede { margin-top: 1rem; max-width: 34rem; }
+  .get-row { display: flex; flex-wrap: wrap; align-items: center; gap: .75rem 1.25rem; margin-top: 2rem; }
+  .get-meta { font-size: var(--text-sm); color: var(--ink-dim); }
+  .get-steps { list-style: none; margin: 2rem 0 0; padding: 0; display: grid; gap: .875rem; max-width: 34rem; }
+  .get-steps li { display: grid; grid-template-columns: 28px 1fr; gap: .75rem; align-items: start; color: var(--ink-dim); }
+  .get-steps span {
+    display: grid; place-items: center; width: 28px; height: 28px; border-radius: 50%;
+    background: var(--surface); border: 1px solid var(--line); font-size: 13px; font-weight: 600; color: var(--ink);
+  }
+  .get-qr { display: none; align-items: center; gap: 1rem; margin-top: 2rem; }
+  .get-qr p { max-width: 16rem; font-size: var(--text-sm); color: var(--ink-dim); }
+  .qr { width: 104px; height: 104px; padding: 8px; border-radius: 14px; background: #fff; flex: none; }
+  .qr :global(svg) { width: 100%; height: 100%; display: block; }
+  @media (pointer: fine) { .get-qr { display: flex; } }
+  .get-shots { position: relative; height: 34rem; display: none; }
+  @media (min-width: 900px) { .get-shots { display: block; } }
+  .get-shots :global(.shot) { position: absolute; width: 15.5rem; }
+  .get-shots :global(.s1) { left: 8%; top: 0; transform: rotate(-4deg); }
+  .get-shots :global(.s2) { right: 8%; top: 3rem; transform: rotate(3deg); }
+</style>

@@ -3,15 +3,16 @@
  *
  * Everything the app cannot draw is refused here, with the reason, so a file
  * never travels 20 MB to fail on a phone in the street. The server repeats the
- * size check (migration 0055); the rest only the file itself can answer.
+ * size check (migrations 0055, 0063); the rest only the file itself can answer.
  *
  * Limits, from the design (docs/superpowers/specs/2026-10-01-own-3d-models-design.md):
- * 25 MB, 300,000 triangles, textures at most 4096 px, every buffer and image
+ * 50 MB, 1,000,000 triangles (raised for full-size buildings, migration 0063),
+ * textures at most 4096 px, every buffer and image
  * inside the file, and no extension the app has no decoder for.
  */
 
-export const MODEL_MAX_BYTES = 25 * 1024 * 1024;
-export const MODEL_MAX_TRIANGLES = 300_000;
+export const MODEL_MAX_BYTES = 50 * 1024 * 1024;
+export const MODEL_MAX_TRIANGLES = 1_000_000;
 export const MODEL_MAX_TEXTURE = 4096;
 
 /** Extensions the app's glTF loader draws without an extra decoder. */

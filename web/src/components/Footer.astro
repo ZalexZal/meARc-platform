@@ -22,10 +22,11 @@ const year = new Date().getFullYear();
         <span class="font-[family-name:var(--font-display)] text-[15px] font-semibold">AR&nbsp;Trail</span>
       </a>
       <p class="mt-4 max-w-xs text-sm text-[var(--ink-dim)]">{t('footer.tagline')}</p>
-      <p class="mt-5 inline-flex items-center gap-2 rounded-full border border-dashed border-[var(--line)] px-3.5 py-2 text-xs text-[var(--ink-dim)]">
-        <span class="h-1.5 w-1.5 rounded-full bg-[var(--signal)]" aria-hidden="true"></span>
+      <a class="mt-5 inline-flex items-center gap-2 rounded-full border border-[var(--line)] px-3.5 py-2 text-xs text-[var(--ink-dim)] hover:text-[var(--ink)]"
+         href="/ARTrail.apk" download>
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4v11M7 10l5 5 5-5M5 20h14" /></svg>
         {t('home.soon')}
-      </p>
+      </a>
     </div>
 
     <nav aria-label={t('footer.product')}>

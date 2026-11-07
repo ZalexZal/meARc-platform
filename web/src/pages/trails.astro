@@ -1,10 +1,12 @@
 ---
 import Base from '../layouts/Base.astro';
 import TrailList from '../components/TrailList.astro';
+import GetApp from '../components/GetApp.astro';
 import { langFromUrl, useTranslations } from '../i18n/ui';
 const lang = langFromUrl(Astro.url);
 const t = useTranslations(lang);
 ---
 <Base title={t('games.title') + ' — AR Trail'}>
   <TrailList lang={lang} />
+  <GetApp lang={lang} />
 </Base>

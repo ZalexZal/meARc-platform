@@ -21,24 +21,26 @@ const copy = {
   bg: {
     loading: 'Зареждам маршрута…',
     noTrail: 'Няма такъв маршрут', noTrailBody: 'Провери линка. Маршрутите с код се отварят в приложението, с кода.',
-    play: 'Играе се в приложението', playBody: 'На всяка спирка телефонът показва знак или 3D модел точно на мястото. Въпросите се отговарят там, на място.',
+    play: 'Отваря се в приложението', playBody: 'На всяка спирка телефонът показва историята, снимките или 3D модела точно на мястото.',
+    getApp: 'Нямаш приложението? Изтегли го за Android', qrDesk: 'Насочи камерата на телефона към кода, за да отвориш маршрута там.',
     openApp: 'Отвори в приложението', qr: 'QR код', qrHint: 'Сканирай с телефона, после „Отвори в приложението“.',
-    stops: 'Спирки', stopsHidden: 'Още {0} спирки се появяват по пътя.', noStops: 'Спирките се появяват, когато играта започне.',
+    stops: 'Спирки', stopsHidden: 'Още {0} спирки се появяват по пътя.', noStops: 'Спирките се появяват, когато маршрутът започне.',
     teams: '{0} отбора', stopN: '{0} спирки',
-    startAuto: 'Започва на {0}', startManual: 'Започва, когато организаторът даде старт.', started: 'Играта тече',
-    ended: 'Играта приключи',
+    startAuto: 'Започва на {0}', startManual: 'Започва, когато организаторът даде старт.', started: 'Маршрутът е започнал',
+    ended: 'Маршрутът приключи',
     board: 'Класиране', boardFull: 'Цялото класиране', boardEmpty: 'Още няма отбори.', live: 'Обновява се само',
     pts: 'т.', noMap: 'Картата се показва само за публични маршрути.',
   },
   en: {
     loading: 'Loading the trail…',
     noTrail: 'No such trail', noTrailBody: 'Check the link. Trails with a code open in the app, with the code.',
-    play: 'Played in the app', playBody: 'At every stop the phone shows a sign or a 3D model standing right there. The questions are answered on the spot.',
+    play: 'Opens in the app', playBody: 'At every stop the phone shows the story, the photos or the 3D model right where it belongs.',
+    getApp: 'No app yet? Download it for Android', qrDesk: 'Point a phone camera at the code to open the trail there.',
     openApp: 'Open in the app', qr: 'QR code', qrHint: 'Scan it with a phone, then tap Open in the app.',
-    stops: 'Stops', stopsHidden: '{0} more stops appear along the way.', noStops: 'The stops appear when the game starts.',
+    stops: 'Stops', stopsHidden: '{0} more stops appear along the way.', noStops: 'The stops appear when the trail starts.',
     teams: '{0} teams', stopN: '{0} stops',
-    startAuto: 'Starts at {0}', startManual: 'Starts when the organiser says go.', started: 'The game is on',
-    ended: 'The game has ended',
+    startAuto: 'Starts at {0}', startManual: 'Starts when the organiser says go.', started: 'The trail has started',
+    ended: 'The trail has ended',
     board: 'Standings', boardFull: 'Full standings', boardEmpty: 'No teams yet.', live: 'Updates by itself',
     pts: 'pts', noMap: 'The map is shown for public trails only.',
   },
@@ -66,13 +68,19 @@ const strings = { ...copy, lang, boardHref: href('/board'), listHref: href('/tra
         <h2 class="text-xl">{copy.play}</h2>
         <p class="mt-2 text-[var(--ink-dim)]">{copy.playBody}</p>
       </div>
-      <div class="view-actions">
+      <!-- On a phone: open it in the app. On a computer that button does
+           nothing useful, so the QR code is the way across (website sweep,
+           6 Nov 2026). -->
+      <div class="view-actions phone-actions">
         <a class="btn btn-primary" data-v-app>{copy.openApp}</a>
-        <button type="button" class="btn btn-quiet" aria-expanded="false" data-v-qr>{copy.qr}</button>
+        <a class="text-sm text-[var(--signal)] underline-offset-2 hover:underline" href="/ARTrail.apk" download>{copy.getApp}</a>
       </div>
-      <div hidden data-v-qrbox class="view-qr">
+      <div class="view-qr desk-qr" data-v-qrbox>
         <canvas></canvas>
-        <p class="text-sm text-[var(--ink-dim)]">{copy.qrHint}</p>
+        <div>
+          <p class="text-sm text-[var(--ink-dim)]">{copy.qrDesk}</p>
+          <a class="mt-2 inline-block text-sm text-[var(--signal)] underline-offset-2 hover:underline" href="/ARTrail.apk" download>{copy.getApp}</a>
+        </div>
       </div>
     </div>
 
@@ -107,6 +115,7 @@ const strings = { ...copy, lang, boardHref: href('/board'), listHref: href('/tra
   import { db, configured } from '../lib/supabase';
   import { param, text } from '../lib/session';
   import { isScored, isOrdered, modeLine } from '../lib/modes';
+  import { mapStyle, followTheme } from '../lib/mapstyle';
 
   const S = JSON.parse(document.querySelector('[data-v-strings]')!.textContent || '{}');
   const q = <T extends Element = HTMLElement>(s: string) => document.querySelector(s) as T | null;
@@ -129,18 +138,16 @@ const strings = { ...copy, lang, boardHref: href('/board'), listHref: href('/tra
     text(q('[data-v-mode]'), modeLine(summary.mode, S.lang));
     text(q('[data-v-name]'), summary.name);
     document.title = `${summary.name} — AR Trail`;
-    text(q('[data-v-meta]'), [fmt(S.stopN, summary.stop_count), scored ? fmt(S.teams, summary.team_count) : '']
+    text(q('[data-v-meta]'), [fmt(S.stopN, summary.stop_count), scored && Number(summary.team_count) > 0 ? fmt(S.teams, summary.team_count) : '']
       .filter(Boolean).join(' · '));
 
     // The app link, and a QR code of this page for the phone that has the app.
     const app = q<HTMLAnchorElement>('[data-v-app]')!;
     app.href = `intent://join/${id}#Intent;scheme=artrail;package=com.alex.artrail;` +
       `S.browser_fallback_url=${encodeURIComponent(`${location.origin}${S.listHref}?t=${id}&noapp=1`)};end`;
-    q('[data-v-qr]')!.addEventListener('click', async (e) => {
-      const box = q('[data-v-qrbox]')!; box.hidden = !box.hidden;
-      (e.currentTarget as HTMLElement).setAttribute('aria-expanded', String(!box.hidden));
-      if (!box.hidden) await QRCode.toCanvas(box.querySelector('canvas'), location.href, { width: 200, margin: 1 });
-    });
+    if (matchMedia('(pointer: fine)').matches) {
+      await QRCode.toCanvas(q('[data-v-qrbox] canvas'), location.href, { width: 168, margin: 1 });
+    }
 
     // A live event: when it starts.
     const start = (await client.rpc('trail_start', { p_world: id })).data;
@@ -186,8 +193,9 @@ const strings = { ...copy, lang, boardHref: href('/board'), listHref: href('/tra
     if (!stops.length && listed?.start_lat == null) { show('[data-v-map]', false); return; }
     const ml = await loadMapLibre();
     const centre = stops[0] ?? { lat: listed.start_lat, lng: listed.start_lng };
-    const map = new ml.Map({ container: q('[data-v-map]'), style: 'https://tiles.openfreemap.org/styles/liberty',
+    const map = new ml.Map({ container: q('[data-v-map]'), style: mapStyle(),
       center: [centre.lng, centre.lat], zoom: 15, attributionControl: { compact: true }, cooperativeGestures: true });
+    followTheme(map);
     stops.forEach((m, i) => {
       const el = document.createElement('div');
       el.className = 'view-pin'; el.style.setProperty('--pin', m.colour_hex || '#0066cc');
@@ -242,7 +250,15 @@ const strings = { ...copy, lang, boardHref: href('/board'), listHref: href('/tra
   .view-play { display: grid; gap: 1.25rem; }
   @media (min-width: 720px) { .view-play { grid-template-columns: 1fr auto; align-items: center; } }
   .view-actions { display: flex; flex-wrap: wrap; gap: .75rem; }
-  .view-qr { display: flex; flex-wrap: wrap; align-items: center; gap: 1rem; grid-column: 1 / -1; }
+  .view-actions { align-items: center; }
+  .view-qr { display: flex; align-items: center; gap: 1rem; max-width: 26rem; }
+  .view-qr p { max-width: 18rem; }
+  /* A phone opens the app; a computer shows the code to scan. */
+  .desk-qr { display: none; }
+  @media (pointer: fine) {
+    .desk-qr { display: flex; }
+    .phone-actions { display: none; }
+  }
   .view-qr canvas { border-radius: 12px; background: #fff; }
   .view-grid { display: grid; gap: 2rem; }
   @media (min-width: 900px) { .view-grid { grid-template-columns: 3fr 2fr; } }

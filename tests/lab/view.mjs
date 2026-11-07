@@ -5,7 +5,8 @@ const b = await browser();
 const errs = [];
 for (const [w, h, tag] of [[1280, 900, 'desk'], [390, 844, 'phone']]) {
   for (const scheme of ['light', 'dark']) {
-    const ctx = await b.newContext({ viewport: { width: w, height: h }, colorScheme: scheme });
+    const phone = tag === 'phone';
+    const ctx = await b.newContext({ viewport: { width: w, height: h }, colorScheme: scheme, isMobile: phone, hasTouch: phone });
     const p = await ctx.newPage();
     p.on('pageerror', (e) => errs.push(e.message));
     p.on('console', (m) => { if (m.type() === 'error') errs.push(m.text()); });
@@ -20,8 +21,10 @@ for (const [w, h, tag] of [[1280, 900, 'desk'], [390, 844, 'phone']]) {
     check(`${t}: stops listed and pinned`, stops > 0 && (await p.$$('.view-pin')).length === stops, `${stops}`);
     check(`${t}: live board on a points trail`, await p.isVisible('[data-v-board]'));
     check(`${t}: app link`, (await p.getAttribute('[data-v-app]', 'href')).startsWith(`intent://join/${CTF}`));
-    await p.click('[data-v-qr]');
-    check(`${t}: QR opens`, await p.isVisible('[data-v-qrbox] canvas'));
+    // A phone opens the app; a computer gets the QR code instead (7 Nov 2026).
+    if (phone) check(`${t}: open-in-app button, no QR`, await p.isVisible('[data-v-app]') && !(await p.isVisible('[data-v-qrbox]')));
+    else check(`${t}: QR shown, no app button`, await p.isVisible('[data-v-qrbox] canvas') && !(await p.isVisible('[data-v-app]')));
+    check(`${t}: download link to the APK`, (await p.$$eval('a[href="/ARTrail.apk"]', (a) => a.length)) > 0);
     const sw = await p.evaluate(() => document.documentElement.scrollWidth);
     check(`${t}: no horizontal scroll`, sw <= w, `${sw}`);
     await p.screenshot({ path: `${SHOTS}/view-${tag}-${scheme}.png`, fullPage: true });

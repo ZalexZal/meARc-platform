@@ -1,5 +1,6 @@
 ---
 import Loading from './Loading.astro';
+import AppShot from './AppShot.astro';
 import { useTranslations, localise, type Lang } from '../i18n/ui';
 
 interface Props { lang: Lang; }
@@ -132,9 +133,9 @@ const strings = {
     </div>
 
     <div class="flex flex-wrap items-center gap-2">
-      <div class="card flex items-center gap-2 px-3 py-2">
+      <div class="card flex flex-wrap items-center gap-x-2 gap-y-1 px-3 py-2">
         <span class="eyebrow">{t('ed.code')}</span>
-        <code class="data text-xl font-medium uppercase tracking-widest text-[var(--signal)]"
+        <code class="code text-xl font-medium uppercase tracking-widest text-[var(--signal)]"
               data-trail-code></code>
         <button class="btn btn-ghost btn-sm" type="button" data-copy-code>{t('pub.copy')}</button>
         <button class="text-xs text-[var(--ink-faint)] underline-offset-2 hover:text-[var(--ink)] hover:underline"
@@ -253,7 +254,22 @@ const strings = {
     </div>
 
     <div>
-      <p class="empty" data-no-selection>{t('ed.selectStop')}</p>
+      <!-- Nothing chosen yet: how to start, and what a visitor will see,
+           instead of one line in an empty box (website sweep, 7 Nov 2026). -->
+      <div class="card start-card" data-no-selection>
+        <div>
+          <h2 class="text-lg">{t('ed.selectStop')}</h2>
+          <ol class="start-tips">
+            <li><span>1</span>{t('ed.tip1')}</li>
+            <li><span>2</span>{t('ed.tip2')}</li>
+            <li><span>3</span>{t('ed.tip3')}</li>
+          </ol>
+        </div>
+        <figure class="start-shot">
+          <AppShot name="sheet" alt="" />
+          <figcaption>{t('ed.tipShot')}</figcaption>
+        </figure>
+      </div>
 
       <!-- The stop, one question at a time. It was five tabs and a Save button;
            a creator who had not opened the fourth tab never knew it was there.
@@ -411,7 +427,7 @@ const strings = {
                     <div class="grid grid-cols-2 gap-3">
                       <label class="block text-sm">
                         <span class="mb-1.5 block font-medium">{t('mdl.height')}</span>
-                        <input class="field data" type="number" min="0.2" max="10" step="0.1" data-model-height />
+                        <input class="field data" type="number" min="0.2" max="200" step="0.1" data-model-height />
                       </label>
                       <label class="block text-sm">
                         <span class="mb-1.5 block font-medium">{t('mdl.heading')}</span>
@@ -526,7 +542,7 @@ const strings = {
             </div>
 
             <div class="grid grid-cols-2 gap-3" data-when-scored>
-              <label class="block text-sm">
+              <label class="block text-sm" data-points-only>
                 <span class="mb-1.5 block font-medium">{t('ed.pointsLabel')}</span>
                 <input class="field data" name="points" inputmode="numeric" value="10" />
               </label>
@@ -544,7 +560,7 @@ const strings = {
                   <select class="field" name="onWrong">
                     <option value="retry">{t('ed.wrongRetry')}</option>
                     <option value="lock">{t('ed.wrongLock')}</option>
-                    <option value="deduct">{t('ed.wrongDeduct')}</option>
+                    <option value="deduct" data-points-only>{t('ed.wrongDeduct')}</option>
                     <option value="skip">{t('ed.wrongSkip')}</option>
                   </select>
                 </label>
@@ -587,14 +603,14 @@ const strings = {
                 </label>
               </div>
               <div class="flex flex-wrap items-end gap-3">
-                <label class="block w-32 text-sm">
+                <label class="block w-32 text-sm" data-points-only>
                   <span class="mb-1.5 block font-medium">{t('ed.hintCost')}</span>
                   <input class="field data" data-hint-cost inputmode="numeric" value="0" />
                 </label>
                 <button class="btn btn-quiet" type="button" data-add-hint>{t('ed.addHint')}</button>
               </div>
             </div>
-            <p class="text-xs text-[var(--ink-faint)]">{t('ed.hintsHint')}</p>
+            <p class="text-xs text-[var(--ink-faint)]" data-points-only>{t('ed.hintsHint')}</p>
           </div>
 
           <!-- 5 · Media. Uploaded the moment a file is chosen. -->
@@ -733,6 +749,7 @@ const strings = {
   import { requireUser, reveal, param, escapeHtml, text, duration } from '../lib/session';
   import { levelOf, isPending, isListed, setLevel } from '../lib/publishing';
   import { inspectGlb, type GlbInfo, type GlbProblem } from '../lib/glb';
+  import { mapStyle, followTheme } from '../lib/mapstyle';
 
   /**
    * MapLibre is loaded from a CDN rather than bundled, which is a decision and
@@ -813,6 +830,14 @@ const strings = {
   });
   // The mode's name, not its database code - "ctf" is not a word.
   text(q('[data-trail-mode]'), modeLine(owned.mode, S.lang));
+  // A trail without teams counts nothing, so its question and hints ask for
+  // no points (website sweep, 7 Nov 2026). Questions stay: a lesson can still
+  // ask one.
+  document.documentElement.classList.toggle('trail-no-points', !isScored(owned.mode));
+  if (!isScored(owned.mode)) {
+    const wrong = document.querySelector('[data-marker-form] [name="onWrong"]') as HTMLSelectElement | null;
+    if (wrong?.value === 'deduct') wrong.value = 'retry';
+  }
   text(q('[data-trail-code]'), owned.join_code);
   q('[data-board-link]')!.setAttribute('href', `${S.boardHref}?id=${encodeURIComponent(worldId)}`);
 
@@ -958,7 +983,7 @@ const strings = {
   const maplibregl = await loadMapLibre();
   const map = new maplibregl.Map({
     container: q('[data-map]') as HTMLElement,
-    style: 'https://tiles.openfreemap.org/styles/liberty',
+    style: mapStyle(),
     center: [26.5060, 42.4841],
     zoom: 15,
     // On a phone the map is the full width of the page, so a one-finger drag
@@ -970,6 +995,7 @@ const strings = {
     attributionControl: { compact: true },
   });
   map.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'top-right');
+  followTheme(map);
   requestAnimationFrame(() => map.resize());
   setTimeout(() => map.resize(), 400);
   new ResizeObserver(() => map.resize()).observe(q('[data-map]') as HTMLElement);
@@ -2426,7 +2452,7 @@ const strings = {
     modelSay(summary(file.size, found.info.triangles, found.info.animated), false);
     // Its own size, if it was made at a size that makes sense in a street.
     const h = found.info.height;
-    mq('height').value = String(h >= 0.2 && h <= 10 ? Math.round(h * 10) / 10 : 1);
+    mq('height').value = String(h >= 0.2 && h <= 200 ? Math.round(h * 10) / 10 : 1);
     if (modelUrl.startsWith('blob:')) URL.revokeObjectURL(modelUrl);
     modelUrl = URL.createObjectURL(file);
     showPreview(modelUrl);
@@ -2440,7 +2466,7 @@ const strings = {
   function modelProblem(): string {
     if (!modelRow && !modelFile) return S.mdl.need;
     const h = Number(mq('height').value);
-    if (!(h >= 0.2 && h <= 10)) return S.lang === 'bg' ? 'Височината е между 0,2 и 10 m.' : 'The height is between 0.2 and 10 m.';
+    if (!(h >= 0.2 && h <= 200)) return S.lang === 'bg' ? 'Височината е между 0,2 и 200 m.' : 'The height is between 0.2 and 200 m.';
     if (creditOther() && (!mq('author').value.trim() || !licence() || !/^https:\/\/\S+$/.test(mq('link').value.trim()))) return S.mdl.needCredit;
     if (modelFile && !mq('rights').checked) return S.mdl.needRights;
     return '';
@@ -2816,6 +2842,16 @@ const strings = {
 </script>
 
 <style>
+  .start-card { display: grid; gap: 1.5rem; padding: 1.5rem; align-items: start; }
+  @media (min-width: 720px) { .start-card { grid-template-columns: minmax(0, 1fr) 11rem; } }
+  .start-tips { list-style: none; margin: 1rem 0 0; padding: 0; display: grid; gap: .875rem; }
+  .start-tips li { display: grid; grid-template-columns: 26px 1fr; gap: .625rem; font-size: var(--text-sm); color: var(--ink-dim); }
+  .start-tips span { display: grid; place-items: center; width: 26px; height: 26px; border-radius: 50%; background: var(--signal-wash); color: var(--signal); font-size: 12px; font-weight: 600; }
+  .start-shot { margin: 0; }
+  .start-shot :global(.shot) { width: 11rem; border-width: 5px; border-radius: 26px; }
+  .start-shot figcaption { margin-top: .5rem; font-size: var(--text-xs); color: var(--ink-faint); text-align: center; }
+  @media (max-width: 719px) { .start-shot { display: none; } }
+  :global(.trail-no-points) [data-points-only] { display: none !important; }
   /* ------------------------------------------------------------ the steps */
   .wiz {
     /* clip, not hidden: hidden would make the form its own scroller and the
@@ -2851,7 +2887,7 @@ const strings = {
   .st-row { display: flex; align-items: center; gap: 7px; min-width: 0; }
   .st-n {
     flex: none; width: 22px; height: 22px; border-radius: 50%; display: grid; place-items: center;
-    border: 1.5px solid var(--line); font: 600 11px var(--font-mono); color: var(--ink-faint);
+    border: 1.5px solid var(--line); font: 600 11px var(--font-body); color: var(--ink-faint);
   }
   .st-check { display: none; }
   .st.is-done .st-num { display: none; }
@@ -2956,6 +2992,12 @@ const strings = {
   @media (max-width: 420px) { .hide-xs { display: none; } .wiz-next { min-width: 0; flex: 1; } }
   .trail-status:not(:empty)::before { content: "·"; margin-right: .75rem; color: var(--ink-faint); }
   .ed-tabs { width: fit-content; max-width: 100%; overflow-x: auto; }
+  /* Phones: the four tabs share the full width instead of running off the
+     edge (website sweep, 6 Nov 2026). */
+  @media (max-width: 560px) {
+    .ed-tabs { width: 100%; }
+    .ed-tabs .tab { padding: 0 .5rem; font-size: var(--text-xs); }
+  }
   .ed-off { display: none !important; }
   .trail-settings { padding: 0; }
   .trail-settings > summary { display: flex; flex-wrap: wrap; align-items: baseline; gap: .25rem .75rem; padding: 1rem 1.25rem; cursor: pointer; list-style: none; }

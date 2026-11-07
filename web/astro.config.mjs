@@ -22,7 +22,7 @@ import tailwindcss from '@tailwindcss/vite';
 const SUPABASE = process.env.PUBLIC_SUPABASE_URL || 'https://tajbebyhmvppqlswyjiq.supabase.co';
 
 export default defineConfig({
-  site: 'https://artrail.example',
+  site: 'https://artrails.netlify.app',
   // "Build a trail" used to be a page of its own. The name and mode are now
   // asked on My trails, so old links and bookmarks land there with the form
   // already open.

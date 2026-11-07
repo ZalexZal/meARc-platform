@@ -1,4 +1,3 @@
-<p align="center"><img src="docs/play-store/feature-graphic-1024x500.png" alt="AR Trail: city trails in augmented reality" width="640"></p>
 
 # AR Trail: the platform
 

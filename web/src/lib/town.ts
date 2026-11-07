@@ -561,7 +561,7 @@ export function startTown(o: TownOptions): () => void {
     c.fillStyle = colour; c.fill();
     c.lineWidth = Math.max(1, 1.4 * Math.min(scale, 1.4)); c.strokeStyle = pal.pinEdge; c.stroke();
     if (label) {
-      c.fillStyle = pal.pinInk; c.font = `600 ${Math.max(8, Math.round(8.5 * scale))}px "JetBrains Mono", monospace`;
+      c.fillStyle = pal.pinInk; c.font = `600 ${Math.max(8, Math.round(8.5 * scale))}px Inter, system-ui, sans-serif`;
       c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillText(label, x, hy + 0.5);
     } else {
       c.beginPath(); c.arc(x, hy, r * 0.36, 0, 6.2832); c.fillStyle = pal.pinInk; c.fill();
@@ -570,7 +570,7 @@ export function startTown(o: TownOptions): () => void {
   }
 
   function bubble(c: CanvasRenderingContext2D, x: number, y: number, text: string, alpha: number) {
-    c.font = '600 12px Onest, system-ui, sans-serif';
+    c.font = '600 12px Inter, system-ui, sans-serif';
     const w = c.measureText(text).width + 18, h = 24;
     const plus = /^[+−-]/.test(text);
     c.globalAlpha = alpha;

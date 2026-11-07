@@ -21,6 +21,7 @@ const t = useTranslations(lang);
 
   <div class="card mt-8 hidden max-w-lg p-6" data-trails-noapp>
     <p class="text-sm">{t('games.noApp')}</p>
+    <a class="btn btn-primary mt-4" href="/ARTrail.apk" download>{t('app.download')}</a>
   </div>
 
   <!-- Three states, all of them designed. A list that can only render rows is a
@@ -64,7 +65,7 @@ const t = useTranslations(lang);
 <script>
   import { db, configured } from '../lib/supabase';
   import { count } from '../lib/session';
-  import { modeLine } from '../lib/modes';
+  import { modeLine, isScored } from '../lib/modes';
 
   const strings = JSON.parse(
     document.querySelector('[data-trails-strings]')?.textContent || '{}'
@@ -138,10 +139,10 @@ const t = useTranslations(lang);
         <span class="eyebrow">${modeLine(trail.mode, strings.lang)}</span>
         <h2 class="mt-2 text-xl">${escapeHtml(trail.name)}</h2>
         <p class="data mt-4 text-xs text-[var(--ink-dim)]">
-          ${count(trail.stop_count, labels.stop, labels.stops)} · ${count(trail.team_count, labels.team, labels.teams)}${away != null ? ` · ${strings.away.replace('{0}', distance(away))}` : ''}
+          ${count(trail.stop_count, labels.stop, labels.stops)}${isScored(trail.mode) && Number(trail.team_count) > 0 ? ` · ${count(trail.team_count, labels.team, labels.teams)}` : ''}${away != null ? ` · ${strings.away.replace('{0}', distance(away))}` : ''}
         </p>
         <div class="mt-6 flex flex-wrap gap-2">
-          <a class="btn btn-primary" href="${appLink(trail.id)}">${strings.openApp}</a>
+          <a class="btn btn-primary touch-only" href="${appLink(trail.id)}">${strings.openApp}</a>
           <a class="btn btn-quiet" href="${strings.walkHref}?id=${encodeURIComponent(trail.id)}">${strings.walkWeb}</a>
           <a class="ml-auto self-center text-xs text-[var(--ink-faint)] underline-offset-2 hover:text-[var(--alert)] hover:underline"
              href="mailto:zalex8623@gmail.com?subject=${encodeURIComponent(`${strings.reportSubject}: ${trail.name} (${trail.id})`)}">${strings.report}</a>

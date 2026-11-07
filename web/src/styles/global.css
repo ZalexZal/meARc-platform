@@ -21,7 +21,7 @@
 
 @theme {
   --font-display: "Inter Tight", "Inter", "Segoe UI", system-ui, sans-serif;
-  --font-body: "Onest", "Segoe UI", system-ui, sans-serif;
+  --font-body: "Inter", system-ui, -apple-system, "Segoe UI", sans-serif;
   --font-mono: "JetBrains Mono", ui-monospace, "Cascadia Mono", monospace;
 
   /* A fifth-scale, tight at the bottom where UI text lives and loose at the
@@ -413,17 +413,23 @@ img, svg, video { max-width: 100%; height: auto; display: block; }
 
 /* Coordinates, distances, times and counts. Anything a machine measured. */
 .data {
-  font-family: var(--font-mono);
   font-variant-numeric: tabular-nums;
-  letter-spacing: -0.01em;
 }
 
-.eyebrow {
+/* Codes people read out and type: the one place the monospace face stays,
+   so 0 and O, 1 and I can't be mistaken. */
+.code {
   font-family: var(--font-mono);
-  font-size: var(--text-2xs);
-  letter-spacing: 0.16em;
-  text-transform: uppercase;
-  color: var(--ink-faint);
+  font-variant-numeric: tabular-nums;
+}
+
+/* A quiet label over a heading: sentence case, the body face, a touch
+   heavier - Apple's section labels, not a terminal's (6 Nov 2026). */
+.eyebrow {
+  font-size: var(--text-xs);
+  font-weight: 600;
+  letter-spacing: -0.005em;
+  color: var(--ink-dim);
 }
 
 .card {
@@ -704,11 +710,8 @@ input[type="file"].field::file-selector-button:hover { border-color: var(--ink-f
 .table thead th {
   padding: .625rem .75rem;
   border-bottom: 1px solid var(--line);
-  font-family: var(--font-mono);
-  font-size: var(--text-2xs);
-  font-weight: 500;
-  letter-spacing: .08em;
-  text-transform: uppercase;
+  font-size: var(--text-xs);
+  font-weight: 600;
   text-align: left;
   color: var(--ink-faint);
 }
@@ -716,7 +719,6 @@ input[type="file"].field::file-selector-button:hover { border-color: var(--ink-f
 .table tbody tr:last-child td { border-bottom: 0; }
 .table .num {
   text-align: right;
-  font-family: var(--font-mono);
   font-variant-numeric: tabular-nums;
 }
 .table tbody tr.is-mine { background: var(--signal-wash); }
@@ -1165,6 +1167,10 @@ input[type="radio"][aria-invalid="true"] { outline: 2px solid var(--alert); outl
 }
 .to-top svg { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
 
+/* Things only a phone can use (opening the app): hidden where there is a
+   mouse, since a computer cannot open an Android app. */
+@media (pointer: fine) { .touch-only { display: none !important; } }
+
 /* ---------------------------------------------------------- cookie notice
 
    Not a consent banner: there is nothing to consent to. It says what the
@@ -1205,15 +1211,14 @@ input[type="radio"][aria-invalid="true"] { outline: 2px solid var(--alert); outl
   .cookie-bar p > :not(strong) { display: none; }
   .cookie-bar-actions .btn-ghost { display: none; }
 }
-/* On a wide screen a compact card in the corner, clear of the hero's words. */
-@media (min-width: 900px) {
-  .cookie-bar {
-    left: auto; right: 1.5rem; width: 22rem;
-    flex-direction: column; align-items: stretch;
-    transform: translate(0, calc(100% + 2rem));
-  }
-  .cookie-bar.is-shown { transform: translate(0, 0); }
-  .cookie-bar-actions { justify-content: flex-end; }
+/* On a wide screen the same slim line, centred at the foot of the window:
+   the card it was in the corner sat over content on every page until it was
+   dismissed (website sweep, 6 Nov 2026). */
+@media (min-width: 561px) {
+  .cookie-bar { width: auto; max-width: calc(100% - 2rem); gap: 1rem;
+                padding: .375rem .375rem .375rem 1.125rem; border-radius: 999px; }
+  .cookie-bar p { white-space: nowrap; font-size: .8125rem; }
+  .cookie-bar p > :not(strong) { display: none; }
 }
 
 }
