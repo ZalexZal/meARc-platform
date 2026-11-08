@@ -20,11 +20,13 @@ const href = localise(lang);
  * The map and the stop list stay outside the steps. They are how you choose
  * what you are editing, so they cannot live inside one of the things chosen.
  */
+// 8 Nov 2026: the 3D visual got its own step, second, so the AI that makes
+// models is in plain view; hints moved under the question they help with.
 const steps = [
   { id: 'basics',   label: t('tab.basics'),   sub: t('wiz.basics.sub') },
+  { id: 'visual',   label: t('tab.visual'),   sub: t('wiz.visual.sub') },
   { id: 'place',    label: t('tab.place'),    sub: t('wiz.place.sub') },
   { id: 'question', label: t('tab.question'), sub: t('wiz.optional') },
-  { id: 'hints',    label: t('tab.hints'),    sub: t('wiz.optional') },
   { id: 'media',    label: t('tab.media'),    sub: t('wiz.media.sub') },
 ];
 
@@ -43,24 +45,27 @@ const kinds = [
  * and an empty value mean. Drawn in currentColor so each card is the stop's
  * own colour once one is picked.
  */
+// The five a creator picks from (8 Nov 2026). Sphere and cone are gone from
+// the picker; stops that already use them keep them (see setShape).
 const shapes = [
   { key: 'pin', label: t('ed.shape.pin'),
     svg: '<svg viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M16 29s-8-8.6-8-15a8 8 0 1 1 16 0c0 6.4-8 15-8 15Z" fill="currentColor" fill-opacity=".25"/><circle cx="16" cy="14" r="3"/></svg>' },
-  { key: 'sphere', label: t('ed.shape.sphere'),
-    svg: '<svg viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="16" cy="14" r="9" fill="currentColor" fill-opacity=".25"/><path d="M11.5 10.5a5 5 0 0 1 4-2.5"/><ellipse cx="16" cy="28" rx="8" ry="2"/></svg>' },
-  { key: 'cone', label: t('ed.shape.cone'),
-    svg: '<svg viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" aria-hidden="true"><path d="M16 4 8 26h16L16 4Z" fill="currentColor" fill-opacity=".25"/><path d="M11 18h10"/><ellipse cx="16" cy="28" rx="10" ry="2"/></svg>' },
   { key: 'cube', label: t('ed.shape.cube'),
     svg: '<svg viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" aria-hidden="true"><path d="M16 6 26 11v11l-10 5-10-5V11l10-5Z" fill="currentColor" fill-opacity=".25"/><path d="M6 11l10 5 10-5M16 16v11"/></svg>' },
   { key: 'sign', label: t('ed.shape.sign'),
     svg: '<svg viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="4" width="24" height="14" rx="2" fill="currentColor" fill-opacity=".25"/><path d="M9 9h14M9 13h9M16 18v11"/></svg>' },
-  // The creator's own: a .glb they made or may share (0055).
+  // A model made by AI from photos, a video or a description. Saved as 'model'.
+  { key: 'ai', label: t('ed.shape.ai'), ai: true,
+    svg: '<svg viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" aria-hidden="true"><path d="M14 4l2.4 6.2L22.6 12.6l-6.2 2.4L14 21.2l-2.4-6.2L5.4 12.6l6.2-2.4L14 4Z" fill="currentColor" fill-opacity=".25"/><path d="M24 19l1.2 3 3 1.2-3 1.2L24 27.4l-1.2-3-3-1.2 3-1.2L24 19Z"/></svg>' },
+  // The creator's own model: a .glb or .stl they made or may share (0055).
   { key: 'model', label: t('ed.shape.model'),
-    svg: '<svg viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" aria-hidden="true"><path d="M16 3.5 26.5 9.5v13L16 28.5 5.5 22.5v-13L16 3.5Z" fill="currentColor" fill-opacity=".12"/><path d="M5.5 9.5 16 15.5l10.5-6M16 15.5v13"/><path d="M11 20.5c1.2-1.6 2.6-2.4 4-2.4M21 12.5l1.5 1.5M22.5 12.5 21 14" stroke-linecap="round"/></svg>' },
+    svg: '<svg viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" aria-hidden="true"><path d="M16 3.5 26.5 9.5v13L16 28.5 5.5 22.5v-13L16 3.5Z" fill="currentColor" fill-opacity=".12"/><path d="M5.5 9.5 16 15.5l10.5-6M16 15.5v13"/></svg>' },
 ];
 
 const strings = {
   lang,
+  shapeLegacy: t('ed.shapeLegacy'),
+  shapeNames: { sphere: t('ed.shape.sphere'), cone: t('ed.shape.cone') },
   ai: {
     toEn: t('ai.toEn'), toBg: t('ai.toBg'), working: t('ai.working'), done: t('ai.done'),
     nothing: t('ai.nothing'), quota: t('ai.quota'), failed: t('ai.failed'), notReady: t('ai.notReady'),
@@ -111,19 +116,19 @@ const strings = {
     textureTooBig: t('mdl.textureTooBig'), compressed: t('mdl.compressed'), external: t('mdl.external'),
     noMesh: t('mdl.noMesh'), current: t('mdl.current'), need: t('mdl.need'), needRights: t('mdl.needRights'),
     needCredit: t('mdl.needCredit'), uploading: t('mdl.uploading'), imp: t('imp.model'),
-    stl: t('mdl.stl'), stlBad: t('mdl.stlBad'),
+    stl: t('mdl.stl'), stlBad: t('mdl.stlBad'), choose: t('mdl.choose'),
   },
   ai3d: {
     picture: t('ai3d.picture'), model: t('ai3d.model'), server: t('ai3d.server'), done: t('ai3d.done'),
     quota: t('ai3d.quota'), busy: t('ai3d.busy'), down: t('ai3d.down'), failed: t('ai3d.failed'),
     signin: t('ai3d.signin'), notReady: t('ai3d.notReady'), pick: t('ai3d.pick'),
-    needPhoto: t('ai3d.needPhoto'), needText: t('ai3d.needText'),
+    emptyStage: t('ai3d.emptyStage'), needInput: t('ai3d.needInput'), frames: t('ai3d.frames'), videoBad: t('ai3d.videoBad'),
   },
   wiz: {
     next: t('wiz.next'), done: t('wiz.done'), saved: t('wiz.saved'), skipped: t('wiz.skipped'),
     of: t('wiz.of'), newStop: t('wiz.newStop'), stop: t('wiz.stop'), untitled: t('wiz.untitled'),
     ready: t('wiz.ready'), skippedList: t('wiz.skippedList'),
-    names: [t('tab.basics'), t('tab.place'), t('tab.question'), t('tab.hints'), t('tab.media')],
+    names: [t('tab.basics'), t('tab.visual'), t('tab.place'), t('tab.question'), t('tab.media')],
   },
 };
 ---
@@ -310,7 +315,7 @@ const strings = {
                       <svg class="st-check" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="m5 12 5 5 9-10" /></svg>
                     </span>
                     <span class="st-l">{st.label}</span>
-                    {st.id === 'hints' && <span class="data st-count" data-count-hints></span>}
+                    {st.id === 'question' && <span class="data st-count" data-count-hints></span>}
                     {st.id === 'media' && <span class="data st-count" data-count-media></span>}
                   </span>
                   <span class="st-sub" data-step-sub data-sub={st.sub}>{st.sub}</span>
@@ -373,39 +378,19 @@ const strings = {
             <p class="text-xs text-[var(--ink-faint)]">* {t('ed.required')}</p>
           </div>
 
-          <!-- 2 · The place: where it stands, and what stands there. Shape and
-               colour live here rather than with the words, because they are
-               what a walker sees on that spot. -->
-          <div class="pane hidden" data-panel="place">
+          <!-- 2 · The 3D visual: what stands on the spot (8 Nov 2026). A pin, a
+               cube, a sign, a model made by AI, or the creator's own model -
+               the AI kept in plain view rather than inside "a model". -->
+          <div class="pane hidden" data-panel="visual">
             <header class="pane-head">
-              <h3>{t('wiz.place.title')}</h3>
-              <p>{t('wiz.place.lede')}</p>
+              <h3>{t('wiz.visual.title')}</h3>
+              <p>{t('wiz.visual.lede')}</p>
             </header>
-            <p class="where">
-              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 21s-7-7.4-7-12a7 7 0 1 1 14 0c0 4.6-7 12-7 12Z" /><circle cx="12" cy="9" r="2.5" /></svg>
-              <span>{t('wiz.place.drag')}</span>
-            </p>
-            <div class="grid grid-cols-2 gap-3 sm:grid-cols-3">
-              <label class="block text-sm">
-                <span class="mb-1.5 block font-medium">{t('ed.lat')} *</span>
-                <input class="field data" name="lat" inputmode="decimal" />
-              </label>
-              <label class="block text-sm">
-                <span class="mb-1.5 block font-medium">{t('ed.lng')} *</span>
-                <input class="field data" name="lng" inputmode="decimal" />
-              </label>
-              <label class="block text-sm">
-                <span class="mb-1.5 block font-medium">{t('ed.radius')}</span>
-                <input class="field data" name="radius" inputmode="numeric" />
-              </label>
-            </div>
-            <p class="-mt-2 text-xs text-[var(--ink-faint)]">{t('ed.radiusHint')}</p>
-
             <div>
               <span class="mb-1.5 block text-sm font-medium" id="shape-label">{t('ed.shape')}</span>
               <div class="shape-picker" role="radiogroup" aria-labelledby="shape-label" data-shapes>
                 {shapes.map((s) => (
-                  <label class="shape-option">
+                  <label class:list={['shape-option', { 'shape-ai': s.ai }]}>
                     <input type="radio" name="shape" value={s.key} class="sr-only" />
                     <Fragment set:html={s.svg} />
                     <span class="text-xs">{s.label}</span>
@@ -413,6 +398,7 @@ const strings = {
                 ))}
               </div>
               <p class="mt-2 text-xs text-[var(--ink-faint)]">{t('ed.shapeHint')}</p>
+              <p class="mt-2 hidden text-xs text-[var(--ink-dim)]" data-shape-legacy></p>
 
               <!-- A sign's words, in both languages. Only for a sign: every
                    other shape has nothing to write on. Empty shows the name. -->
@@ -431,38 +417,41 @@ const strings = {
                    sent (lib/glb.ts), shown turning, sized and faced, and
                    credited. Uploaded when the step is left, like the rest. -->
               <div class="model-box mt-3 hidden" data-model-fields>
-                <p class="text-xs text-[var(--ink-dim)]">{t('mdl.hint')}</p>
+                <p class="text-xs text-[var(--ink-dim)]" data-model-hint>{t('mdl.hint')}</p>
                 <div class="model-grid">
                   <div class="model-stage" data-model-stage>
                     <p class="model-empty" data-model-empty>
                       <svg width="28" height="28" viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round" aria-hidden="true"><path d="M16 3.5 26.5 9.5v13L16 28.5 5.5 22.5v-13L16 3.5Z"/><path d="M5.5 9.5 16 15.5l10.5-6M16 15.5v13"/></svg>
-                      <span>{t('mdl.choose')}</span>
+                      <span data-model-empty-label>{t('mdl.choose')}</span>
                     </p>
                   </div>
                   <div class="space-y-3">
-                    <!-- Where the model comes from (7 Nov 2026): a file (.glb or
-                         .stl), or made by AI from a photo or a description. -->
-                    <div class="tabs mdl-src" role="tablist" aria-label={t('mdl.choose')} data-mdl-src>
-                      <button class="tab is-on" type="button" role="tab" data-src="file">{t('mdl.src.file')}</button>
-                      <button class="tab" type="button" role="tab" data-src="photo">{t('mdl.src.photo')}</button>
-                      <button class="tab" type="button" role="tab" data-src="text">{t('mdl.src.text')}</button>
-                    </div>
+                    <!-- Where the model comes from follows the tile (8 Nov 2026):
+                         "Insert a 3D model" takes a file (.glb or .stl), "Generate
+                         with AI" takes photos and/or a video, and a description. -->
                     <label class="block text-sm" data-src-panel="file">
                       <span class="mb-1.5 block font-medium">{t('mdl.choose')}</span>
                       <input class="field" type="file" accept=".glb,.stl,model/gltf-binary,model/stl" data-model-file />
                     </label>
-                    <div class="space-y-2" data-src-panel="photo" hidden>
-                      <p class="text-xs text-[var(--ink-dim)]">{t('ai3d.photoHint')}</p>
-                      <input class="field" type="file" accept="image/jpeg,image/png,image/webp,image/heic" multiple data-ai-photos />
+                    <div class="space-y-3" data-src-panel="ai" hidden>
+                      <label class="block text-sm">
+                        <span class="mb-1.5 block font-medium">{t('ai3d.media')}</span>
+                        <input class="field" type="file" accept="image/jpeg,image/png,image/webp,image/heic,video/mp4,video/quicktime,video/webm" multiple data-ai-media />
+                      </label>
+                      <p class="text-xs text-[var(--ink-dim)]">{t('ai3d.mediaHint')}</p>
                       <div class="ai-thumbs" data-ai-thumbs></div>
-                    </div>
-                    <div class="space-y-2" data-src-panel="text" hidden>
-                      <textarea class="field" rows="3" maxlength="300" data-ai-text placeholder={t('ai3d.textPh')}></textarea>
+                      <label class="block text-sm">
+                        <span class="mb-1.5 block font-medium">{t('ai3d.describe')}</span>
+                        <textarea class="field" rows="3" maxlength="300" data-ai-text placeholder={t('ai3d.textPh')}></textarea>
+                      </label>
                       <img class="ai-picture" alt="" data-ai-picture hidden />
-                    </div>
-                    <div class="flex flex-wrap items-center gap-x-4 gap-y-2" data-ai-controls hidden>
-                      <button class="btn btn-primary btn-sm" type="button" data-ai-make>{t('ai3d.make')}</button>
-                      <p class="basis-full text-xs text-[var(--ink-faint)]">{t('ai3d.note')}</p>
+                      <div class="flex flex-wrap items-center gap-x-4 gap-y-2">
+                        <button class="btn btn-primary btn-sm" type="button" data-ai-make>
+                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l1.8 4.7L18.5 9.5l-4.7 1.8L12 16l-1.8-4.7L5.5 9.5l4.7-1.8L12 3ZM19 15l.8 2.2L22 18l-2.2.8L19 21l-.8-2.2L16 18l2.2-.8L19 15Z"/></svg>
+                          {t('ai3d.make')}
+                        </button>
+                        <p class="basis-full text-xs text-[var(--ink-faint)]">{t('ai3d.note')}</p>
+                      </div>
                     </div>
                     <p class="text-xs text-[var(--ink-dim)]" data-model-current hidden></p>
                     <p class="text-xs" data-model-check role="status" aria-live="polite" hidden></p>
@@ -540,7 +529,35 @@ const strings = {
             </div>
           </div>
 
-          <!-- 3 · The question. Optional: a tour needs none. -->
+          <!-- 3 · The place: where it stands and how close a walker comes. -->
+          <div class="pane hidden" data-panel="place">
+            <header class="pane-head">
+              <h3>{t('wiz.place.title')}</h3>
+              <p>{t('wiz.place.lede')}</p>
+            </header>
+            <p class="where">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 21s-7-7.4-7-12a7 7 0 1 1 14 0c0 4.6-7 12-7 12Z" /><circle cx="12" cy="9" r="2.5" /></svg>
+              <span>{t('wiz.place.drag')}</span>
+            </p>
+            <div class="grid grid-cols-2 gap-3 sm:grid-cols-3">
+              <label class="block text-sm">
+                <span class="mb-1.5 block font-medium">{t('ed.lat')} *</span>
+                <input class="field data" name="lat" inputmode="decimal" />
+              </label>
+              <label class="block text-sm">
+                <span class="mb-1.5 block font-medium">{t('ed.lng')} *</span>
+                <input class="field data" name="lng" inputmode="decimal" />
+              </label>
+              <label class="block text-sm">
+                <span class="mb-1.5 block font-medium">{t('ed.radius')}</span>
+                <input class="field data" name="radius" inputmode="numeric" />
+              </label>
+            </div>
+            <p class="-mt-2 text-xs text-[var(--ink-faint)]">{t('ed.radiusHint')}</p>
+
+          </div>
+
+          <!-- 4 · The question and its hints. Optional: a tour needs none. -->
           <div class="pane hidden" data-panel="question">
             <header class="pane-head">
               <h3>{t('wiz.question.title')} <span class="badge badge-quiet ml-1 align-middle">{t('wiz.optional')}</span></h3>
@@ -622,12 +639,11 @@ const strings = {
               </div>
               <p class="text-xs text-[var(--ink-faint)]">{t('ed.afterHint')}</p>
             </div>
-          </div>
-
-          <!-- 4 · Hints. Optional. Each one is saved the moment it is added. -->
-          <div class="pane hidden" data-panel="hints">
-            <header class="pane-head">
-              <h3>{t('wiz.hints.title')} <span class="badge badge-quiet ml-1 align-middle">{t('wiz.optional')}</span></h3>
+            <!-- Hints, under the question they help with (8 Nov 2026). Each
+                 one is saved the moment it is added. -->
+            <section class="hints-box space-y-3" data-hints-box>
+            <header class="hints-head">
+              <h4>{t('wiz.hints.title')} <span class="badge badge-quiet ml-1 align-middle">{t('wiz.optional')}</span></h4>
               <p>{t('wiz.hints.lede')}</p>
             </header>
             <p class="text-sm text-[var(--ink-dim)]" data-hints-empty>{t('ed.noHints')}</p>
@@ -653,6 +669,7 @@ const strings = {
               </div>
             </div>
             <p class="text-xs text-[var(--ink-faint)]" data-points-only>{t('ed.hintsHint')}</p>
+            </section>
           </div>
 
           <!-- 5 · Media. Uploaded the moment a file is chosen. -->
@@ -840,7 +857,8 @@ const strings = {
   // is still loading reaches setShape, and SHAPES was not defined yet.
   const SHAPES = ['pin', 'sphere', 'cone', 'cube', 'sign', 'model'];
   // A spreadsheet row cannot carry a file, so it cannot carry a model.
-  const IMPORTABLE = SHAPES.filter((k) => k !== 'model');
+  // The shapes a creator can pick (8 Nov 2026): a spreadsheet row keeps to them.
+  const IMPORTABLE = ['pin', 'cube', 'sign'];
   const q = (s: string) => document.querySelector(s);
   const qa = (s: string) => Array.from(document.querySelectorAll(s));
 
@@ -1154,14 +1172,15 @@ const strings = {
   let dirty = false;
   const markDirty = (e: Event) => {
     const el = e.target as HTMLElement;
-    if (el.closest('[data-panel="hints"], [data-panel="media"], [data-import]')) return;
+    if (el.closest('[data-hints-box], [data-panel="media"], [data-import]')) return;
     dirty = true;
   };
   form.addEventListener('input', markDirty);
   form.addEventListener('change', markDirty);
 
-  const STEPS = ['basics', 'place', 'question', 'hints', 'media'] as const;
-  const OPTIONAL = new Set([2, 3]);
+  const STEPS = ['basics', 'visual', 'place', 'question', 'media'] as const;
+  const QUESTION = STEPS.indexOf('question'), MEDIA = STEPS.indexOf('media');
+  const OPTIONAL = new Set([QUESTION]);
   let step = 0;
   let ready = false;
   let visited = new Set<number>([0]);
@@ -1317,10 +1336,10 @@ const strings = {
     skippedSteps = new Set<number>();
     if (!fresh) {
       if (m.content?.bg?.title) doneSteps.add(0);
-      doneSteps.add(1);
-      if ((m.answer_kind ?? 'none') !== 'none') doneSteps.add(2);
-      if (Number(m.hint_count)) doneSteps.add(3);
-      if (Number(m.media_count)) doneSteps.add(4);
+      doneSteps.add(STEPS.indexOf('visual'));
+      doneSteps.add(STEPS.indexOf('place'));
+      if ((m.answer_kind ?? 'none') !== 'none' || Number(m.hint_count)) doneSteps.add(QUESTION);
+      if (Number(m.media_count)) doneSteps.add(MEDIA);
     }
     text(q('[data-wiz-kind]'), fresh ? S.wiz.newStop : S.wiz.stop.replace('{0}', String(stopNumber(m.id))));
     text(q('[data-wiz-pin]'), String(stopNumber(m.id)));
@@ -1350,8 +1369,8 @@ const strings = {
   // and then skipped is not a question.
   q('[data-wiz-skip]')?.addEventListener('click', () => {
     const m = markers.find((x) => x.id === selected);
-    if (step === 2 && m) fillAnswer(m);
-    if (step === 3) {
+    if (step === QUESTION && m) fillAnswer(m);
+    if (step === QUESTION) {
       (q('[data-hint-bg]') as HTMLInputElement).value = '';
       (q('[data-hint-en]') as HTMLInputElement).value = '';
     }
@@ -1704,7 +1723,9 @@ const strings = {
     const rows = data ?? [];
 
     text(q('[data-count-hints]'), rows.length ? String(rows.length) : '');
-    if (rows.length) { doneSteps.add(3); skippedSteps.delete(3); } else doneSteps.delete(3);
+    // Hints live in the question step now: having some marks it done; having
+    // none says nothing about the question itself.
+    if (rows.length) { doneSteps.add(QUESTION); skippedSteps.delete(QUESTION); }
     paintSteps();
     q('[data-hints-empty]')!.classList.toggle('hidden', rows.length > 0);
     q('[data-hints]')!.innerHTML = rows.map((h: any) => `
@@ -1784,7 +1805,7 @@ const strings = {
     const rows = data ?? [];
 
     text(q('[data-count-media]'), rows.length ? String(rows.length) : '');
-    if (rows.length) doneSteps.add(4); else doneSteps.delete(4);
+    if (rows.length) doneSteps.add(MEDIA); else doneSteps.delete(MEDIA);
     paintSteps();
     q('[data-media-empty]')!.classList.toggle('hidden', rows.length > 0);
     q('[data-media]')!.innerHTML = rows.map((m: any) => {
@@ -1954,7 +1975,7 @@ const strings = {
     // had changed when nobody changed it.
     if (chosenShape() === 'model') {
       const problem = modelProblem();
-      if (problem) { fail(problem, 'place'); return false; }
+      if (problem) { fail(problem, 'visual'); return false; }
     }
 
     if (!dirty) { button.disabled = false; text(labelEl, label); return true; }
@@ -2015,7 +2036,7 @@ const strings = {
 
     if (shape === 'model') {
       const problem = await saveModel(saving);
-      if (problem) { savingNow = false; fail(problem, 'place'); return false; }
+      if (problem) { savingNow = false; fail(problem, 'visual'); return false; }
     }
 
     const moved = await client.rpc('move_marker', { p_marker: selected, p_lat: lat, p_lng: lng });
@@ -2434,15 +2455,31 @@ const strings = {
 
 
   /** The shape the form shows: 'default', empty or unknown all mean the pin. */
+  // A stop with a shape no longer offered (sphere, cone) keeps it until the
+  // creator picks another: no tile is ticked and a line says what it is.
+  let legacyShape: string | null = null;
+
   function setShape(key: string | null | undefined) {
     const shape = SHAPES.includes(key ?? '') ? key! : 'pin';
+    form.querySelectorAll<HTMLInputElement>('input[name="shape"]').forEach((r) => { r.checked = false; });
     const radio = form.querySelector(`input[name="shape"][value="${shape}"]`) as HTMLInputElement | null;
+    legacyShape = radio ? null : shape;
     if (radio) radio.checked = true;
+    const note = q('[data-shape-legacy]') as HTMLElement;
+    note.classList.toggle('hidden', !legacyShape);
+    if (legacyShape) text(note, S.shapeLegacy.replace('{0}', S.shapeNames[legacyShape] ?? legacyShape));
     showSignFields();
   }
 
+  /** The tile ticked: pin, cube, sign, ai or model. */
+  function chosenTile(): string | null {
+    return (form.querySelector('input[name="shape"]:checked') as HTMLInputElement | null)?.value ?? null;
+  }
+
+  /** What is saved as the stop's style: an AI model is a model. */
   function chosenShape(): string {
-    return (form.querySelector('input[name="shape"]:checked') as HTMLInputElement | null)?.value ?? 'pin';
+    const tile = chosenTile();
+    return tile === 'ai' ? 'model' : tile ?? legacyShape ?? 'pin';
   }
 
   // ------------------------------------------------------------- the model
@@ -2536,6 +2573,10 @@ const strings = {
     if (selected !== m.id) return;
     modelRow = data ?? null;
     modelAi = modelRow?.credit_source === 'ai' ? modelRow.ai_source : null;
+    if (modelAi && chosenTile() === 'model') {
+      (form.querySelector('input[name="shape"][value="ai"]') as HTMLInputElement).checked = true;
+      showModelFields();
+    }
     paintCredit();
     mq('height').value = modelRow ? String(Math.round(modelRow.height_m * 100) / 100) : '';
     mq('heading').value = mq('heading-num').value = String(modelRow?.heading_deg ?? 0);
@@ -2558,6 +2599,14 @@ const strings = {
   function showModelFields() {
     const on = chosenShape() === 'model';
     mq<HTMLElement>('fields').classList.toggle('hidden', !on);
+    form.querySelectorAll<HTMLElement>('[data-src-panel]').forEach((p) => {
+      p.hidden = p.dataset.srcPanel !== (chosenTile() === 'ai' ? 'ai' : 'file');
+    });
+    // The file instructions and "whose model" belong to a file, not to AI.
+    const ai = chosenTile() === 'ai';
+    mq<HTMLElement>('hint').hidden = ai;
+    text(mq<HTMLElement>('empty-label'), ai ? S.ai3d.emptyStage : S.mdl.choose);
+    paintCredit();
     if (on) showPreview(modelUrl);
   }
 
@@ -2586,7 +2635,7 @@ const strings = {
   }
 
   function paintCredit() {
-    mq<HTMLElement>('credit').hidden = Boolean(modelAi);
+    mq<HTMLElement>('credit').hidden = Boolean(modelAi) || chosenTile() === 'ai';
   }
 
   mq('file').addEventListener('change', async () => {
@@ -2609,22 +2658,38 @@ const strings = {
   });
 
   // ------------------------------------------------- a model made by AI
-  let aiSource: 'file' | 'photo' | 'text' = 'file';
-  let aiPhotos: File[] = [];
+  // Photos and/or a video, and an optional description (8 Nov 2026). A video
+  // gives up a few of its frames as pictures; the creator taps the best one.
+  // TRELLIS.2 builds from one picture, so the description is used when there
+  // is no picture: it becomes one first (FLUX.1).
+  let aiPictures: Blob[] = [];
   let aiChosen = 0;
 
-  function showSource(src: typeof aiSource) {
-    aiSource = src;
-    form.querySelectorAll<HTMLElement>('[data-src]').forEach((b) => b.classList.toggle('is-on', b.dataset.src === src));
-    form.querySelectorAll<HTMLElement>('[data-src-panel]').forEach((p) => { p.hidden = p.dataset.srcPanel !== src; });
-    (q('[data-ai-controls]') as HTMLElement).hidden = src === 'file';
+  /** Six frames spread through a video, as JPEGs. */
+  async function videoFrames(file: File, count = 6): Promise<Blob[]> {
+    const video = document.createElement('video');
+    video.muted = true; video.playsInline = true; video.preload = 'auto';
+    video.src = URL.createObjectURL(file);
+    await new Promise<void>((ok, bad) => { video.onloadeddata = () => ok(); video.onerror = () => bad(new Error('video')); });
+    const canvas = document.createElement('canvas');
+    const scale = Math.min(1, 1024 / Math.max(video.videoWidth, video.videoHeight));
+    canvas.width = Math.round(video.videoWidth * scale);
+    canvas.height = Math.round(video.videoHeight * scale);
+    const frames: Blob[] = [];
+    for (let i = 0; i < count; i++) {
+      video.currentTime = Math.min(video.duration - 0.05, (video.duration * (i + 0.5)) / count);
+      await new Promise<void>((ok) => { video.onseeked = () => ok(); });
+      canvas.getContext('2d')!.drawImage(video, 0, 0, canvas.width, canvas.height);
+      const blob = await new Promise<Blob | null>((ok) => canvas.toBlob(ok, 'image/jpeg', 0.88));
+      if (blob) frames.push(blob);
+    }
+    URL.revokeObjectURL(video.src);
+    return frames;
   }
-  form.querySelectorAll<HTMLElement>('[data-src]').forEach((b) =>
-    b.addEventListener('click', () => showSource(b.dataset.src as typeof aiSource)));
 
   function drawThumbs() {
     const box = q('[data-ai-thumbs]') as HTMLElement;
-    box.replaceChildren(...aiPhotos.map((f, i) => {
+    box.replaceChildren(...aiPictures.map((f, i) => {
       const b = document.createElement('button');
       b.type = 'button';
       b.className = 'ai-thumb' + (i === aiChosen ? ' is-on' : '');
@@ -2636,9 +2701,21 @@ const strings = {
       return b;
     }));
   }
-  q('[data-ai-photos]')?.addEventListener('change', (e) => {
-    aiPhotos = Array.from((e.target as HTMLInputElement).files ?? []).slice(0, 6);
+
+  q('[data-ai-media]')?.addEventListener('change', async (e) => {
+    const files = Array.from((e.target as HTMLInputElement).files ?? []);
+    const pictures: Blob[] = [];
+    for (const f of files) {
+      if (f.type.startsWith('video/')) {
+        modelSay(S.ai3d.frames, false);
+        try { pictures.push(...await videoFrames(f)); } catch { modelSay(S.ai3d.videoBad, true); }
+      } else {
+        pictures.push(f);
+      }
+    }
+    aiPictures = pictures.slice(0, 12);
     aiChosen = 0;
+    if (aiPictures.length) modelSay('', false);
     drawThumbs();
   });
 
@@ -2650,20 +2727,17 @@ const strings = {
   q('[data-ai-make]')?.addEventListener('click', async (e) => {
     const button = e.currentTarget as HTMLButtonElement;
     const say = (stage: string) => modelSay(S.ai3d[stage] ?? '', false);
+    const words = (q('[data-ai-text]') as HTMLTextAreaElement).value.trim();
+    let picture: Blob | null = aiPictures[aiChosen] ?? null;
+    if (!picture && words.length < 3) { modelSay(S.ai3d.needInput, true); return; }
     button.disabled = true;
     try {
-      let photo: Blob | null = null;
-      if (aiSource === 'photo') {
-        photo = aiPhotos[aiChosen] ?? null;
-        if (!photo) { modelSay(S.ai3d.needPhoto, true); return; }
-      } else {
-        const words = (q('[data-ai-text]') as HTMLTextAreaElement).value.trim();
-        if (words.length < 3) { modelSay(S.ai3d.needText, true); return; }
-        photo = await describeToPicture(words, say);
+      if (!picture) {
+        picture = await describeToPicture(words, say);
         const pic = q('[data-ai-picture]') as HTMLImageElement;
-        pic.src = URL.createObjectURL(photo); pic.hidden = false;
+        pic.src = URL.createObjectURL(picture); pic.hidden = false;
       }
-      const made = await photoTo3d(photo, say);
+      const made = await photoTo3d(picture, say);
       await takeModel(new File([made.glb], `ai-${made.source}.glb`, { type: 'model/gltf-binary' }), made.source);
     } catch (err) {
       aiFail(err);
@@ -2741,7 +2815,11 @@ const strings = {
     box?.classList.toggle('grid', sign);
   }
 
-  form.querySelectorAll('input[name="shape"]').forEach((r) => r.addEventListener('change', showSignFields));
+  form.querySelectorAll('input[name="shape"]').forEach((r) => r.addEventListener('change', () => {
+    legacyShape = null;
+    (q('[data-shape-legacy]') as HTMLElement).classList.add('hidden');
+    showSignFields();
+  }));
 
   function hueFromEvent(event: PointerEvent | MouseEvent) {
     const strip = q('[data-hue]') as HTMLElement;
@@ -3060,9 +3138,9 @@ const strings = {
 </script>
 
 <style>
-  .mdl-src { width: 100%; }
-  .mdl-src .tab { flex: 1 1 0; padding: 0 .5rem; font-size: var(--text-xs); }
-  .mdl-src .tab.is-on { background: var(--surface); color: var(--ink); box-shadow: 0 1px 2px rgba(0,0,0,.08); }
+  .hints-box { margin-top: 1.5rem; padding-top: 1.25rem; border-top: 1px solid var(--line-soft); }
+  .hints-head h4 { font-size: 1.0625rem; font-weight: 600; letter-spacing: -.01em; }
+  .hints-head p { margin-top: .25rem; font-size: var(--text-sm); color: var(--ink-dim); }
   .ai-thumbs { display: flex; flex-wrap: wrap; gap: .5rem; }
   .ai-thumbs:empty { display: none; }
   .ai-thumb { width: 64px; height: 64px; padding: 0; border-radius: 12px; overflow: hidden; border: 2px solid transparent; }

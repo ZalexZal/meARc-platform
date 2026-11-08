@@ -848,6 +848,14 @@ input[type="file"].field::file-selector-button:hover { border-color: var(--ink-f
   outline-offset: 2px;
 }
 
+/* The AI tile stands out a little: the accent's wash and its own colour,
+   whatever colour the stop has (8 Nov 2026). */
+.shape-option.shape-ai { background: var(--signal-wash); color: var(--signal); }
+.shape-option.shape-ai svg { color: var(--signal); }
+@media (max-width: 480px) {
+  .shape-picker { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+}
+
 /* ------------------------------------------------------------------ meters */
 
 .meter {

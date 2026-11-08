@@ -16,6 +16,12 @@ try {
     [id, JSON.stringify({ bg: { title: 'Безистен', body: 'Покрит пазар от XVI век.' } }), u.id]);
 
   const p = await b.newPage({ viewport: { width: 1280, height: 900 } });
+  // A step saves first, then shows its pane: wait for the pane.
+  const PANES = ['basics', 'visual', 'place', 'question', 'media'];
+  const goStep = async (i) => {
+    await p.click(`[data-step="${i}"]`);
+    await p.waitForSelector(`[data-panel="${PANES[i]}"]:not(.hidden)`, { timeout: 15000 });
+  };
   p.on('pageerror', (e) => errs.push(e.message + ' @ ' + (e.stack || '').split('\n').slice(1, 3).join(' ')));
   p.on('console', (msg) => { if (msg.type() === 'error' || msg.type() === 'warning') console.log('console:', msg.text().slice(0, 200)); });
   p.on('dialog', (d) => d.accept().catch(() => {}));
@@ -35,15 +41,25 @@ try {
   const en = await p.inputValue('input[name=titleEn]');
   check('translate answers (filled, or says the key is not set yet)', /Bezisten/i.test(en) || /не е включен/.test(said), `${said} | ${en}`);
 
-  // Step 2: the shape, then a model from an .stl
-  await p.click('[data-step="1"]');
+  // The steps (8 Nov 2026): Basics, 3D visual, Place, Question (with hints), Media.
+  const steps = await p.$$eval('[data-step]', (b) => b.map((x) => x.textContent.replace(/\s+/g, ' ').trim()));
+  check('five steps, 3D visual second, no separate hints', steps.length === 5 && /3D/.test(steps[1]) && !steps.some((t) => /Подсказки/.test(t)), steps.join(' | '));
+  await goStep(3);
+  check('hints sit inside the question step', await p.isVisible('[data-panel="question"] [data-hints-box]'));
+  await (await p.$('[data-marker-form]')).screenshot({ path: `${SHOTS}/ai-question.png` });
+
+  // Step 2, the 3D visual: five tiles
+  await goStep(1);
+  const tiles = await p.$$eval('[data-panel="visual"] input[name=shape]', (r) => r.map((x) => x.value));
+  check('tiles: pin, cube, sign, AI, 3D model', tiles.join() === 'pin,cube,sign,ai,model', tiles.join());
+  await p.click('label:has(input[name=shape][value=ai])');
+  check('AI tile: photos/video, description and Make', await p.isVisible('[data-ai-media]') && await p.isVisible('[data-ai-text]')
+    && await p.isVisible('[data-ai-make]') && !(await p.isVisible('[data-model-file]')));
+  await (await p.$('[data-marker-form]')).screenshot({ path: `${SHOTS}/ai-visual.png` });
+  await p.click('[data-ai-make]');
+  check('Make with nothing asks for a picture or words', /снимка|видео/.test(await p.textContent('[data-model-check]')));
   await p.click('label:has(input[name=shape][value=model])');
-  check('three model sources', (await p.$$('[data-src]')).length === 3);
-  await p.click('[data-src=photo]');
-  check('photo source shows the photo picker and Make', await p.isVisible('[data-ai-photos]') && await p.isVisible('[data-ai-make]'));
-  await p.click('[data-src=text]');
-  check('description source shows the text box', await p.isVisible('[data-ai-text]'));
-  await p.click('[data-src=file]');
+  check('3D model tile: the file picker only', await p.isVisible('[data-model-file]') && !(await p.isVisible('[data-ai-media]')));
   await p.setInputFiles('[data-model-file]', path.join(import.meta.dirname, 'fixtures/house.stl'));
   await p.waitForFunction(() => /MB/.test(document.querySelector('[data-model-check]')?.textContent ?? ''), null, { timeout: 30000 });
   check('stl converted and checked', true, await p.textContent('[data-model-check]'));
@@ -66,7 +82,8 @@ try {
   // for the app. Optional: AI_GLB=/path/to/a/trellis.glb (too big for the repo).
   if (process.env.AI_GLB) {
     await p.click(`[data-pick="${m.id}"]`);
-    await p.click('[data-step="1"]');
+    await goStep(1);
+    await p.click('label:has(input[name=shape][value=model])');
     await p.setInputFiles('[data-model-file]', process.env.AI_GLB);
     await p.waitForFunction(() => {
       const t = document.querySelector('[data-model-check]')?.textContent ?? '';
