@@ -61,6 +61,10 @@ const shapes = [
 
 const strings = {
   lang,
+  ai: {
+    toEn: t('ai.toEn'), toBg: t('ai.toBg'), working: t('ai.working'), done: t('ai.done'),
+    nothing: t('ai.nothing'), quota: t('ai.quota'), failed: t('ai.failed'), notReady: t('ai.notReady'),
+  },
   setOneByOne: t('ed.setOneByOne'), teamSize: t('ed.teamSize'), start: t('ed.start'),
   deleteConfirm: t('ed.deleteConfirm'), deleteNotOwner: t('ed.deleteNotOwner'),
   saved: t('ed.saved'), saving: t('ed.saving'),
@@ -107,6 +111,13 @@ const strings = {
     textureTooBig: t('mdl.textureTooBig'), compressed: t('mdl.compressed'), external: t('mdl.external'),
     noMesh: t('mdl.noMesh'), current: t('mdl.current'), need: t('mdl.need'), needRights: t('mdl.needRights'),
     needCredit: t('mdl.needCredit'), uploading: t('mdl.uploading'), imp: t('imp.model'),
+    stl: t('mdl.stl'), stlBad: t('mdl.stlBad'),
+  },
+  ai3d: {
+    picture: t('ai3d.picture'), model: t('ai3d.model'), server: t('ai3d.server'), done: t('ai3d.done'),
+    quota: t('ai3d.quota'), busy: t('ai3d.busy'), down: t('ai3d.down'), failed: t('ai3d.failed'),
+    signin: t('ai3d.signin'), notReady: t('ai3d.notReady'), pick: t('ai3d.pick'),
+    needPhoto: t('ai3d.needPhoto'), needText: t('ai3d.needText'),
   },
   wiz: {
     next: t('wiz.next'), done: t('wiz.done'), saved: t('wiz.saved'), skipped: t('wiz.skipped'),
@@ -328,6 +339,17 @@ const strings = {
               <h3>{t('wiz.basics.title')}</h3>
               <p>{t('wiz.basics.lede')}</p>
             </header>
+            <!-- AI translation of the whole stop in one go (7 Nov 2026): only
+                 the empty fields of the other language are filled, and the
+                 creator reads them before saving. -->
+            <div class="ai-row">
+              <button class="btn btn-quiet btn-sm" type="button" data-ai-translate>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 5h8M8 3v2M6 5c0 4 2.5 7 6 8M10 5c0 3-2 6-6 8M13 21l4-9 4 9M14.5 18h5"/></svg>
+                <span data-ai-label>{t('ai.toEn')}</span>
+              </button>
+              <p class="ai-say" data-ai-say aria-live="polite"></p>
+              <p class="ai-note">{t('ai.note')}</p>
+            </div>
             <div class="grid gap-3 sm:grid-cols-2">
               <label class="block text-sm">
                 <span class="mb-1.5 block font-medium">{t('ed.titleBg')} *</span>
@@ -418,10 +440,30 @@ const strings = {
                     </p>
                   </div>
                   <div class="space-y-3">
-                    <label class="block text-sm">
+                    <!-- Where the model comes from (7 Nov 2026): a file (.glb or
+                         .stl), or made by AI from a photo or a description. -->
+                    <div class="tabs mdl-src" role="tablist" aria-label={t('mdl.choose')} data-mdl-src>
+                      <button class="tab is-on" type="button" role="tab" data-src="file">{t('mdl.src.file')}</button>
+                      <button class="tab" type="button" role="tab" data-src="photo">{t('mdl.src.photo')}</button>
+                      <button class="tab" type="button" role="tab" data-src="text">{t('mdl.src.text')}</button>
+                    </div>
+                    <label class="block text-sm" data-src-panel="file">
                       <span class="mb-1.5 block font-medium">{t('mdl.choose')}</span>
-                      <input class="field" type="file" accept=".glb,model/gltf-binary" data-model-file />
+                      <input class="field" type="file" accept=".glb,.stl,model/gltf-binary,model/stl" data-model-file />
                     </label>
+                    <div class="space-y-2" data-src-panel="photo" hidden>
+                      <p class="text-xs text-[var(--ink-dim)]">{t('ai3d.photoHint')}</p>
+                      <input class="field" type="file" accept="image/jpeg,image/png,image/webp,image/heic" multiple data-ai-photos />
+                      <div class="ai-thumbs" data-ai-thumbs></div>
+                    </div>
+                    <div class="space-y-2" data-src-panel="text" hidden>
+                      <textarea class="field" rows="3" maxlength="300" data-ai-text placeholder={t('ai3d.textPh')}></textarea>
+                      <img class="ai-picture" alt="" data-ai-picture hidden />
+                    </div>
+                    <div class="flex flex-wrap items-center gap-x-4 gap-y-2" data-ai-controls hidden>
+                      <button class="btn btn-primary btn-sm" type="button" data-ai-make>{t('ai3d.make')}</button>
+                      <p class="basis-full text-xs text-[var(--ink-faint)]">{t('ai3d.note')}</p>
+                    </div>
                     <p class="text-xs text-[var(--ink-dim)]" data-model-current hidden></p>
                     <p class="text-xs" data-model-check role="status" aria-live="polite" hidden></p>
                     <div class="grid grid-cols-2 gap-3">
@@ -442,7 +484,7 @@ const strings = {
                   </div>
                 </div>
 
-                <fieldset class="mt-2 space-y-3">
+                <fieldset class="mt-2 space-y-3" data-model-credit>
                   <legend class="mb-1.5 text-sm font-medium">{t('mdl.credit')}</legend>
                   <div class="flex flex-wrap gap-2">
                     <label class="kind-opt credit-opt"><input class="sr-only" type="radio" name="modelCredit" value="own" checked /><span class="kind-name">{t('mdl.own')}</span></label>
@@ -750,6 +792,9 @@ const strings = {
   import { levelOf, isPending, isListed, setLevel } from '../lib/publishing';
   import { inspectGlb, type GlbInfo, type GlbProblem } from '../lib/glb';
   import { mapStyle, followTheme } from '../lib/mapstyle';
+  import { stlToGlb, isStl } from '../lib/stl';
+  import { glbForApp } from '../lib/glbclean';
+  import { photoTo3d, describeToPicture, Ai3dError, type Ai3dSource } from '../lib/ai3d';
 
   /**
    * MapLibre is loaded from a CDN rather than bundled, which is a decision and
@@ -786,6 +831,11 @@ const strings = {
   }
 
   const S = JSON.parse(document.querySelector('[data-editor-strings]')!.textContent || '{}');
+  // Up here, before the first await: a stop opened while the rest of the page
+  // is still loading reaches setShape, and SHAPES was not defined yet.
+  const SHAPES = ['pin', 'sphere', 'cone', 'cube', 'sign', 'model'];
+  // A spreadsheet row cannot carry a file, so it cannot carry a model.
+  const IMPORTABLE = SHAPES.filter((k) => k !== 'model');
   const q = (s: string) => document.querySelector(s);
   const qa = (s: string) => Array.from(document.querySelectorAll(s));
 
@@ -1379,6 +1429,8 @@ const strings = {
     q('[data-marker-error]')!.classList.add('hidden');
     startSteps(m, fresh);
     await Promise.all([loadHints(), loadMedia(), loadModel(m)]);
+    text(q('[data-ai-say]'), '');
+    paintAiLabel();
   }
 
   function drawList() {
@@ -1575,6 +1627,67 @@ const strings = {
     await load();
     const id = Array.isArray(data) ? data[0]?.id : (data as any)?.id;
     if (id) await select(id, true);
+  });
+
+  // ------------------------------------------------------------ translation
+  // One request for the whole stop through the translate Edge Function
+  // (supabase/functions/translate). Only empty fields of the other language
+  // are filled; hints, which save the moment they are added, are updated in
+  // place; everything else waits for the creator to read it and save.
+  const PAIRS: Record<string, [string, string]> = {
+    title: ['titleBg', 'titleEn'], body: ['bodyBg', 'bodyEn'], sign: ['signBg', 'signEn'],
+    question: ['questionBg', 'questionEn'], after: ['afterBg', 'afterEn'],
+  };
+  const fval = (n: string) => ((form.elements.namedItem(n) as HTMLInputElement | null)?.value ?? '').trim();
+  const aiFrom = () => (Object.values(PAIRS).some(([bg]) => fval(bg)) ? 'bg' : 'en') as 'bg' | 'en';
+  const aiSay = (msg: string) => text(q('[data-ai-say]'), msg);
+  function paintAiLabel() { text(q('[data-ai-label]'), aiFrom() === 'bg' ? S.ai.toEn : S.ai.toBg); }
+  form.addEventListener('input', paintAiLabel);
+
+  q('[data-ai-translate]')?.addEventListener('click', async (e) => {
+    if (!selected) return;
+    const button = e.currentTarget as HTMLButtonElement;
+    const from = aiFrom(), to = from === 'bg' ? 'en' : 'bg';
+    const side = (pair: [string, string], lang: 'bg' | 'en') => pair[lang === 'bg' ? 0 : 1];
+
+    const fields: Record<string, unknown> = {};
+    for (const [key, pair] of Object.entries(PAIRS)) {
+      if (fval(side(pair, from)) && !fval(side(pair, to))) fields[key] = fval(side(pair, from));
+    }
+    if (choices.some((c) => c[from]?.trim() && !c[to]?.trim())) fields.choices = choices.map((c) => c[from] ?? '');
+    const hintRows = ((await client.from('marker_hints').select('id,body').eq('marker_id', selected).order('ord')).data ?? [])
+      .filter((h: any) => h.body?.[from] && !h.body?.[to]);
+    if (hintRows.length) fields.hints = hintRows.map((h: any) => h.body[from]);
+    if (!Object.keys(fields).length) { aiSay(S.ai.nothing); return; }
+
+    button.disabled = true; aiSay(S.ai.working);
+    const { data, error } = await client.functions.invoke('translate', { body: { world: worldId, from, to, fields } });
+    button.disabled = false;
+    if (error || !data?.ok) {
+      const reason = data?.reason ?? (await (error as any)?.context?.json?.().catch(() => null))?.reason;
+      aiSay(reason === 'quota' ? S.ai.quota : reason === 'not_configured' ? S.ai.notReady : S.ai.failed);
+      return;
+    }
+
+    const out = data.fields ?? {};
+    for (const [key, pair] of Object.entries(PAIRS)) {
+      const el = form.elements.namedItem(side(pair, to)) as HTMLInputElement | null;
+      if (el && !el.value.trim() && typeof out[key] === 'string') {
+        el.value = out[key]; el.dispatchEvent(new Event('input', { bubbles: true }));
+      }
+    }
+    if (Array.isArray(out.choices)) {
+      out.choices.forEach((v: string, i: number) => { if (choices[i] && !choices[i][to]?.trim()) choices[i][to] = v; });
+      drawChoices();
+    }
+    if (Array.isArray(out.hints)) {
+      await Promise.all(hintRows.map((h: any, i: number) => out.hints[i]
+        ? client.from('marker_hints').update({ body: { ...h.body, [to]: out.hints[i] } }).eq('id', h.id)
+        : null));
+      await loadHints();
+    }
+    aiSay(S.ai.done);
+    paintAiLabel();
   });
 
   // ------------------------------------------------------------------ hints
@@ -2069,7 +2182,9 @@ const strings = {
         </tr>`).join('')}</tbody>`;
   }
 
-  await Promise.all([loadReview(), loadBoard()]);
+  // Not awaited: the page script has to run to its end at once, or a stop
+  // opened meanwhile meets constants not defined yet (7 Nov 2026).
+  Promise.all([loadReview(), loadBoard()]).catch(() => {});
 
   // ---------------------------------------------------------------- editors
   const me = (await client.auth.getUser()).data.user;
@@ -2147,7 +2262,7 @@ const strings = {
     location.href = S.myTrailsHref;
   });
 
-  await loadEditors();
+  loadEditors().catch(() => {});
 
   // ------------------------------------------------------------------- live
   //
@@ -2224,7 +2339,7 @@ const strings = {
 
   // Last, not beside load(): everything it reads is declared further down this
   // file, and a const is not readable before its declaration has been reached.
-  await loadUsage();
+  // (loadUsage is called at the very end of this script.)
 
   // ------------------------------------------------------------------ colour
   //
@@ -2309,9 +2424,6 @@ const strings = {
     if (badge) badge.style.background = hex;
   }
 
-  const SHAPES = ['pin', 'sphere', 'cone', 'cube', 'sign', 'model'];
-  // A spreadsheet row cannot carry a file, so it cannot carry a model.
-  const IMPORTABLE = SHAPES.filter((k) => k !== 'model');
 
   /** The shape the form shows: 'default', empty or unknown all mean the pin. */
   function setShape(key: string | null | undefined) {
@@ -2329,6 +2441,8 @@ const strings = {
   // The stop's own 3D model (0055): the row that is saved, a new file waiting to
   // go up with the step, and what the checks found in it.
   let modelRow: any = null;
+  // Which AI made the model in hand, or null for a file the creator brought.
+  let modelAi: Ai3dSource | null = null;
   let modelFile: File | null = null;
   let modelInfo: GlbInfo | null = null;
   let modelUrl = '';
@@ -2413,6 +2527,8 @@ const strings = {
     const { data } = await client.from('marker_models').select('*').eq('marker_id', m.id).maybeSingle();
     if (selected !== m.id) return;
     modelRow = data ?? null;
+    modelAi = modelRow?.credit_source === 'ai' ? modelRow.ai_source : null;
+    paintCredit();
     mq('height').value = modelRow ? String(Math.round(modelRow.height_m * 100) / 100) : '';
     mq('heading').value = mq('heading-num').value = String(modelRow?.heading_deg ?? 0);
     const other = modelRow?.credit_source === 'other';
@@ -2437,25 +2553,115 @@ const strings = {
     if (on) showPreview(modelUrl);
   }
 
-  mq('file').addEventListener('change', async () => {
-    const input = mq('file');
-    const file = input.files?.[0];
-    if (!file) return;
-    modelSay(S.mdl.checking, false);
+  /** A model in hand - chosen, converted from STL or made by AI - checked and previewed. */
+  async function takeModel(file: File, ai: Ai3dSource | null): Promise<boolean> {
+    // WebP textures (TRELLIS.2 and many tools) re-saved as JPEG/PNG for the app.
+    try { file = await glbForApp(file); } catch { /* not a GLB three.js can read: inspectGlb says why */ }
     const found = inspectGlb(await file.arrayBuffer());
     if (!found.ok) {
-      input.value = ''; modelFile = null; modelInfo = null;
+      modelFile = null; modelInfo = null;
       modelSay(problemText(found.problem), true);
-      return;
+      return false;
     }
-    modelFile = file; modelInfo = found.info;
-    modelSay(summary(file.size, found.info.triangles, found.info.animated), false);
+    modelFile = file; modelInfo = found.info; modelAi = ai;
+    paintCredit();
+    modelSay((ai ? S.ai3d.done + ' ' : '') + summary(file.size, found.info.triangles, found.info.animated), false);
     // Its own size, if it was made at a size that makes sense in a street.
+    // An AI model has no real size of its own: it starts at 2 m.
     const h = found.info.height;
-    mq('height').value = String(h >= 0.2 && h <= 200 ? Math.round(h * 10) / 10 : 1);
+    mq('height').value = String(!ai && h >= 0.2 && h <= 200 ? Math.round(h * 10) / 10 : ai ? 2 : 1);
     if (modelUrl.startsWith('blob:')) URL.revokeObjectURL(modelUrl);
     modelUrl = URL.createObjectURL(file);
     showPreview(modelUrl);
+    dirty = true;
+    return true;
+  }
+
+  function paintCredit() {
+    mq<HTMLElement>('credit').hidden = Boolean(modelAi);
+  }
+
+  mq('file').addEventListener('change', async () => {
+    const input = mq('file');
+    let file = input.files?.[0];
+    if (!file) return;
+    // STL: converted to a GLB here, so everything after is the same (7 Nov 2026).
+    if (isStl(file)) {
+      modelSay(S.mdl.stl, false);
+      try {
+        const glb = await stlToGlb(file, hue === null ? DEFAULT_STOP_COLOUR : hueToHex(hue));
+        file = new File([glb], file.name.replace(/\.stl$/i, '.glb'), { type: 'model/gltf-binary' });
+      } catch {
+        input.value = ''; modelSay(S.mdl.stlBad, true); return;
+      }
+    } else {
+      modelSay(S.mdl.checking, false);
+    }
+    if (!(await takeModel(file, null))) input.value = '';
+  });
+
+  // ------------------------------------------------- a model made by AI
+  let aiSource: 'file' | 'photo' | 'text' = 'file';
+  let aiPhotos: File[] = [];
+  let aiChosen = 0;
+
+  function showSource(src: typeof aiSource) {
+    aiSource = src;
+    form.querySelectorAll<HTMLElement>('[data-src]').forEach((b) => b.classList.toggle('is-on', b.dataset.src === src));
+    form.querySelectorAll<HTMLElement>('[data-src-panel]').forEach((p) => { p.hidden = p.dataset.srcPanel !== src; });
+    (q('[data-ai-controls]') as HTMLElement).hidden = src === 'file';
+  }
+  form.querySelectorAll<HTMLElement>('[data-src]').forEach((b) =>
+    b.addEventListener('click', () => showSource(b.dataset.src as typeof aiSource)));
+
+  function drawThumbs() {
+    const box = q('[data-ai-thumbs]') as HTMLElement;
+    box.replaceChildren(...aiPhotos.map((f, i) => {
+      const b = document.createElement('button');
+      b.type = 'button';
+      b.className = 'ai-thumb' + (i === aiChosen ? ' is-on' : '');
+      b.title = S.ai3d.pick;
+      const img = document.createElement('img');
+      img.src = URL.createObjectURL(f); img.alt = '';
+      b.append(img);
+      b.addEventListener('click', () => { aiChosen = i; drawThumbs(); });
+      return b;
+    }));
+  }
+  q('[data-ai-photos]')?.addEventListener('change', (e) => {
+    aiPhotos = Array.from((e.target as HTMLInputElement).files ?? []).slice(0, 6);
+    aiChosen = 0;
+    drawThumbs();
+  });
+
+  function aiFail(e: unknown) {
+    const reason = e instanceof Ai3dError ? e.reason : 'failed';
+    modelSay(S.ai3d[reason] ?? S.ai3d.failed, true);
+  }
+
+  q('[data-ai-make]')?.addEventListener('click', async (e) => {
+    const button = e.currentTarget as HTMLButtonElement;
+    const say = (stage: string) => modelSay(S.ai3d[stage] ?? '', false);
+    button.disabled = true;
+    try {
+      let photo: Blob | null = null;
+      if (aiSource === 'photo') {
+        photo = aiPhotos[aiChosen] ?? null;
+        if (!photo) { modelSay(S.ai3d.needPhoto, true); return; }
+      } else {
+        const words = (q('[data-ai-text]') as HTMLTextAreaElement).value.trim();
+        if (words.length < 3) { modelSay(S.ai3d.needText, true); return; }
+        photo = await describeToPicture(words, say);
+        const pic = q('[data-ai-picture]') as HTMLImageElement;
+        pic.src = URL.createObjectURL(photo); pic.hidden = false;
+      }
+      const made = await photoTo3d(photo, say);
+      await takeModel(new File([made.glb], `ai-${made.source}.glb`, { type: 'model/gltf-binary' }), made.source);
+    } catch (err) {
+      aiFail(err);
+    } finally {
+      button.disabled = false;
+    }
   });
   mq('heading').addEventListener('input', () => { mq('heading-num').value = mq('heading').value; turnPreview(); });
   mq('heading-num').addEventListener('input', () => { mq('heading').value = mq('heading-num').value; turnPreview(); });
@@ -2468,7 +2674,7 @@ const strings = {
     const h = Number(mq('height').value);
     if (!(h >= 0.2 && h <= 200)) return S.lang === 'bg' ? 'Височината е между 0,2 и 200 m.' : 'The height is between 0.2 and 200 m.';
     if (creditOther() && (!mq('author').value.trim() || !licence() || !/^https:\/\/\S+$/.test(mq('link').value.trim()))) return S.mdl.needCredit;
-    if (modelFile && !mq('rights').checked) return S.mdl.needRights;
+    if (modelFile && !modelAi && !mq('rights').checked) return S.mdl.needRights;
     return '';
   }
 
@@ -2485,7 +2691,7 @@ const strings = {
       const up = await client.storage.from('marker-media').upload(path, body, { contentType: 'model/gltf-binary', upsert: false });
       if (up.error) { modelSay('', false); return up.error.message; }
     }
-    const other = creditOther();
+    const other = !modelAi && creditOther();
     const row = {
       marker_id: markerId,
       path,
@@ -2493,7 +2699,8 @@ const strings = {
       animated: modelInfo?.animated ?? modelRow.animated,
       height_m: Number(mq('height').value),
       heading_deg: ((Math.round(Number(mq('heading').value)) || 0) % 360 + 360) % 360,
-      credit_source: other ? 'other' : 'own',
+      credit_source: modelAi ? 'ai' : other ? 'other' : 'own',
+      ai_source: modelAi,
       credit_author: other ? mq('author').value.trim() : null,
       credit_licence: other ? licence() : null,
       credit_link: other ? mq('link').value.trim() : null,
@@ -2839,10 +3046,27 @@ const strings = {
 
     await load();
   });
+  // Last of all: it reads constants declared all through this file.
+  loadUsage().catch(() => {});
 </script>
 
 <style>
+  .mdl-src { width: 100%; }
+  .mdl-src .tab { flex: 1 1 0; padding: 0 .5rem; font-size: var(--text-xs); }
+  .mdl-src .tab.is-on { background: var(--surface); color: var(--ink); box-shadow: 0 1px 2px rgba(0,0,0,.08); }
+  .ai-thumbs { display: flex; flex-wrap: wrap; gap: .5rem; }
+  .ai-thumbs:empty { display: none; }
+  .ai-thumb { width: 64px; height: 64px; padding: 0; border-radius: 12px; overflow: hidden; border: 2px solid transparent; }
+  .ai-thumb.is-on { border-color: var(--signal); }
+  .ai-thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
+  .ai-picture { width: 128px; height: 128px; object-fit: cover; border-radius: 14px; border: 1px solid var(--line); }
+  .ai-row { display: flex; flex-wrap: wrap; align-items: center; gap: .375rem .875rem; margin-bottom: 1rem; }
+  .ai-row .btn svg { margin-right: .375rem; }
+  .ai-say { font-size: var(--text-sm); color: var(--ink-dim); }
+  .ai-say:empty { display: none; }
+  .ai-note { flex-basis: 100%; font-size: var(--text-xs); color: var(--ink-faint); }
   .start-card { display: grid; gap: 1.5rem; padding: 1.5rem; align-items: start; }
+  .start-card.hidden { display: none; }
   @media (min-width: 720px) { .start-card { grid-template-columns: minmax(0, 1fr) 11rem; } }
   .start-tips { list-style: none; margin: 1rem 0 0; padding: 0; display: grid; gap: .875rem; }
   .start-tips li { display: grid; grid-template-columns: 26px 1fr; gap: .625rem; font-size: var(--text-sm); color: var(--ink-dim); }

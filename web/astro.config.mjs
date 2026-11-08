@@ -37,7 +37,9 @@ export default defineConfig({
   },
   security: {
     csp: {
-      scriptDirective: { resources: ["'self'", 'https://cdnjs.cloudflare.com'] },
+      // 'wasm-unsafe-eval' lets model-viewer and three.js compile their WebAssembly
+      // decoders; it allows WebAssembly only, not eval() of JavaScript.
+      scriptDirective: { resources: ["'self'", "'wasm-unsafe-eval'", 'https://cdnjs.cloudflare.com'] },
       styleDirective: {
         resources: ["'self'", "'unsafe-inline'", 'https://fonts.googleapis.com', 'https://cdnjs.cloudflare.com'],
       },
@@ -45,7 +47,7 @@ export default defineConfig({
         "default-src 'self'",
         // The API and realtime (co-editing), and the editor's map tiles.
         // blob: is a creator's own 3D model, read in the builder before upload.
-        `connect-src 'self' blob: ${SUPABASE} ${SUPABASE.replace(/^https:/, 'wss:')} https://tiles.openfreemap.org`,
+        `connect-src 'self' blob: ${SUPABASE} ${SUPABASE.replace(/^https:/, 'wss:')} https://tiles.openfreemap.org https://*.hf.space https://huggingface.co`,
         // Uploads, QR codes (data:), map sprites (blob:), and pictures a
         // creator linked from anywhere.
         "img-src 'self' data: blob: https:",
