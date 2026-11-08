@@ -52,7 +52,11 @@ try {
   await p.fill('[data-model-height]', '12');
   await p.check('[data-model-rights]');
   await p.click('[data-marker-save]');
-  await p.waitForTimeout(5000);
+  // The upload and the row take a few seconds; wait for the row, up to 30 s.
+  for (let i = 0; i < 30; i++) {
+    if ((await sql(`select 1 from marker_models where marker_id = $1`, [m.id])).length) break;
+    await p.waitForTimeout(1000);
+  }
   const rows = await sql(`select path, triangles, height_m, credit_source from marker_models where marker_id = $1`, [m.id]);
   check('model row saved from the stl', rows.length === 1 && rows[0].path.endsWith('.glb') && rows[0].triangles === 16 && rows[0].height_m === 12,
     JSON.stringify(rows[0] ?? null));

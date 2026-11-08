@@ -831,6 +831,11 @@ const strings = {
   }
 
   const S = JSON.parse(document.querySelector('[data-editor-strings]')!.textContent || '{}');
+  // A stop opened by a person waits for this: until the script below has run
+  // to its end, the helpers a stop's form needs are not defined yet (a click
+  // during the first load crashed the editor, 7-8 Nov 2026).
+  let markReady!: () => void;
+  const editorReady = new Promise<void>((resolve) => { markReady = resolve; });
   // Up here, before the first await: a stop opened while the rest of the page
   // is still loading reaches setShape, and SHAPES was not defined yet.
   const SHAPES = ['pin', 'sphere', 'cone', 'cube', 'sign', 'model'];
@@ -1077,7 +1082,7 @@ const strings = {
   const num = (n: string) => { const v = val(n); return v === '' ? null : Number(v); };
 
   function showKindFields() {
-    const kind = (field('kind') as HTMLSelectElement).value;
+    const kind = (field('kind') as HTMLSelectElement).value || 'none';
     q('[data-when-exact]')!.classList.toggle('hidden', kind !== 'exact');
     q('[data-when-choice]')!.classList.toggle('hidden', kind !== 'choice');
     (q('[data-when-scored]') as HTMLElement).style.visibility = kind === 'none' ? 'hidden' : '';
@@ -1130,7 +1135,7 @@ const strings = {
   // a wait only punishes spelling; the box said 15 for it anyway, and the
   // server was sent 15 unless the creator noticed and changed it.
   onKind(() => {
-    const kind = (field('kind') as HTMLSelectElement).value;
+    const kind = (field('kind') as HTMLSelectElement).value || 'none';
     const wait = field('cooldown') as HTMLInputElement;
     if (kind === 'free' && wait.value === '15') wait.value = '0';
     else if (kind !== 'free' && kind !== 'none' && wait.value === '0') wait.value = '15';
@@ -1233,7 +1238,7 @@ const strings = {
         || lat < -90 || lat > 90 || lng < -180 || lng > 180) {
       items.push({ label: S.miss.place, panel: 'place', field: 'lat', required: true });
     }
-    const kind = (field('kind') as HTMLSelectElement).value;
+    const kind = (field('kind') as HTMLSelectElement).value || 'none';
     if (kind !== 'none' && !val('questionBg') && !val('questionEn')) {
       items.push({ label: S.miss.question, panel: 'question', field: 'questionBg', required: true });
     }
@@ -1460,6 +1465,7 @@ const strings = {
     list.querySelectorAll('[data-pick]').forEach((b) =>
       b.addEventListener('click', async () => {
         const id = (b as HTMLElement).dataset.pick!;
+        await editorReady;
         await select(id);
         const m = markers.find((x) => x.id === id);
         if (m) map.easeTo({ center: [m.lng, m.lat], zoom: Math.max(map.getZoom(), 16) });
@@ -1549,7 +1555,7 @@ const strings = {
 
       const pin = new maplibregl.Marker({ element: el, draggable: true })
         .setLngLat([m.lng, m.lat]).addTo(map);
-      el.addEventListener('click', (e) => { e.stopPropagation(); select(m.id); });
+      el.addEventListener('click', (e) => { e.stopPropagation(); editorReady.then(() => select(m.id)); });
 
       pin.on('dragend', async () => {
         const { lng, lat } = pin.getLngLat();
@@ -1921,7 +1927,9 @@ const strings = {
       return false;
     }
 
-    const kind = (field('kind') as HTMLSelectElement).value;
+    // Radios: before the stop's answer has loaded none is checked and the
+    // value is '' - which used to read as "a question" and block the save.
+    const kind = (field('kind') as HTMLSelectElement).value || 'none';
     const kept = choices.filter((c) => c.bg.trim() || c.en.trim());
     const correct = kept.map((c, i) => (c.correct ? i : -1)).filter((i) => i >= 0);
 
@@ -3048,6 +3056,7 @@ const strings = {
   });
   // Last of all: it reads constants declared all through this file.
   loadUsage().catch(() => {});
+  markReady();
 </script>
 
 <style>
