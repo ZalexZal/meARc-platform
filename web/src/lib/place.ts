@@ -52,13 +52,19 @@ const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
 /**
  * The city at a point, in Bulgarian and English. Null on any error or when there is no city.
- * The two requests go one after the other, 1.1 s apart in Node, to keep to 1 request/s.
+ * The two requests go one after the other, `wait` ms apart (1.1 s by default) in the browser
+ * and in Node alike, to keep to Nominatim's 1 request/s.
  */
-export async function cityAt(lat: number, lng: number, fetchImpl: typeof fetch = fetch): Promise<City | null> {
+export async function cityAt(
+  lat: number,
+  lng: number,
+  fetchImpl: typeof fetch = fetch,
+  wait = 1100,
+): Promise<City | null> {
   try {
     const bg = await place(lat, lng, 'bg', fetchImpl);
     if (!bg) return null;
-    if (typeof window === 'undefined') await sleep(1100);
+    await sleep(wait);
     const en = await place(lat, lng, 'en', fetchImpl);
     if (!en) return null;
     return { key: en.toLowerCase().trim(), bg, en, lat, lng };
