@@ -34,6 +34,12 @@
 - **Existing accounts:** asked once (My trails on the website, sign-in in the app). Old trails keep every feature they already use.
 - **Netlify credits:** push the website once per finished phase, not per task.
 
+- **Visibility (Alex, 9 Nov):** every line of work keeps both choices in the builder: private (only with a code) and public (sent for review, then listed). Line of work never hides the visibility setting.
+- **Approvals for this build (Alex, 9 Nov):**
+  - apply 0067 and the back-fill to the live DB;
+  - push the website when tests pass;
+  - delete anything unused in the DB once it's proven unused (Task 0).
+
 ## Review Focus
 
 1. **Never asked.** An account with `work = null` (existing users, guests turned real) sees the full builder, never an empty one. Owner: Task 3, test `featuresFor(null)` equals `featuresFor('other')`.
@@ -45,6 +51,19 @@
 ---
 
 ## Phase A — Database
+
+### Task 0: Database clean-up
+
+**Files:**
+- Create:
+  - `docs/db-cleanup-2026-11-09.md`: what was removed and why, plus each object's definition, so it can be restored.
+  - `supabase/migrations/0068_cleanup.sql`: numbered after 0067, applied after it.
+
+- [ ] **Step 1: Inventory.** List public tables, views, functions, triggers, storage buckets and policies (pg catalog over `~/keys/supabase-db-url.txt`).
+- [ ] **Step 2: Mark an object unused only if its name has zero hits** in `noit-platform/web/src`, `noit-platform/supabase/functions`, `noit-platform/supabase/migrations` (only in its own creation or helpers), `noit-platform/tools`, `noit-platform/tests`, and `AR-Trails/AR-Trails/Assets/Scripts`. It must also not be called by another live function, trigger or policy (check `pg_proc.prosrc`, `pg_policy`, `pg_trigger`).
+- [ ] **Step 3: Remove leftover data.** Delete `@lab.` / `lab-` test accounts and their trails that `cleanUsers` missed (identify by email pattern from `tests/lab/lib.mjs`), plus orphaned storage objects in `marker-media` whose world no longer exists.
+- [ ] **Step 4: Write and apply** `0068_cleanup.sql` (drops only), after 0067. Run the full lab suite afterwards. Expected: all pass.
+- [ ] **Step 5: Commit.**
 
 ### Task 1: Migration 0067 — line of work, category, city
 
@@ -311,20 +330,55 @@
 - [ ] **Step 2:** Run UIPreview. Expected: the shots render, and the trails screen rows show "Туризъм · Ямбол" under the name (preview stand-in data).
 - [ ] **Step 3: Commit.**
 
-### Task 13: App trails tab — search and category chips
+### Task 13: App trail picker — option A (Alex, 9 Nov)
+
+Mockups: https://claude.ai/artifact/RzHw3tRxSdGeLqSVr1vEnX (artboards "A · Top menu" and "A · All trails"). Line of work plays no part here: everyone sees and walks every public trail.
 
 **Files:**
+- Create: `Assets/Scripts/UI/TrailFilter.cs`: `static string Fold(string s)` and `static bool Matches(string query, string name, string cityBg, string cityEn)`, a port of Task 3's `fold`/`matches`.
 - Modify:
-  - `Assets/Scripts/UI/TrailsDoor.cs`:
-    - a search field filters "Near you" and "Yours" by `fold`-equivalent matching. Port `fold` and `matches` to C#, as `TrailFilter.Matches(string query, string name, string cityBg, string cityEn)` in a new `Assets/Scripts/UI/TrailFilter.cs`.
-    - Category chips: All plus four. When nothing matches, the line says `find.nothing`.
-  - `Assets/Scripts/Editor/AppUIBuilder.cs` (`BuildTrailsDoor`, line ~7438): build the search field and chip row above the lists.
-- Test: an Edit-mode test `Assets/Tests/Editor/TrailFilterTests.cs`, the same cases as Task 3's `matches` tests.
+  - `Assets/Scripts/UI/TrailMenuView.cs` (the top pull-down):
+    - "Твоите": your trails (`TrailService.Mine`), each with a category icon and "Category · City · progress"; the current one has a check.
+    - "Наблизо": the 3 closest public trails from `trails_near`, not already in "Твоите", with distance on the right.
+    - Then "Търси сред всички маршрути" (opens the trails screen) and "Влез с код".
+  - `Assets/Scripts/UI/TrailsDoor.cs` (the full "Маршрути" screen):
+    - a search field "Име или град" filtering with `TrailFilter.Matches`;
+    - chips: Всички · Образование · Туризъм · Недвижими имоти · Друго;
+    - a city chip ("Всички градове" ▾, listing the cities present);
+    - "Най-близо" ordering by distance (the default when location is known);
+    - rows: icon, name, "City · N stops", distance;
+    - empty result: "Няма маршрути за …" plus "Изчисти филтрите";
+    - the "Влез с код" button stays at the bottom.
+  - `Assets/Scripts/Editor/AppUIBuilder.cs`: `BuildTrailMenu`, `BuildTrailsDoor` (line ~7438).
+  - Category icons: four stroke icons (book/cap, columns, house, dot), reusing the icon pipeline already used for the tab bar.
+- Test: Edit-mode `Assets/Tests/Editor/TrailFilterTests.cs` with the same cases as Task 3's `matches` tests ("yambol" matches city bg "Ямбол"; "ески джам" matches "Ески джамия"; "sofia" does not match Yambol).
 
-- [ ] **Step 1: Write the failing Edit-mode tests.** Run the tests through Unity batchmode `-runTests -testPlatform EditMode`. Expected: FAIL.
+- [ ] **Step 1: Write the failing Edit-mode tests.** Run them through Unity batchmode `-runTests -testPlatform EditMode`. Expected: FAIL.
 - [ ] **Step 2: Implement `TrailFilter`.** Run. Expected: PASS.
-- [ ] **Step 3: Implement the UI.** Run UIPreview. Expected: a new shot `12b-trails-search` shows the field and chips, in light and dark.
+- [ ] **Step 3: Implement the menu and screen.** Run UIPreview. Expected: shots `01c-trail-menu`, `12-trails`, a new `12b-trails-filtered` and `14-trails-empty`, in light/dark and BG/EN.
 - [ ] **Step 4: Commit.**
+
+### Task 13b: App trail preview before starting
+
+Mockup: artboard "Shared · Trail preview".
+
+**Files:**
+- Create: `Assets/Scripts/UI/TrailPreviewView.cs`, opened by tapping a trail that isn't yours yet, in the menu or the trails screen.
+  - Top: a map of the stops, numbered, with your position.
+  - Sheet:
+    - "Category · City";
+    - the name;
+    - three tiles: stops, ~walking minutes (route length / 4.5 km/h, rounded to 5 min), total length;
+    - one plain line on how it works (`trailLine` wording: order, questions with hints, teams). Real-estate trails get no such line;
+    - "Началото е при <stop 1>, на N м от теб." (any-order trails: the nearest stop).
+  - Buttons: "Започни маршрута" (joins, as today's join path) and "Заведи ме до началото" (joins and starts navigation to stop 1 / the nearest stop).
+- Modify:
+  - `Assets/Scripts/Services/TrailService.cs`: a `Preview(worldId)` call using `trail_summary` plus the stop points the walk already loads (`trail_markers` or equivalent existing RPC). Route length is the sum of straight-line distances between stops in order.
+  - `Editor/AppUIBuilder.cs`: builds the view.
+  - `AppStrings.cs`: `preview.*` strings, BG/EN.
+
+- [ ] **Step 1: Implement.** Compile. Run UIPreview: a new shot `23-trail-preview`, light/dark.
+- [ ] **Step 2: Commit.**
 
 ### Task 14: App sign-up and settings — line of work
 
@@ -353,7 +407,7 @@
   - change the line of work in Settings;
   - a guest upgrade keeps the choice;
   - the screen is turned off after.
-- [ ] **Step 3: Publish and push.** Run `tools/publish-apk.sh`, commit the APK and `app.json`, then push the website (one deploy). Commit and push the app repo.
+- [ ] **Step 3 (changed 9 Nov):** build only. The APK is NOT published yet; Alex tests it on the phone first, then `tools/publish-apk.sh`. Commit the app repo locally.
 
 ---
 
