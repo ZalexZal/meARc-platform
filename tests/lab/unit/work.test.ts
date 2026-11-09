@@ -115,7 +115,7 @@ test('strings: new keys exist in both languages and the labels match work.ts', (
     'work.title', 'work.broker', 'work.teacher', 'work.guide', 'work.other', 'work.otherHint', 'work.ask', 'work.change',
     'cat.education', 'cat.tourism', 'cat.estate', 'cat.other', 'cat.all', 'cat.label',
     'city.label', 'city.none', 'city.auto',
-    'find.search', 'find.allCities', 'find.nothing', 'find.clear',
+    'find.search', 'find.allCities', 'find.nothing', 'find.nothingFiltered', 'find.clear',
     'ed.hiddenQuestions', 'err.work',
   ] as const;
   for (const lang of ['bg', 'en'] as const) {
@@ -125,6 +125,14 @@ test('strings: new keys exist in both languages and the labels match work.ts', (
     for (const c of CATEGORIES) assert.equal(t[`cat.${c}`], categoryLabel(c, lang));
     assert.ok(t['find.nothing'].includes('{0}'), `${lang} find.nothing takes the search`);
   }
+});
+
+test('strings: find.clear and find.nothingFiltered', () => {
+  assert.equal(ui.bg['find.clear'], 'Изчисти филтрите');
+  assert.equal(ui.en['find.clear'], 'Clear filters');
+  assert.equal(ui.bg['find.nothingFiltered'], 'Няма маршрути с тези филтри.');
+  assert.equal(ui.en['find.nothingFiltered'], 'No trails match these filters.');
+  assert.ok(!ui.bg['find.nothingFiltered'].includes('{0}'));
 });
 
 test('strings: verbatim texts', () => {

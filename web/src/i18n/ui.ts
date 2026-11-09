@@ -731,7 +731,8 @@ export const ui = {
     'find.search': 'Търсете по име или град',
     'find.allCities': 'Всички градове',
     'find.nothing': 'Няма маршрути за „{0}“.',
-    'find.clear': 'Изчисти търсенето',
+    'find.clear': 'Изчисти филтрите',
+    'find.nothingFiltered': 'Няма маршрути с тези филтри.',
     'ed.hiddenQuestions': 'Този маршрут има въпроси. Сменете заниманието си на Учител или Друго, за да ги редактирате.',
   },
 
@@ -1448,7 +1449,8 @@ export const ui = {
     'find.search': 'Search by name or city',
     'find.allCities': 'All cities',
     'find.nothing': 'No trails for “{0}”.',
-    'find.clear': 'Clear search',
+    'find.clear': 'Clear filters',
+    'find.nothingFiltered': 'No trails match these filters.',
     'ed.hiddenQuestions': 'This trail has questions. Switch your line of work to Teacher or Other to edit them.',
   },
 } as const;
