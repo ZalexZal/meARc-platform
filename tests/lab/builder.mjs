@@ -21,7 +21,8 @@ try {
   check('no points + in order = guide', w?.mode === 'guide', w?.mode);
   await p.waitForSelector('[data-trail-mode]', { timeout: 15000 });
   await p.waitForTimeout(2500);
-  check('builder shows the plain line', (await p.textContent('[data-trail-mode]')) === 'Без отбори · По ред', await p.textContent('[data-trail-mode]'));
+  // Task 9: the header is trailLine - mode, then category (and city once found).
+  check('builder shows the plain line', (await p.textContent('[data-trail-mode]')).startsWith('Без отбори · По ред · Друго'), await p.textContent('[data-trail-mode]'));
   const tabs = await p.$$eval('[data-ed-tab]', (b) => b.map((x) => x.dataset.edTab));
   check('four tabs', tabs.join() === 'stops,share,results,settings', tabs.join());
   check('stops tab first, map visible', await p.isVisible('[data-map]'));

@@ -735,6 +735,11 @@ export const ui = {
     'find.clear': 'Изчисти филтрите',
     'find.nothingFiltered': 'Няма маршрути с тези филтри.',
     'ed.hiddenQuestions': 'Този маршрут има въпроси. Сменете заниманието си на Учител или Друго, за да ги редактирате.',
+    // The builder for a line of work that never sees questions, teams or order.
+    'ed.editorsLedePlain': 'Покани хора да правят маршрута заедно с теб. Те могат да променят спирките и медията. Името, видимостта и кодът на маршрута, както и изтриването му, остават само твои.',
+    'ed.deleteBodyPlain': 'Спирките, снимките и записите му изчезват заедно с него. Не може да се върне.',
+    'ed.tip3Plain': 'Много спирки наведнъж внасяш от таблица.',
+    'city.hint': 'Избери от списъка или напиши името. Празно — без град.',
   },
 
   en: {
@@ -1454,6 +1459,10 @@ export const ui = {
     'find.clear': 'Clear filters',
     'find.nothingFiltered': 'No trails match these filters.',
     'ed.hiddenQuestions': 'This trail has questions. Switch your line of work to Teacher or Other to edit them.',
+    'ed.editorsLedePlain': 'Invite people to build this trail with you. They can change stops and media. The trail’s name, visibility and code, and deleting it, stay yours alone.',
+    'ed.deleteBodyPlain': 'Its stops, photos and recordings go with it. This cannot be undone.',
+    'ed.tip3Plain': 'Bring in many stops at once from a spreadsheet.',
+    'city.hint': 'Pick one from the list or type the name. Empty means no city.',
   },
 } as const;
 

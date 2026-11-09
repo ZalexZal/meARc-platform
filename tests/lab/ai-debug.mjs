@@ -26,7 +26,7 @@ try {
   await p.goto(`${BASE}/trail/?id=${id}`);
   await p.waitForSelector(`[data-pick="${m.id}"]`, { timeout: 20000 });
   await p.click(`[data-pick="${m.id}"]`);
-  await p.click('[data-step="1"]');
+  await p.click('[data-step="visual"]');
   await p.waitForSelector('[data-panel="visual"]:not(.hidden)');
   await p.click('label:has(input[name=shape][value=ai])');
   await p.fill('[data-ai-text]', process.env.AI_TEXT || 'Generate me a generic white house with brown doors and a green roof.');

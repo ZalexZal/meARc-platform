@@ -19,7 +19,7 @@ try {
   // A step saves first, then shows its pane: wait for the pane.
   const PANES = ['basics', 'visual', 'place', 'question', 'media'];
   const goStep = async (i) => {
-    await p.click(`[data-step="${i}"]`);
+    await p.click(`[data-step="${PANES[i]}"]`);
     await p.waitForSelector(`[data-panel="${PANES[i]}"]:not(.hidden)`, { timeout: 15000 });
   };
   p.on('pageerror', (e) => errs.push(e.message + ' @ ' + (e.stack || '').split('\n').slice(1, 3).join(' ')));

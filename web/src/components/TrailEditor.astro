@@ -2,6 +2,7 @@
 import Loading from './Loading.astro';
 import AppShot from './AppShot.astro';
 import { useTranslations, localise, type Lang } from '../i18n/ui';
+import { CATEGORIES, categoryLabel } from '../lib/work';
 
 interface Props { lang: Lang; }
 const { lang } = Astro.props;
@@ -105,6 +106,9 @@ const strings = {
     choice: t('miss.choice'), accepted: t('miss.accepted'),
   },
   revealOff: t('ed.revealOff'),
+  hiddenQuestions: t('ed.hiddenQuestions'),
+  plain: { editorsLede: t('ed.editorsLedePlain'), deleteBody: t('ed.deleteBodyPlain'), tip3: t('ed.tip3Plain') },
+  categories: Object.fromEntries(CATEGORIES.map((c) => [c, categoryLabel(c, lang)])),
   boardHref: href('/board'),
   hidden: t('board.hidden'), revBlock: t('rev.block'), revBlockConfirm: t('rev.blockConfirm'),
   ownerWord: t('ed.owner'), editorWord: t('ed.editor'), leaveConfirm: t('ed.leaveConfirm'),
@@ -128,7 +132,7 @@ const strings = {
     next: t('wiz.next'), done: t('wiz.done'), saved: t('wiz.saved'), skipped: t('wiz.skipped'),
     of: t('wiz.of'), newStop: t('wiz.newStop'), stop: t('wiz.stop'), untitled: t('wiz.untitled'),
     ready: t('wiz.ready'), skippedList: t('wiz.skippedList'),
-    names: [t('tab.basics'), t('tab.visual'), t('tab.place'), t('tab.question'), t('tab.media')],
+    names: Object.fromEntries(steps.map((st) => [st.id, st.label])),
   },
 };
 ---
@@ -204,7 +208,7 @@ const strings = {
         <input class="field data w-24" data-team-size inputmode="numeric" maxlength="2" aria-label={t('ed.teamSize')} />
         <p class="set-hint">{t('ed.teamSizeHint')}</p>
       </div>
-      <div class="set-group">
+      <div class="set-group" data-start-row>
         <p class="eyebrow">{t('ed.start')}</p>
         <div class="flex flex-wrap gap-2">
           <select class="field w-auto" data-start-mode aria-label={t('ed.start')}>
@@ -215,6 +219,22 @@ const strings = {
           <input type="datetime-local" class="field w-auto" data-start-at hidden aria-label={t('ed.startAuto')} />
         </div>
         <p class="set-hint">{t('ed.startHint')}</p>
+      </div>
+      <!-- What the trail is and where (classification, 9 Nov 2026). The city
+           finds itself from the first stop until a person types one. -->
+      <div class="set-group">
+        <p class="eyebrow">{t('cat.label')}</p>
+        <select class="field w-auto" data-category aria-label={t('cat.label')}>
+          {CATEGORIES.map((c) => <option value={c}>{categoryLabel(c, lang)}</option>)}
+        </select>
+      </div>
+      <div class="set-group">
+        <p class="eyebrow">{t('city.label')}</p>
+        <input class="field" data-city list="known-cities" maxlength="80" autocomplete="off"
+               placeholder={t('city.none')} aria-label={t('city.label')} />
+        <datalist id="known-cities" data-known-cities></datalist>
+        <p class="set-hint" data-city-auto hidden>{t('city.auto')}</p>
+        <p class="set-hint" data-city-hint>{t('city.hint')}</p>
       </div>
     </div>
   </details>
@@ -278,7 +298,7 @@ const strings = {
           <ol class="start-tips">
             <li><span>1</span>{t('ed.tip1')}</li>
             <li><span>2</span>{t('ed.tip2')}</li>
-            <li><span>3</span>{t('ed.tip3')}</li>
+            <li data-tip3><span>3</span>{t('ed.tip3')}</li>
           </ol>
         </div>
         <figure class="start-shot">
@@ -307,7 +327,7 @@ const strings = {
           <ol class="stepper" aria-label={t('wiz.newStop')}>
             {steps.map((st, i) => (
               <li>
-                <button type="button" class="st" data-step={i}>
+                <button type="button" class="st" data-step={st.id}>
                   <span class="st-bar" aria-hidden="true"></span>
                   <span class="st-row">
                     <span class="st-n" aria-hidden="true">
@@ -747,7 +767,7 @@ const strings = {
 
   <section class="mt-8" data-editors data-ed-panel="share">
     <h2 class="text-lg">{t('ed.editors')}</h2>
-    <p class="mt-2 max-w-2xl text-sm text-[var(--ink-dim)]">{t('ed.editorsLede')}</p>
+    <p class="mt-2 max-w-2xl text-sm text-[var(--ink-dim)]" data-editors-lede>{t('ed.editorsLede')}</p>
     <ul class="mt-4 max-w-2xl" data-editor-list></ul>
 
     <div class="card mt-4 max-w-2xl space-y-3 p-4" data-owner-only>
@@ -789,7 +809,7 @@ const strings = {
        markers, teams and scores go with it. -->
   <section class="mt-14 border-t border-[var(--line)] pt-8" data-delete-trail data-owner-only data-ed-panel="settings">
     <h2 class="text-lg">{t('ed.deleteTitle')}</h2>
-    <p class="mt-2 max-w-xl text-sm text-[var(--ink-dim)]">{t('ed.deleteBody')}</p>
+    <p class="mt-2 max-w-xl text-sm text-[var(--ink-dim)]" data-delete-body>{t('ed.deleteBody')}</p>
     <button type="button" class="btn btn-danger-quiet mt-4" data-delete-trail-btn>{t('ed.deleteButton')}</button>
     <p class="mt-3 hidden text-sm text-[var(--alert)]" data-delete-trail-msg role="alert"></p>
   </section>
@@ -803,7 +823,9 @@ const strings = {
 
 <script>
   import { db } from '../lib/supabase';
-  import { modeLine, isScored } from '../lib/modes';
+  import { trailLine, isScored } from '../lib/modes';
+  import { featuresFor, loadWork, fold, type Category } from '../lib/work';
+  import { cityAt, farFrom, type City } from '../lib/place';
   import { requireUser, reveal, param, escapeHtml, text, duration } from '../lib/session';
   import { levelOf, isPending, isListed, setLevel } from '../lib/publishing';
   import { inspectGlb, type GlbInfo, type GlbProblem } from '../lib/glb';
@@ -871,6 +893,36 @@ const strings = {
 
   text(q('[data-trail-name]'), owned.name);
 
+  // ------------------------------------------------------- line of work
+  // What this person sees follows their own line of work, not the owner's: an
+  // editor who is a broker sees a teacher's trail as a broker would. Hiding is
+  // complete - the parts are taken out of the page, not folded away - and it is
+  // only a preference: nothing here refuses a write the database would accept.
+  // A failed read (undefined) and "never asked" (null) both see everything.
+  const features = featuresFor((await loadWork(client as any)) ?? null);
+  const drop = (sel: string) => qa(sel).forEach((el) => el.remove());
+  if (!features.questions) {
+    q('[data-step="question"]')?.closest('li')?.remove();
+    drop('[data-panel="question"]');
+    // The steps that are left count 1, 2, 3, 4.
+    qa('[data-step] .st-num').forEach((n, i) => text(n, String(i + 1)));
+    text(q('[data-editors-lede]'), S.plain.editorsLede);
+  }
+  if (!features.results) drop('[data-ed-tab="results"], [data-ed-panel="results"]');
+  if (!features.teams) text(q('[data-delete-body]'), S.plain.deleteBody);
+  if (!features.order) {
+    const tip = q('[data-tip3]');
+    if (tip?.lastChild) tip.lastChild.textContent = S.plain.tip3;
+  }
+  // A broker starts from the AI flow: its two tiles come first.
+  if (features.aiFirst) {
+    const picker = q('[data-shapes]')!;
+    ['model', 'ai'].forEach((k) => {
+      const tile = picker.querySelector(`input[value="${k}"]`)?.closest('label');
+      if (tile) picker.prepend(tile);
+    });
+  }
+
   // An editor gets the stops and nothing about the trail itself. RLS already
   // refuses them; hiding the controls is so they are not offered a refusal.
   const isOwner = owned.role === 'owner';
@@ -899,25 +951,33 @@ const strings = {
     }
     location.href = S.lang === 'en' ? '/en/my-trails' : '/my-trails';
   });
-  // The mode's name, not its database code - "ctf" is not a word.
-  text(q('[data-trail-mode]'), modeLine(owned.mode, S.lang));
   // A trail without teams counts nothing, so its question and hints ask for
   // no points (website sweep, 7 Nov 2026). Questions stay: a lesson can still
-  // ask one.
-  document.documentElement.classList.toggle('trail-no-points', !isScored(owned.mode));
-  if (!isScored(owned.mode)) {
+  // ask one. A line of work without teams sees no points on any trail.
+  const noPoints = !isScored(owned.mode) || !features.teams;
+  document.documentElement.classList.toggle('trail-no-points', noPoints);
+  if (noPoints) {
     const wrong = document.querySelector('[data-marker-form] [name="onWrong"]') as HTMLSelectElement | null;
     if (wrong?.value === 'deduct') wrong.value = 'retry';
   }
   text(q('[data-trail-code]'), owned.join_code);
-  q('[data-board-link]')!.setAttribute('href', `${S.boardHref}?id=${encodeURIComponent(worldId)}`);
+  q('[data-board-link]')?.setAttribute('href', `${S.boardHref}?id=${encodeURIComponent(worldId)}`);
 
   // Read from the row rather than from my_worlds: adding columns there means
   // dropping and recreating the function, and nothing else wanted them.
   const sizeBox = q('[data-team-size]') as HTMLInputElement;
   const settings = await client.from('worlds')
-    .select('team_size,reveal_one_at_a_time,mode,start_mode,starts_at').eq('id', worldId).single();
+    .select('team_size,reveal_one_at_a_time,mode,start_mode,starts_at,category,city,city_auto').eq('id', worldId).single();
   sizeBox.value = String(settings.data?.team_size ?? 4);
+
+  // What the trail is and where. The line under the name says it in the
+  // reader's words; a line of work without teams or order never sees the mode.
+  let category: Category = (settings.data?.category ?? owned.category ?? 'other') as Category;
+  let city: City | null = (settings.data?.city ?? owned.city ?? null) as City | null;
+  let cityAuto = settings.data?.city_auto ?? true;
+  const paintHeader = () => text(q('[data-trail-mode]'),
+    trailLine(settings.data?.mode ?? owned.mode, category, city, S.lang, features.teams || features.order));
+  paintHeader();
   // The start: datetime-local speaks the browser's own time zone, so it is
   // turned into an instant here, and back for display.
   const startMode = q('[data-start-mode]') as HTMLSelectElement;
@@ -954,7 +1014,8 @@ const strings = {
   // Which part of the trail is on screen. Kept in the address (#share...) so a
   // reload or a shared link opens the same tab. Standings only exist on a
   // trail with teams.
-  (q('[data-board-section]') as HTMLElement).hidden = !isScored(settings.data?.mode ?? 'guide');
+  const boardSection = q('[data-board-section]') as HTMLElement | null;
+  if (boardSection) boardSection.hidden = !isScored(settings.data?.mode ?? 'guide');
   const edTabs = Array.from(document.querySelectorAll<HTMLButtonElement>('[data-ed-tab]'));
   const showTab = (name: string) => {
     if (!edTabs.some((b) => b.dataset.edTab === name && !b.hidden && b.offsetParent !== null)) name = 'stops';
@@ -976,9 +1037,11 @@ const strings = {
   (q('[data-team-row]') as HTMLElement).hidden = !isScored(settings.data?.mode ?? 'guide');
   const paintSettings = () => {
     const parts = [
-      ordered && revealBox.checked ? S.setOneByOne : '',
-      isScored(settings.data?.mode ?? 'guide') ? `${S.teamSize}: ${sizeBox.value}` : '',
-      `${S.start}: ${startMode.selectedOptions[0]?.textContent ?? ''}`,
+      features.oneAtATime && ordered && revealBox.checked ? S.setOneByOne : '',
+      features.teamSettings && isScored(settings.data?.mode ?? 'guide') ? `${S.teamSize}: ${sizeBox.value}` : '',
+      features.teamSettings ? `${S.start}: ${startMode.selectedOptions[0]?.textContent ?? ''}` : '',
+      S.categories[category] ?? '',
+      city?.[S.lang as 'bg' | 'en'] ?? '',
     ].filter(Boolean);
     text(q('[data-settings-sum]'), parts.join(' · '));
   };
@@ -1009,6 +1072,89 @@ const strings = {
     if (error) { alert(error.message); return; }
     sizeBox.value = String(wanted);
   });
+
+  // Wired above, then taken out for a line of work that never uses them.
+  if (!features.teamSettings) drop('[data-team-row], [data-start-row]');
+  if (!features.oneAtATime) drop('[data-reveal-row]');
+
+  // ------------------------------------------------------- category and city
+  const categoryBox = q('[data-category]') as HTMLSelectElement;
+  const cityBox = q('[data-city]') as HTMLInputElement;
+  categoryBox.value = category;
+  categoryBox.addEventListener('change', async () => {
+    const wanted = categoryBox.value as Category;
+    const { error } = await client.from('worlds').update({ category: wanted }).eq('id', worldId);
+    if (error) { categoryBox.value = category; alert(error.message); return; }
+    category = wanted;
+    paintHeader(); paintSettings();
+  });
+
+  function paintCity() {
+    cityBox.value = city?.[S.lang as 'bg' | 'en'] ?? '';
+    (q('[data-city-auto]') as HTMLElement).hidden = !cityAuto;
+    paintHeader(); paintSettings();
+  }
+  paintCity();
+
+  // Cities other trails already use, so the same town is spelled one way.
+  const knownCities: City[] = [];
+  const addKnown = (c: any) => {
+    if (c?.key && c.bg && !knownCities.some((k) => k.key === c.key)) knownCities.push(c as City);
+  };
+  (mine ?? []).forEach((w: any) => addKnown(w.city));
+  client.rpc('public_trails').then(({ data }: any) => {
+    (data ?? []).forEach((w: any) => addKnown(w.city));
+    const list = q('[data-known-cities]')!;
+    list.replaceChildren(...knownCities.map((c) => {
+      const o = document.createElement('option');
+      o.value = c[S.lang as 'bg' | 'en'] || c.bg;
+      return o;
+    }));
+  }, () => {});
+
+  /** The first stop: lowest step, else the first made (the back-fill's rule too). */
+  const firstStop = () => markers.filter((m) => Number.isFinite(m.lat) && Number.isFinite(m.lng))
+    .map((m, i) => ({ m, i }))
+    .sort((a, b) => (a.m.step ?? Infinity) - (b.m.step ?? Infinity) || a.i - b.i)[0]?.m ?? null;
+
+  // A person typing the city takes it out of the machine's hands for good.
+  cityBox.addEventListener('change', async () => {
+    const name = cityBox.value.trim();
+    let next: City | null = null;
+    if (name) {
+      const known = knownCities.find((c) => fold(c.bg) === fold(name) || fold(c.en) === fold(name));
+      const at = firstStop();
+      next = known ? { ...known }
+        : { key: fold(name), bg: name, en: name,
+            lat: at?.lat ?? city?.lat ?? null, lng: at?.lng ?? city?.lng ?? null } as City;
+    }
+    const { error } = await client.from('worlds').update({ city: next, city_auto: false }).eq('id', worldId);
+    if (error) { alert(error.message); paintCity(); return; }
+    city = next; cityAuto = false;
+    paintCity();
+  });
+
+  // The city from the first stop, in the background: never in the way of a
+  // save, silent when Nominatim is down, and one lookup at a time.
+  let cityBusy = false;
+  async function findCity() {
+    if (!isOwner || !cityAuto || cityBusy) return;
+    const stops = markers.filter((m) => Number.isFinite(m.lat) && Number.isFinite(m.lng));
+    if (!stops.length || (city && !farFrom(city, stops))) return;
+    const at = firstStop();
+    if (!at) return;
+    cityBusy = true;
+    try {
+      const found = await cityAt(at.lat, at.lng);
+      if (!found || !cityAuto) return;
+      // Only while still automatic: a person may have typed one meanwhile.
+      const { data, error } = await client.from('worlds').update({ city: found })
+        .eq('id', worldId).eq('city_auto', true).select('id');
+      if (error || !data?.length) return;
+      city = found;
+      paintCity();
+    } catch { /* silent: the city is a nicety */ } finally { cityBusy = false; }
+  }
 
 
   // The row as the server last described it. Every level change reloads it
@@ -1099,6 +1245,7 @@ const strings = {
   const num = (n: string) => { const v = val(n); return v === '' ? null : Number(v); };
 
   function showKindFields() {
+    if (!features.questions) return;
     const kind = (field('kind') as HTMLSelectElement).value || 'none';
     q('[data-when-exact]')!.classList.toggle('hidden', kind !== 'exact');
     q('[data-when-choice]')!.classList.toggle('hidden', kind !== 'choice');
@@ -1114,6 +1261,7 @@ const strings = {
   }
 
   function drawChoices() {
+    if (!features.questions) return;
     const box = q('[data-choices]')!;
     box.innerHTML = choices.map((c, i) => `
       <div class="flex items-center gap-2">
@@ -1158,7 +1306,7 @@ const strings = {
     else if (kind !== 'free' && kind !== 'none' && wait.value === '0') wait.value = '15';
   });
   // The deduction box appears and disappears with the rule beside it.
-  field('onWrong').addEventListener('change', showKindFields);
+  field('onWrong')?.addEventListener('change', showKindFields);
   q('[data-add-choice]')?.addEventListener('click', () => {
     dirty = true;
     choices.push({ bg: '', en: '', correct: false });
@@ -1177,7 +1325,11 @@ const strings = {
   form.addEventListener('input', markDirty);
   form.addEventListener('change', markDirty);
 
-  const STEPS = ['basics', 'visual', 'place', 'question', 'media'] as const;
+  // The steps this line of work has; a broker has no Question. Always found by
+  // name (STEPS.indexOf), never by a number, since the numbers move.
+  type Step = 'basics' | 'visual' | 'place' | 'question' | 'media';
+  const STEPS: Step[] = (['basics', 'visual', 'place', 'question', 'media'] as Step[])
+    .filter((st) => st !== 'question' || features.questions);
   const QUESTION = STEPS.indexOf('question'), MEDIA = STEPS.indexOf('media');
   const OPTIONAL = new Set([QUESTION]);
   let step = 0;
@@ -1212,7 +1364,7 @@ const strings = {
   function paintSteps() {
     qa('[data-step]').forEach((b) => {
       const button = b as HTMLButtonElement;
-      const i = Number(button.dataset.step);
+      const i = STEPS.indexOf(button.dataset.step as Step);
       const cur = !ready && i === step;
       button.classList.toggle('is-current', cur);
       button.classList.toggle('is-done', doneSteps.has(i));
@@ -1249,14 +1401,14 @@ const strings = {
    * title is listed as optional.
    */
   function missingItems() {
-    const items: { label: string; panel: typeof STEPS[number]; field: string | null; required: boolean }[] = [];
+    const items: { label: string; panel: Step; field: string | null; required: boolean }[] = [];
     if (!val('titleBg')) items.push({ label: S.miss.titleBg, panel: 'basics', field: 'titleBg', required: true });
     const lat = num('lat'), lng = num('lng');
     if (lat === null || lng === null || Number.isNaN(lat) || Number.isNaN(lng)
         || lat < -90 || lat > 90 || lng < -180 || lng > 180) {
       items.push({ label: S.miss.place, panel: 'place', field: 'lat', required: true });
     }
-    const kind = (field('kind') as HTMLSelectElement).value || 'none';
+    const kind = features.questions ? (field('kind') as HTMLSelectElement).value || 'none' : 'none';
     if (kind !== 'none' && !val('questionBg') && !val('questionEn')) {
       items.push({ label: S.miss.question, panel: 'question', field: 'questionBg', required: true });
     }
@@ -1318,7 +1470,7 @@ const strings = {
     ready = true;
     show('ready');
     text(q('[data-ready-title]'), S.wiz.ready.replace('{0}', String(stopNumber(selected))));
-    const names = [...skippedSteps].sort().map((i) => S.wiz.names[i]);
+    const names = [...skippedSteps].sort().map((i) => S.wiz.names[STEPS[i]]);
     text(q('[data-ready-skipped]'), names.length ? S.wiz.skippedList.replace('{0}', names.join(', ')) : '');
     paintSteps();
   }
@@ -1330,14 +1482,14 @@ const strings = {
   function startSteps(m: any, fresh: boolean) {
     // A stop just placed is still a draft: its first Next has to publish it.
     dirty = fresh || m.status !== 'published';
-    visited = new Set([0, 1, 2, 3, 4]);
+    visited = new Set(STEPS.map((_, i) => i));
     doneSteps = new Set<number>();
     skippedSteps = new Set<number>();
     if (!fresh) {
       if (m.content?.bg?.title) doneSteps.add(0);
       doneSteps.add(STEPS.indexOf('visual'));
       doneSteps.add(STEPS.indexOf('place'));
-      if ((m.answer_kind ?? 'none') !== 'none' || Number(m.hint_count)) doneSteps.add(QUESTION);
+      if (QUESTION >= 0 && ((m.answer_kind ?? 'none') !== 'none' || Number(m.hint_count))) doneSteps.add(QUESTION);
       if (Number(m.media_count)) doneSteps.add(MEDIA);
     }
     text(q('[data-wiz-kind]'), fresh ? S.wiz.newStop : S.wiz.stop.replace('{0}', String(stopNumber(m.id))));
@@ -1379,8 +1531,8 @@ const strings = {
   });
 
   qa('[data-step]').forEach((b) => b.addEventListener('click', async () => {
-    const i = Number((b as HTMLElement).dataset.step);
-    if (i === step && !ready) return;
+    const i = STEPS.indexOf((b as HTMLElement).dataset.step as Step);
+    if (i < 0 || (i === step && !ready)) return;
     // Any step, any time. What can be saved is saved on the way; what cannot
     // stays in the form, and "Still missing" says what it needs.
     if (!ready && (await save(true))) {
@@ -1394,6 +1546,7 @@ const strings = {
 
   /** The question step's fields, from the stop as it was last saved. */
   function fillAnswer(m: any) {
+    if (!features.questions) return;
     (field('kind') as HTMLSelectElement).value = m.answer_kind ?? 'none';
     (field('points') as HTMLInputElement).value = String(m.points ?? 10);
     (field('cooldown') as HTMLInputElement).value = String(m.cooldown_seconds ?? 15);
@@ -1468,9 +1621,9 @@ const strings = {
         class="flex w-full cursor-grab items-center gap-2.5 rounded-lg border border-[var(--line)] px-3 py-2 text-left text-sm transition-colors hover:bg-[var(--surface-2)]">
         <span class="data w-5 shrink-0 text-xs text-[var(--ink-faint)]">${m.step ?? i + 1}</span>
         <span class="min-w-0 flex-1 truncate">${escapeHtml(title)}</span>
-        ${Number(m.hint_count) ? `<span class="data shrink-0 text-2xs text-[var(--ink-faint)]">?${m.hint_count}</span>` : ''}
+        ${features.questions && Number(m.hint_count) ? `<span class="data shrink-0 text-2xs text-[var(--ink-faint)]">?${m.hint_count}</span>` : ''}
         ${Number(m.media_count) ? `<span class="data shrink-0 text-2xs text-[var(--ink-faint)]">#${m.media_count}</span>` : ''}
-        ${m.answer_kind && m.answer_kind !== 'none'
+        ${features.teams && m.answer_kind && m.answer_kind !== 'none'
           ? `<span class="data shrink-0 text-xs" style="color:var(--lamp)">${m.points ?? 0}</span>` : ''}
         ${m.status !== 'published' ? `<span class="eyebrow shrink-0">${S.draft}</span>` : ''}
       </button></li>`;
@@ -1595,6 +1748,7 @@ const strings = {
           (field('lat') as HTMLInputElement).value = String(lat);
           (field('lng') as HTMLInputElement).value = String(lng);
         }
+        void findCity();
       });
 
       pins.set(m.id, pin);
@@ -1608,6 +1762,24 @@ const strings = {
       markers.forEach((m) => bounds.extend([m.lng, m.lat]));
       map.fitBounds(bounds, { padding: 60, maxZoom: 17, duration: 0 });
     }
+  }
+
+  /**
+   * A trail made before, with questions this line of work does not see: one
+   * line says so, rather than letting the questions look gone. Made only when
+   * needed, so a trail without questions never carries the word.
+   */
+  function paintHiddenNote() {
+    const want = !features.questions && markers.some((m) => (m.answer_kind ?? 'none') !== 'none');
+    let note = q('[data-hidden-note]');
+    if (!want) { note?.remove(); return; }
+    if (note) return;
+    note = document.createElement('p');
+    note.setAttribute('data-hidden-note', '');
+    note.setAttribute('role', 'note');
+    note.className = 'mt-3 rounded-lg border border-[var(--line)] px-3 py-2 text-xs text-[var(--ink-dim)]';
+    text(note, S.hiddenQuestions);
+    q('[data-overlap]')!.before(note);
   }
 
   function drawPinsWhenReady() {
@@ -1626,6 +1798,7 @@ const strings = {
 
     drawList();
     drawPinsWhenReady();
+    paintHiddenNote();
     if (selected && !markers.some((m) => m.id === selected)) await select(null);
 
     // Said, not enforced: a creator mid-edit will legitimately have two stops
@@ -1654,6 +1827,7 @@ const strings = {
     });
     if (error) { alert(error.message); return; }
     await load();
+    void findCity();
     const id = Array.isArray(data) ? data[0]?.id : (data as any)?.id;
     if (id) await select(id, true);
   });
@@ -1684,7 +1858,7 @@ const strings = {
       if (fval(side(pair, from)) && !fval(side(pair, to))) fields[key] = fval(side(pair, from));
     }
     if (choices.some((c) => c[from]?.trim() && !c[to]?.trim())) fields.choices = choices.map((c) => c[from] ?? '');
-    const hintRows = ((await client.from('marker_hints').select('id,body').eq('marker_id', selected).order('ord')).data ?? [])
+    const hintRows = !features.questions ? [] : ((await client.from('marker_hints').select('id,body').eq('marker_id', selected).order('ord')).data ?? [])
       .filter((h: any) => h.body?.[from] && !h.body?.[to]);
     if (hintRows.length) fields.hints = hintRows.map((h: any) => h.body[from]);
     if (!Object.keys(fields).length) { aiSay(S.ai.nothing); return; }
@@ -1721,7 +1895,7 @@ const strings = {
 
   // ------------------------------------------------------------------ hints
   async function loadHints() {
-    if (!selected) return;
+    if (!selected || !features.questions) return;
     const { data } = await client.from('marker_hints')
       .select('id,ord,body,cost').eq('marker_id', selected).order('ord');
     const rows = data ?? [];
@@ -1929,7 +2103,7 @@ const strings = {
       button.disabled = false; text(labelEl, label);
       if (quiet) return;
       // The step first, then the message: moving to a step clears old ones.
-      if (panel) goTo(STEPS.indexOf(panel as typeof STEPS[number]));
+      if (panel && STEPS.includes(panel as Step)) goTo(STEPS.indexOf(panel as Step));
       err.textContent = message; err.classList.remove('hidden');
     };
 
@@ -1954,7 +2128,9 @@ const strings = {
 
     // Radios: before the stop's answer has loaded none is checked and the
     // value is '' - which used to read as "a question" and block the save.
-    const kind = (field('kind') as HTMLSelectElement).value || 'none';
+    // Without the Question step there is nothing to read, and nothing is
+    // written either: an old trail's questions stay exactly as they were.
+    const kind = features.questions ? (field('kind') as HTMLSelectElement).value || 'none' : 'none';
     const kept = choices.filter((c) => c.bg.trim() || c.en.trim());
     const correct = kept.map((c, i) => (c.correct ? i : -1)).filter((i) => i >= 0);
 
@@ -2004,6 +2180,14 @@ const strings = {
       content.bg.choices = kept.map((c) => c.bg);
       content.en = { ...(content.en ?? {}), choices: kept.map((c) => c.en || c.bg) };
     }
+    if (!features.questions) {
+      const was = markers.find((x) => x.id === selected)?.content ?? {};
+      for (const l of ['bg', 'en'] as const) {
+        for (const k of ['question', 'choices']) {
+          if (was[l]?.[k] !== undefined) content[l] = { ...(content[l] ?? {}), [k]: was[l][k] };
+        }
+      }
+    }
 
     // A sign's words, only on a sign. Kept out of every other shape so that
     // switching away and back does not resurrect text nobody can see.
@@ -2043,10 +2227,14 @@ const strings = {
       if (problem) { savingNow = false; fail(problem, 'visual'); return false; }
     }
 
+    const before = markers.find((x) => x.id === saving);
+    const shifted = !before || before.lat !== lat || before.lng !== lng;
     const moved = await client.rpc('move_marker', { p_marker: selected, p_lat: lat, p_lng: lng });
     if (moved.error) { savingNow = false; fail(moved.error.message, 'place'); return false; }
 
-    if (kind === 'none') {
+    if (!features.questions) {
+      // Left alone: see above.
+    } else if (kind === 'none') {
       await client.rpc('clear_marker_answer', { p_marker: selected });
     } else {
       const accepted = (field('accepted') as HTMLTextAreaElement).value
@@ -2079,6 +2267,7 @@ const strings = {
     formVersion = markers.find((m) => m.id === saving)?.version ?? formVersion;
     savingNow = false;
     dirty = false;
+    if (shifted) void findCity();
     return true;
   }
 
@@ -2217,7 +2406,7 @@ const strings = {
 
   // Not awaited: the page script has to run to its end at once, or a stop
   // opened meanwhile meets constants not defined yet (7 Nov 2026).
-  Promise.all([loadReview(), loadBoard()]).catch(() => {});
+  if (features.results) Promise.all([loadReview(), loadBoard()]).catch(() => {});
 
   // ---------------------------------------------------------------- editors
   const me = (await client.auth.getUser()).data.user;
