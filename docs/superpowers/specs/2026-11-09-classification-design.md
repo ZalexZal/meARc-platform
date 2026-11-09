@@ -156,6 +156,10 @@ for people who only walk trails."
 
 ### Browsing
 
+- **Search** (Alex, 9 Nov): a search box on the website's trail list and in
+  the app's trails tab, matching the trail's name and its city, in either
+  language, ignoring case and Bulgarian/Latin accents. It combines with the
+  filters below.
 - **Website trail list** (`TrailList.astro`, /trails): category chips (All ·
   Education · Tourism · Real estate · Other), a city choice listing only
   cities that have public trails, and the existing "Near me" sort. Filters
@@ -172,7 +176,7 @@ for people who only walk trails."
   and by Settings; readable by its owner.
 - `worlds.category text not null default 'other' check (category in
   ('education','tourism','estate','other'))`.
-- `worlds.city jsonb null` (`{"key": "yambol", "bg": "Ямбол", "en": "Yambol"}`) and
+- `worlds.city jsonb null` (`{"key": "yambol", "bg": "Ямбол", "en": "Yambol", "lat": 42.48, "lng": 26.50}`: lat/lng = where it was found, for the 5 km rule) and
   `worlds.city_auto boolean default true` (false once the creator edits
   it, so geocoding never overwrites a correction).
 - `create_world` takes an optional category; `public_trails`, `trails_near`,
