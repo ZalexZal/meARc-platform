@@ -20,10 +20,12 @@ test('Yambol centre gives key yambol, bg Ямбол', async () => {
   assert.deepEqual(c, { key: 'yambol', bg: 'Ямбол', en: 'Yambol', lat: 42.4842, lng: 26.5035 });
 });
 
-test('a village never becomes the city', async () => {
+test('a village files under its municipality, never the village', async () => {
   // Real Nominatim reply for Кабиле: village + state_district (Тунджа), no city/town/municipality.
-  assert.equal(pickPlace(fx('village-bg').address), null);
-  assert.equal(await cityAt(42.5497, 26.492, fakeFetch(fx('village-bg'), fx('village-en'))), null);
+  assert.equal(pickPlace(fx('village-bg').address), 'Тунджа');
+  const c = await cityAt(42.5497, 26.492, fakeFetch(fx('village-bg'), fx('village-en')));
+  assert.deepEqual(c, { key: fx('village-en').address.state_district.toLowerCase().trim(), bg: 'Тунджа', en: fx('village-en').address.state_district, lat: 42.5497, lng: 26.492 });
+  assert.equal(c?.key, 'tundzha');
 });
 
 test('pickPlace order and "Община" stripping', () => {
@@ -33,6 +35,8 @@ test('pickPlace order and "Община" stripping', () => {
   assert.equal(pickPlace({ municipality: 'Municipality of Tundzha' }), 'Tundzha');
   assert.equal(pickPlace({ municipality: 'Tundzha Municipality' }), 'Tundzha');
   assert.equal(pickPlace({ village: 'Кабиле', suburb: 'S', hamlet: 'H' }), null);
+  assert.equal(pickPlace({ village: 'Кабиле', state_district: 'Тунджа' }), 'Тунджа');
+  assert.equal(pickPlace({ municipality: 'M', state_district: 'S' }), 'M');
   assert.equal(pickPlace({}), null);
 });
 

@@ -1,8 +1,9 @@
 /**
  * A trail's city, from a point, via OpenStreetMap Nominatim (free, no key, 1 request/s).
  *
- * The city is `city`, else `town`, else `municipality`. Never a village, suburb or hamlet:
- * a trail in a village has no city rather than a tiny one, so "Education · Yambol" groups
+ * The city is `city`, else `town`, else `municipality`, else `state_district` (where Nominatim
+ * puts a Bulgarian municipality). Never a village, suburb or hamlet: a plot outside a town
+ * files under its municipality rather than a tiny village, so "Education · Yambol" groups
  * trails the way people think of them.
  *
  * Used by the builder (browser) and the back-fill script (Node), so it touches nothing but
@@ -16,7 +17,7 @@ const ENDPOINT = 'https://nominatim.openstreetmap.org/reverse';
 /** The place name from a Nominatim `address`, or null when it is only a village or less. */
 export function pickPlace(address: Record<string, string> | null | undefined): string | null {
   const a = address ?? {};
-  const raw = a.city ?? a.town ?? a.municipality;
+  const raw = a.city ?? a.town ?? a.municipality ?? a.state_district;
   if (!raw) return null;
   const name = raw
     .replace(/^Община\s+/i, '')
