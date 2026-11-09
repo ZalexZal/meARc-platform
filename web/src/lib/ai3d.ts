@@ -1,17 +1,17 @@
 /**
- * A 3D model made by AI, from a photo or from a description (7 Nov 2026).
+ * A 3D model made by AI, from a photo or from a description (7-9 Nov 2026).
  *
  *   photo        -> TRELLIS.2 (Microsoft, MIT licence)
  *   description  -> a FLUX.1 [schnell] picture first, then TRELLIS.2
  *
- * Both are free Hugging Face Spaces. They are tried first straight from the
- * creator's browser, on Hugging Face's free anonymous GPU allowance - no key,
- * nothing of ours in between. That allowance is small, so when it is refused
- * the request goes to our ai3d Edge Function, which runs the same Spaces with
- * AR Trail's own Hugging Face token.
+ * Both are free Hugging Face Spaces, run by our ai3d Edge Function with
+ * AR Trail's own Hugging Face token. The browser only sends the picture and
+ * downloads the result.
  *
- * (Stable Fast 3D was tried on 8 Nov 2026 and dropped: its Space keeps its
- * state in the page, so its API fails every call.)
+ * Why not straight from the browser (as first built on 7 Nov): the Spaces
+ * refuse cross-site requests from artrails.netlify.app (CORS on their
+ * /config, found 9 Nov), and the free anonymous GPU allowance is too small
+ * for one TRELLIS.2 model anyway.
  *
  * The result is an ordinary .glb, so it goes through inspectGlb and the same
  * upload as a file the creator chose. Photos are scaled down and re-encoded
@@ -20,7 +20,7 @@
  */
 import { db } from './supabase';
 
-export type Ai3dStage = 'picture' | 'model' | 'server' | 'download';
+export type Ai3dStage = 'picture' | 'model' | 'download';
 export type Ai3dSource = 'trellis2';
 
 export class Ai3dError extends Error {
@@ -29,23 +29,9 @@ export class Ai3dError extends Error {
   }
 }
 
-const TRELLIS = 'microsoft/TRELLIS.2';
-const FLUX = 'black-forest-labs/FLUX.1-schnell';
-
-function classify(e: unknown): Ai3dError {
-  const m = String((e as any)?.message ?? (e as any)?.stage ?? e).toLowerCase();
-  if (/quota|exceeded|gpu limit|zerogpu|too many requests|429|"stage":"error"|^error$/.test(m)) return new Ai3dError('quota', m);
-  if (/queue|busy|full|timeout|timed out/.test(m)) return new Ai3dError('busy', m);
-  if (/sleeping|paused|runtime error|not found|503|502|build error|could not resolve/.test(m)) return new Ai3dError('down', m);
-  return new Ai3dError('failed', m);
-}
-
-const urlOf = (v: any): string | null =>
-  !v ? null : typeof v === 'string' ? v : v.url ?? (v.value ? urlOf(v.value) : null);
-
 async function download(url: string, type: string): Promise<Blob> {
-  const res = await fetch(url);
-  if (!res.ok) throw new Ai3dError('failed', `download ${res.status}`);
+  const res = await fetch(url).catch(() => null);
+  if (!res?.ok) throw new Ai3dError('failed', `download ${res?.status ?? 'blocked'}`);
   return new Blob([await res.blob()], { type });
 }
 
@@ -61,41 +47,7 @@ export async function preparePhoto(photo: Blob): Promise<Blob> {
     canvas.toBlob((b) => (b ? resolve(b) : reject(new Ai3dError('failed', 'photo'))), 'image/jpeg', 0.88));
 }
 
-async function space(id: string) {
-  const { Client } = await import('@gradio/client');
-  try { return await Client.connect(id); } catch (e) { throw classify(e); }
-}
-
-async function predict(app: any, endpoint: string, data: Record<string, unknown>): Promise<any[]> {
-  try { return (await app.predict(endpoint, data)).data as any[]; } catch (e) { throw classify(e); }
-}
-
-// ---------------------------------------------------------------- browser
-
-async function trellisInBrowser(photo: Blob): Promise<Blob> {
-  const { handle_file } = await import('@gradio/client');
-  const app = await space(TRELLIS);
-  await predict(app, '/start_session', {}).catch(() => null);
-  const [cut] = await predict(app, '/preprocess_image', { input: handle_file(photo) });
-  await predict(app, '/image_to_3d', { image: cut ?? handle_file(photo), seed: 0, resolution: '1024' });
-  const out = await predict(app, '/extract_glb', { decimation_target: 300000, texture_size: 2048 });
-  const url = urlOf(out[1]) ?? urlOf(out[0]);
-  if (!url) throw new Ai3dError('failed', 'no model');
-  return download(url, 'model/gltf-binary');
-}
-
-async function pictureInBrowser(prompt: string): Promise<Blob> {
-  const app = await space(FLUX);
-  const [image] = await predict(app, '/infer', {
-    prompt, seed: 0, randomize_seed: true, width: 1024, height: 1024, num_inference_steps: 4,
-  });
-  const url = urlOf(image);
-  if (!url) throw new Ai3dError('failed', 'no picture');
-  return download(url, 'image/webp');
-}
-
-// ----------------------------------------------------------------- server
-
+/** One request to the ai3d Edge Function; the answer is a link to a file on the Space. */
 async function viaServer(body: Record<string, unknown>, type: string): Promise<Blob> {
   const client = db();
   if (!client) throw new Ai3dError('failed', 'no client');
@@ -114,21 +66,10 @@ const dataUrl = (blob: Blob) => new Promise<string>((resolve) => {
   reader.readAsDataURL(blob);
 });
 
-// ----------------------------------------------------------------- public
-
-/**
- * A photo -> a .glb. Tries the browser first; on a refused allowance, the
- * server with our token. Reports which model made it, for the credit line.
- */
+/** A photo -> a .glb (about a minute and a half). */
 export async function photoTo3d(photo: Blob, stage?: (s: Ai3dStage) => void): Promise<{ glb: Blob; source: Ai3dSource }> {
   const jpeg = await preparePhoto(photo);
   stage?.('model');
-  try {
-    return { glb: await trellisInBrowser(jpeg), source: 'trellis2' };
-  } catch (e) {
-    if (!(e instanceof Ai3dError) || (e.reason !== 'quota' && e.reason !== 'busy')) throw e;
-  }
-  stage?.('server');
   const glb = await viaServer({ action: 'model', image: await dataUrl(jpeg) }, 'model/gltf-binary');
   return { glb, source: 'trellis2' };
 }
@@ -139,11 +80,5 @@ export async function describeToPicture(description: string, stage?: (s: Ai3dSta
   const prompt = `${description.trim()}. A single object, whole and centred, on a plain white background, ` +
     `soft even studio light, realistic, no text.`;
   stage?.('picture');
-  try {
-    return await pictureInBrowser(prompt);
-  } catch (e) {
-    if (!(e instanceof Ai3dError) || (e.reason !== 'quota' && e.reason !== 'busy')) throw e;
-  }
-  stage?.('server');
   return viaServer({ action: 'picture', prompt }, 'image/webp');
 }
