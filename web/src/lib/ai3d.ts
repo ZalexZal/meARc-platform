@@ -24,7 +24,7 @@ export type Ai3dStage = 'picture' | 'model' | 'download';
 export type Ai3dSource = 'trellis2';
 
 export class Ai3dError extends Error {
-  constructor(public reason: 'quota' | 'busy' | 'down' | 'failed' | 'signin' | 'notReady', message?: string) {
+  constructor(public reason: 'quota' | 'allowance' | 'busy' | 'down' | 'failed' | 'signin' | 'notReady', message?: string) {
     super(message ?? reason);
   }
 }
@@ -54,7 +54,7 @@ async function viaServer(body: Record<string, unknown>, type: string): Promise<B
   const { data, error } = await client.functions.invoke('ai3d', { body });
   if (error || !data?.ok) {
     const reason = data?.reason ?? (await (error as any)?.context?.json?.().catch(() => null))?.reason;
-    throw new Ai3dError(reason === 'quota' ? 'quota' : reason === 'signin' ? 'signin'
+    throw new Ai3dError(reason === 'quota' ? 'quota' : reason === 'allowance' ? 'allowance' : reason === 'signin' ? 'signin'
       : reason === 'not_configured' ? 'notReady' : reason === 'busy' ? 'busy' : 'failed', reason);
   }
   return download(data.url, type);

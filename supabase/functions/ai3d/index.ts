@@ -42,11 +42,13 @@ Deno.serve(async (req) => {
   const action = body?.action;
   if (action !== 'picture' && action !== 'model') return reply({ ok: false, reason: 'action' }, 400);
 
-  // A picture costs a few GPU seconds and is the first half of a model, so
-  // only the model is counted.
+  // Each person's 5 models a day. Checked first, counted only when a model was
+  // actually made: a failed try must not cost one (9 Nov 2026). A picture is
+  // the first half of a model and is not counted.
+  const today = new Date().toISOString().slice(0, 10);
   if (action === 'model') {
-    const { data: allowed } = await asCaller.rpc('ai_count_model');
-    if (allowed !== true) return reply({ ok: false, reason: 'quota' }, 429);
+    const { data: row } = await asCaller.from('ai_usage').select('models').eq('day', today).maybeSingle();
+    if ((row?.models ?? 0) >= 5) return reply({ ok: false, reason: 'quota' }, 429);
   }
 
   const service = createClient(url, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!);
@@ -64,10 +66,14 @@ Deno.serve(async (req) => {
     if (!match) return reply({ ok: false, reason: 'image' }, 400);
     const jpeg = Uint8Array.from(atob(match[1]), (c) => c.charCodeAt(0));
     if (jpeg.length > 4 * 1024 * 1024) return reply({ ok: false, reason: 'image' }, 400);
-    return reply({ ok: true, url: await model(jpeg, token as string), source: 'trellis2' });
+    const link = await model(jpeg, token as string);
+    await asCaller.rpc('ai_count_model');
+    return reply({ ok: true, url: link, source: 'trellis2' });
   } catch (e) {
-    const reason = e instanceof SpaceError ? e.reason : 'failed';
+    // Hugging Face's own daily limit on AR Trail's token is shared by everyone:
+    // 'allowance', not 'quota', so nobody is told they used up their own.
+    const reason = e instanceof SpaceError ? (e.reason === 'quota' ? 'allowance' : e.reason) : 'failed';
     console.log('ai3d', action, reason, String((e as Error)?.message ?? e).slice(0, 200));
-    return reply({ ok: false, reason }, reason === 'quota' ? 429 : 502);
+    return reply({ ok: false, reason }, reason === 'allowance' ? 429 : 502);
   }
 });
