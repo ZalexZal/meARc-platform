@@ -26,6 +26,7 @@ const strings = {
   roleEditor: t('mine.roleEditor'),
   failed: t('mine.failed'),
   errWork: t('err.work'),
+  newBody: t('mine.newBody'), newBodyPlain: t('mine.newBodyPlain'),
   visLabel: t('vis.label'),
   visPrivate: t('vis.private'),
   visPrivateHint: t('vis.privateHint'),
@@ -124,7 +125,7 @@ const questions = [
           <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M12 5v14M5 12h14" /></svg>
         </span>
         <span class="new-title">{t('mine.newTile')}</span>
-        <span class="new-body">{t('mine.newBody')}</span>
+        <span class="new-body" data-new-body>{t('mine.newBody')}</span>
       </button>
 
       <form class="new-form" id="new-trail" hidden data-create novalidate>
@@ -192,7 +193,10 @@ const questions = [
   await requireUser({ needsReal: false });
   const client = db()!;
   // Null until the person has said what they do; features treat it as "other".
-  let work = await loadWork(client as any);
+  const loaded = await loadWork(client as any);
+  // undefined means the read failed: treated as "other", and the one-time card stays hidden.
+  const workKnown = loaded !== undefined;
+  let work = loaded ?? null;
 
   // ---------------------------------------------------------------- removals
   const drawNotices = async () => {
@@ -298,7 +302,7 @@ const questions = [
       </div>` : ''}
 
       <p class="data mt-3 text-xs text-[var(--ink-dim)]">
-        ${escapeHtml(trailLine(w.mode, w.category ?? 'other', w.city ?? null, S.lang))} \u00b7 ${escapeHtml(count(w.marker_count, S.stop, S.stops))}
+        ${escapeHtml(trailLine(w.mode, w.category ?? 'other', w.city ?? null, S.lang, featuresFor(work).teams || featuresFor(work).order))} \u00b7 ${escapeHtml(count(w.marker_count, S.stop, S.stops))}
         ${Number(w.pending) > 0 ? ` \u00b7 <span style="color:var(--lamp)">${w.pending} ${escapeHtml(S.pending)}</span>` : ''}
         ${owner ? '' : ` \u00b7 ${escapeHtml(S.roleEditor)}`}
       </p>
@@ -354,6 +358,7 @@ const questions = [
   // straight back here with the form open, rather than filling it in to be
   // refused at the end.
   const { anonymous } = await who();
+  const newBody = q('[data-new-body]') as HTMLElement;
   const questionsBox = q('[data-questions]') as HTMLElement;
   const questionTpl = q('[data-question-template]') as HTMLTemplateElement;
   const categoryField = q('[data-new-category]') as HTMLSelectElement;
@@ -369,12 +374,14 @@ const questions = [
       if (shown) questionsBox.append(fs.cloneNode(true));
     }
     categoryField.value = defaultCategory(work);
+    // The tile's sentence mentions teams only for a line of work that has them.
+    text(newBody, f.teams ? S.newBody : S.newBodyPlain);
   }
   drawForm();
 
   // The one-time question: only for a real account that was never asked.
   const workForm = q('[data-work-ask]') as HTMLFormElement;
-  if (work === null && !anonymous) workForm.hidden = false;
+  if (work === null && workKnown && !anonymous) workForm.hidden = false;
   workForm.addEventListener('submit', async (event) => {
     event.preventDefault();
     const msg = q('[data-work-msg]') as HTMLElement;

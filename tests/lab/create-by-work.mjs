@@ -37,6 +37,34 @@ try {
   check('broker: no standings button', !(await p.$(`[data-card="${w.id}"] a[href*="/board"]`)));
   check('broker: visibility controls still there', (await p.$$(`[data-card="${w.id}"] [data-vis]`)).length === 2 && !!(await p.$(`[data-card="${w.id}"] [data-ask]`)));
 
+  // The whole page, not only the form: no word about teams, points, standings or order.
+  await p.goto(`${BASE}/my-trails/`);
+  await p.waitForSelector('[data-card]', { timeout: 15000 });
+  await p.waitForTimeout(500);
+  const whole = await p.evaluate(() => document.body.innerText);
+  const bad = /отбор|точки|класиране|(^|[^\p{L}])ред([^\p{L}]|$)/iu.exec(whole);
+  check('broker: no teams/points/standings/order words anywhere on /my-trails/', !bad, bad ? whole.slice(Math.max(0, bad.index - 40), bad.index + 40) : '');
+  check('broker: tile text is the plain sentence', (await p.textContent('[data-new-body]')).trim() === 'Дай му име и после докосни картата, за да добавиш първата спирка.');
+  const pe = await b.newPage({ viewport: { width: 1280, height: 900 } });
+  await signIn(pe, br, '/en');
+  await pe.goto(`${BASE}/en/my-trails/`);
+  await pe.waitForSelector('[data-card]', { timeout: 15000 });
+  await pe.waitForTimeout(500);
+  const wholeEn = await pe.evaluate(() => document.body.innerText);
+  const badEn = /team|standing|points|\border\b/i.exec(wholeEn);
+  check('broker: no team/standings/points/order words on /en/my-trails/', !badEn, badEn ? wholeEn.slice(Math.max(0, badEn.index - 40), badEn.index + 40) : '');
+  await pe.close();
+
+  // An old scored trail with another category: still only "Category · City" for a broker.
+  await sql(`update worlds set mode = 'ctf', category = 'other', city = $2::jsonb where id = $1`,
+    [w.id, JSON.stringify({ key: 'yambol', bg: 'Ямбол', en: 'Yambol', lat: 42.48, lng: 26.5 })]);
+  await p.reload();
+  await p.waitForSelector('[data-card]', { timeout: 15000 });
+  const oldCard = (await p.textContent(`[data-card="${w.id}"]`)).replace(/\s+/g, ' ');
+  check('broker: old ctf trail reads "Друго · Ямбол"', oldCard.includes('Друго · Ямбол'), oldCard.slice(0, 200));
+  check('broker: old ctf trail card has no "отбор"', !/отбор/i.test(oldCard));
+  check('broker: no standings button on the old ctf trail', !(await p.$(`[data-card="${w.id}"] a[href*="/board"]`)));
+
   // Guide: order question only, tourism by default.
   const gu = await makeUser('cbw-guide', { work: 'guide' });
   const pg = await open(gu);

@@ -147,13 +147,13 @@ test('strings: verbatim texts', () => {
 import { loadWork, saveWork } from '../../../web/src/lib/work.ts';
 
 // A client double that records the update and answers like PostgREST.
-function fakeClient(row: any, updateError: any = null) {
+function fakeClient(row: any, updateError: any = null, selectError: any = null) {
   const seen: any = {};
   return {
     seen,
     auth: { getSession: async () => ({ data: { session: { user: { id: 'u1' } } } }) },
     from: (table: string) => ({
-      select: () => ({ eq: () => ({ maybeSingle: async () => ({ data: row, error: null }) }) }),
+      select: () => ({ eq: () => ({ maybeSingle: async () => ({ data: selectError ? null : row, error: selectError }) }) }),
       update: (patch: any) => ({ eq: async (col: string, val: string) => { Object.assign(seen, { table, patch, col, val }); return { error: updateError }; } }),
     }),
   };
@@ -174,4 +174,17 @@ test('saveWork updates the own row and returns null on success', async () => {
 
 test('saveWork returns the error message on failure', async () => {
   assert.equal(await saveWork(fakeClient(null, { message: 'nope' }), 'broker'), 'nope');
+});
+
+test('loadWork: a failed read is undefined, never "never asked"', async () => {
+  assert.equal(await loadWork(fakeClient(null, null, { message: 'boom' })), undefined);
+  const signedOut = { ...fakeClient(null), auth: { getSession: async () => ({ data: { session: null } }) } };
+  assert.equal(await loadWork(signedOut), undefined);
+});
+
+test('trailLine with withMode=false is only Category · City', () => {
+  const city = { key: 'yambol', bg: 'Ямбол', en: 'Yambol', lat: 0, lng: 0 };
+  assert.equal(trailLine('ctf', 'other', city, 'bg', false), 'Друго · Ямбол');
+  assert.equal(trailLine('ctf', 'tourism', null, 'en', false), 'Tourism');
+  assert.equal(trailLine('ctf', 'other', city, 'bg'), 'Отбори и класиране · По ред · Друго · Ямбол');
 });

@@ -36,11 +36,12 @@ export function modeLine(mode: string, lang: 'bg' | 'en'): string {
 /**
  * One line that says what a trail is, on every page. Real estate has no teams or
  * order, so it reads "Category · City"; the rest read "Mode · Category · City".
- * Empty parts are dropped.
+ * `withMode = false` drops the mode for everybody (a line of work that never
+ * sees teams or order). Empty parts are dropped.
  */
-export function trailLine(mode: string, category: Category, city: City | null, lang: 'bg' | 'en'): string {
+export function trailLine(mode: string, category: Category, city: City | null, lang: 'bg' | 'en', withMode = true): string {
   const parts = [
-    category === 'estate' ? '' : modeLine(mode, lang),
+    category === 'estate' || !withMode ? '' : modeLine(mode, lang),
     categoryLabel(category, lang),
     city?.[lang] ?? '',
   ];

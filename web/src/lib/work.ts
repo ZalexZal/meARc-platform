@@ -117,11 +117,16 @@ export type WorkClient = {
   };
 };
 
-/** The signed-in person's line of work; null when never asked (or not signed in). */
-export async function loadWork(client: WorkClient): Promise<Work | null> {
+/**
+ * The signed-in person's line of work. null means only "never asked"; when the
+ * read itself fails (or nobody is signed in) the answer is undefined, so a caller
+ * never mistakes a failed read for a person who was never asked.
+ */
+export async function loadWork(client: WorkClient): Promise<Work | null | undefined> {
   const { data: { session } } = await client.auth.getSession();
-  if (!session) return null;
-  const { data } = await client.from('profiles').select('work').eq('id', session.user.id).maybeSingle();
+  if (!session) return undefined;
+  const { data, error } = await client.from('profiles').select('work').eq('id', session.user.id).maybeSingle();
+  if (error) return undefined;
   const work = data?.work;
   return (WORKS as string[]).includes(work ?? '') ? (work as Work) : null;
 }
