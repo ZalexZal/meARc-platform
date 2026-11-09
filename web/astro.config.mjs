@@ -47,7 +47,7 @@ export default defineConfig({
         "default-src 'self'",
         // The API and realtime (co-editing), and the editor's map tiles.
         // blob: is a creator's own 3D model, read in the builder before upload.
-        `connect-src 'self' blob: ${SUPABASE} ${SUPABASE.replace(/^https:/, 'wss:')} https://tiles.openfreemap.org https://*.hf.space`,
+        `connect-src 'self' blob: ${SUPABASE} ${SUPABASE.replace(/^https:/, 'wss:')} https://tiles.openfreemap.org https://*.hf.space https://nominatim.openstreetmap.org`,
         // Uploads, QR codes (data:), map sprites (blob:), and pictures a
         // creator linked from anywhere.
         "img-src 'self' data: blob: https:",
