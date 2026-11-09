@@ -19,7 +19,10 @@ try {
   check("sign-up metadata work='pilot' gives null", pc.work === null, String(pc.work));
   const d = await makeUser('cls-d', { work: null });
   const [pd] = await sql(`select work from public.profiles where id = $1`, [d.id]);
-  check('no work metadata gives null', pd.work === null);
+  check('JSON-null work metadata gives null', pd.work === null);
+  const e0 = await makeUser('cls-e', { work: undefined });   // key absent altogether
+  const [pAbs] = await sql(`select work, (raw_user_meta_data ? 'work') as has from public.profiles p join auth.users u on u.id = p.id where p.id = $1`, [e0.id]);
+  check('absent work key gives null', pAbs.has === false && pAbs.work === null, JSON.stringify(pAbs));
 
   // create_world category
   const ca = await api(u);
