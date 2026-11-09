@@ -26,7 +26,7 @@
 --   then re-create the six functions from their definitions before 0067:
 --   public_trails, trails_near, my_worlds, trail_summary, create_world(3 args)
 --   and handle_new_user (full text is in
---   .superpowers/sdd/2026-11-09-classification/task-1-report.md), and restore
+--   docs/db-cleanup-2026-11-09.md, appendix (d)), and restore
 --   their grants (public_trails/trails_near/trail_summary: anon, authenticated,
 --   service_role; my_worlds and create_world: authenticated, service_role;
 --   handle_new_user: service_role only; nothing to PUBLIC).
