@@ -114,7 +114,7 @@ const strings = { ...copy, lang, boardHref: href('/board'), listHref: href('/tra
   import QRCode from 'qrcode';
   import { db, configured } from '../lib/supabase';
   import { param, text } from '../lib/session';
-  import { isScored, isOrdered, modeLine } from '../lib/modes';
+  import { isScored, isOrdered, trailLine } from '../lib/modes';
 
   const S = JSON.parse(document.querySelector('[data-v-strings]')!.textContent || '{}');
   const q = <T extends Element = HTMLElement>(s: string) => document.querySelector(s) as T | null;
@@ -133,8 +133,10 @@ const strings = { ...copy, lang, boardHref: href('/board'), listHref: href('/tra
     const summary = ((await client.rpc('trail_summary', { p_world: id })).data ?? [])[0];
     if (!summary) return none();
 
-    const scored = isScored(summary.mode), ordered = isOrdered(summary.mode);
-    text(q('[data-v-mode]'), modeLine(summary.mode, S.lang));
+    // A real-estate trail has no teams: whatever mode it is stored as, the page shows none.
+    const estate = summary.category === 'estate';
+    const scored = isScored(summary.mode) && !estate, ordered = isOrdered(summary.mode) && !estate;
+    text(q('[data-v-mode]'), trailLine(summary.mode, summary.category ?? 'other', summary.city ?? null, S.lang));
     text(q('[data-v-name]'), summary.name);
     document.title = `${summary.name} — AR Trail`;
     text(q('[data-v-meta]'), [fmt(S.stopN, summary.stop_count), scored && Number(summary.team_count) > 0 ? fmt(S.teams, summary.team_count) : '']
