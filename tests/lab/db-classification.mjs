@@ -17,7 +17,7 @@ try {
   const c = await makeUser('cls-c', { work: 'pilot' });
   const [pc] = await sql(`select work from public.profiles where id = $1`, [c.id]);
   check("sign-up metadata work='pilot' gives null", pc.work === null, String(pc.work));
-  const d = await makeUser('cls-d');
+  const d = await makeUser('cls-d', { work: null });
   const [pd] = await sql(`select work from public.profiles where id = $1`, [d.id]);
   check('no work metadata gives null', pd.work === null);
 

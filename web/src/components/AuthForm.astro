@@ -1,6 +1,7 @@
 ---
 import { useTranslations, localise, type Lang } from '../i18n/ui';
 import AuthShell from './AuthShell.astro';
+import { WORKS } from '../lib/work';
 
 interface Props { lang: Lang; mode: 'signin' | 'signup'; }
 const { lang, mode } = Astro.props;
@@ -18,7 +19,7 @@ const up = mode === 'signup';
         data-errors={JSON.stringify({
           fill: t('err.fill'), weak: t('err.weakPassword'), generic: t('err.generic'),
           network: t('err.network'), bad: t('err.badCredentials'), taken: t('err.emailTaken'),
-          age: t('err.age'), parentEmail: t('err.parentEmail'), unconfirmed: t('err.unconfirmed'),
+          age: t('err.age'), work: t('err.work'), parentEmail: t('err.parentEmail'), unconfirmed: t('err.unconfirmed'),
           tooYoung: t('err.tooYoung'), parentEither: t('err.parentEither'),
           tooYoungHere: t('err.tooYoungHere'),
           slowDown: t('err.slowDown'), resent: t('auth.resent'), parentSentBody: t('auth.parentSentBody'),
@@ -73,6 +74,22 @@ const up = mode === 'signup';
           <label class="mb-1.5 mt-4 block text-sm font-medium" for="pcode">{t('auth.parentCode')}</label>
           <input class="field code uppercase tracking-widest" id="pcode" name="pcode" autocomplete="off" maxlength="12" />
           <p class="mt-1.5 text-xs text-[var(--ink-faint)]">{t('auth.parentCodeHelp')}</p>
+        </div>
+      </fieldset>
+    )}
+
+    {up && (
+      <fieldset class="space-y-2" data-work>
+        <legend class="mb-1.5 block text-sm font-medium">{t('work.title')}</legend>
+        <div class="flex flex-col">
+          {WORKS.map((w) => (
+            <label class="flex min-h-[44px] flex-wrap items-center gap-x-2 text-sm">
+              <input type="radio" name="work" value={w} /> {t(`work.${w}`)}
+              {w === 'other' && (
+                <span class="basis-full pb-2 pl-6 text-xs text-[var(--ink-faint)]">{t('work.otherHint')}</span>
+              )}
+            </label>
+          ))}
         </div>
       </fieldset>
     )}
@@ -186,6 +203,7 @@ const up = mode === 'signup';
       const password = String(data.get('password') ?? '');
       const name = String(data.get('name') ?? '').trim();
       const age = String(data.get('age') ?? '');
+      const work = String(data.get('work') ?? '');
       const parent = String(data.get('parent') ?? '').trim();
       const pcode = String(data.get('pcode') ?? '').trim().toUpperCase();
       const under14 = age === 'under14';
@@ -197,6 +215,8 @@ const up = mode === 'signup';
       // Google Play will not let an app with location be aimed at under-13s,
       // and this app is nothing without location.
       if (mode === 'signup' && age === 'under13') { markTooYoung(); show(said.tooYoung); return; }
+      // Asked once, here, so the site and the app can show each person only what they use.
+      if (mode === 'signup' && !work) { show(said.work, field('work')); return; }
       if (mode === 'signup' && under14 && !parent && !pcode) { show(said.parentEither, field('parent')); return; }
       if (mode === 'signup' && under14 && !pcode
           && (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(parent) || parent.toLowerCase() === email.toLowerCase())) {
@@ -224,6 +244,7 @@ const up = mode === 'signup';
         ? await signUp(email, password, name || undefined, {
             terms_version: TERMS_VERSION,
             age_band: under14 ? 'under14' : '14+',
+            work,
             ...(under14 && pcode && { parent_code: pcode }),
             ...(under14 && !pcode && { parent_email: parent }),
           })

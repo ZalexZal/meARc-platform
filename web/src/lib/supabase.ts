@@ -11,6 +11,9 @@
  * not depend on a gitignored file existing.
  */
 import { createClient, type SupabaseClient, type User } from '@supabase/supabase-js';
+import { WORKS, type Work } from './work';
+
+const isWork = (v: unknown): v is Work => typeof v === 'string' && (WORKS as string[]).includes(v);
 
 declare global {
   interface Window {
@@ -108,6 +111,14 @@ export async function signUp(email: string, password: string, displayName?: stri
     await c.from('profiles').update({ display_name: displayName }).eq('id', result.data.user?.id ?? '');
   }
 
+  // A brand-new sign-up gets its line of work from the metadata, through the
+  // handle_new_user trigger. A guest turned into an account is not an INSERT,
+  // so the trigger never fires: write it here. Best effort, like the name.
+  const work = extra.work;
+  if (upgrading && result.data.user?.id && isWork(work)) {
+    await c.from('profiles').update({ work }).eq('id', result.data.user.id);
+  }
+
   return {
     error: null,
     upgraded: upgrading,
@@ -203,10 +214,16 @@ export async function finishPending(user: User) {
   if (!c || !meta.terms_version) return;
 
   const { data: profile } = await c.from('profiles')
-    .select('terms_version').eq('id', user.id).maybeSingle();
+    .select('terms_version, work').eq('id', user.id).maybeSingle();
 
   if (profile && !profile.terms_version) {
     await acceptTerms(String(meta.terms_version), meta.age_band === 'under14');
+  }
+
+  // The same for the line of work: a guest upgrade never ran the trigger.
+  // Only fills a gap, so a later change of mind is never overwritten.
+  if (profile && !profile.work && isWork(meta.work)) {
+    await c.from('profiles').update({ work: meta.work }).eq('id', user.id);
   }
 
   if (meta.age_band === 'under14' && (meta.parent_email || meta.parent_code)) {
