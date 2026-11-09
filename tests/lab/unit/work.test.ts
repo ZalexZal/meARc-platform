@@ -143,3 +143,35 @@ test('strings: verbatim texts', () => {
   assert.equal(ui.bg['ed.hiddenQuestions'], 'Този маршрут има въпроси. Сменете заниманието си на Учител или Друго, за да ги редактирате.');
   assert.equal(ui.en['ed.hiddenQuestions'], 'This trail has questions. Switch your line of work to Teacher or Other to edit them.');
 });
+
+import { loadWork, saveWork } from '../../../web/src/lib/work.ts';
+
+// A client double that records the update and answers like PostgREST.
+function fakeClient(row: any, updateError: any = null) {
+  const seen: any = {};
+  return {
+    seen,
+    auth: { getSession: async () => ({ data: { session: { user: { id: 'u1' } } } }) },
+    from: (table: string) => ({
+      select: () => ({ eq: () => ({ maybeSingle: async () => ({ data: row, error: null }) }) }),
+      update: (patch: any) => ({ eq: async (col: string, val: string) => { Object.assign(seen, { table, patch, col, val }); return { error: updateError }; } }),
+    }),
+  };
+}
+
+test('loadWork reads profiles.work, null when never asked', async () => {
+  assert.equal(await loadWork(fakeClient({ work: 'guide' })), 'guide');
+  assert.equal(await loadWork(fakeClient({ work: null })), null);
+  assert.equal(await loadWork(fakeClient(null)), null);
+  assert.equal(await loadWork(fakeClient({ work: 'pilot' })), null);
+});
+
+test('saveWork updates the own row and returns null on success', async () => {
+  const c = fakeClient(null);
+  assert.equal(await saveWork(c, 'broker'), null);
+  assert.deepEqual(c.seen, { table: 'profiles', patch: { work: 'broker' }, col: 'id', val: 'u1' });
+});
+
+test('saveWork returns the error message on failure', async () => {
+  assert.equal(await saveWork(fakeClient(null, { message: 'nope' }), 'broker'), 'nope');
+});

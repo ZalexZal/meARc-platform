@@ -1,6 +1,7 @@
 ---
 import Loading from './Loading.astro';
 import { useTranslations, localise, type Lang } from '../i18n/ui';
+import { WORKS } from '../lib/work';
 
 interface Props { lang: Lang; }
 const { lang } = Astro.props;
@@ -79,7 +80,7 @@ const strings = {
   ...copy, lang,
   stop: t('n.stop'), stops: t('n.stops'), point: t('n.point'), points: t('n.points'),
   teamOne: t('n.team'), teamN: t('n.teams'),
-  clearing: t('acct.clearing'), deleteCost: t('acct.deleteCost'), failed: t('err.generic'),
+  clearing: t('acct.clearing'), deleteCost: t('acct.deleteCost'), failed: t('err.generic'), errWork: t('err.work'),
 };
 
 const rail = [
@@ -168,6 +169,20 @@ const rail = [
                 <button class="btn btn-quiet btn-sm" type="submit">{copy.save}</button>
               </div>
               <p class="msg" data-name-msg aria-live="polite"></p>
+            </form>
+
+            <form class="acct-field" data-work-form>
+              <fieldset class="work-set">
+                <legend class="field-label">{t('work.title')}</legend>
+                {WORKS.map((w) => (
+                  <label class="work-opt">
+                    <input type="radio" name="work" value={w} /> {t(`work.${w}`)}
+                    {w === 'other' && <span class="work-hint">{t('work.otherHint')}</span>}
+                  </label>
+                ))}
+              </fieldset>
+              <button class="btn btn-quiet btn-sm self-start" type="submit">{copy.save}</button>
+              <p class="msg" data-work-msg aria-live="polite"></p>
             </form>
 
             <form class="acct-field" data-email-form>
@@ -332,6 +347,14 @@ const rail = [
     font-size: 0.9rem; background: var(--ground); color: var(--ink);
   }
   .field-input:focus-visible { outline: 2px solid var(--signal); outline-offset: 1px; }
+  [data-work-form] .btn { justify-self: start; }
+  .work-set { display: grid; border: 0; padding: 0; margin: 0; min-width: 0; }
+  .work-set legend { margin-bottom: 4px; }
+  .acct-field .work-opt {
+    display: flex; flex-wrap: wrap; align-items: center; align-content: center; column-gap: 8px; min-height: 44px;
+    font-size: 0.9rem; color: var(--ink); cursor: pointer;
+  }
+  .work-hint { flex-basis: 100%; padding: 0 0 8px 24px; font-size: 0.78rem; color: var(--ink-faint); }
   .acct-link { color: var(--signal); font-weight: 500; }
   .acct-link:hover { text-decoration: underline; }
   .msg { min-height: 1.1em; font-size: 0.8rem; color: var(--ink-dim); }
@@ -367,6 +390,7 @@ const rail = [
   import { db, signOut, askParent, redeemParentCode } from '../lib/supabase';
   import { requireUser, reveal, escapeHtml, text, count } from '../lib/session';
   import { busy, formError, formOk } from '../lib/form';
+  import { loadWork, saveWork, WORKS } from '../lib/work';
 
   const S = JSON.parse(document.querySelector('[data-acct-strings]')!.textContent || '{}');
   const q = (sel: string) => document.querySelector(sel);
@@ -537,6 +561,25 @@ const rail = [
     name = value;
     drawName();
     say('[data-name-msg]', S.saved, 'good');
+  });
+
+  // The line of work. Null (never asked) leaves every radio unchecked.
+  {
+    const current = await loadWork(client as any);
+    qa('[data-work-form] input[name="work"]').forEach((r) => ((r as HTMLInputElement).checked = (r as HTMLInputElement).value === current));
+  }
+
+  q('[data-work-form]')?.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const picked = (q('[data-work-form] input[name="work"]:checked') as HTMLInputElement | null)?.value;
+    if (!picked || !(WORKS as string[]).includes(picked)) {
+      say('[data-work-msg]', S.errWork, 'bad', '[data-work-form] input[name="work"]');
+      return;
+    }
+    working(e);
+    const failed = await saveWork(client as any, picked as any);
+    if (failed) { say('[data-work-msg]', failed, 'bad'); return; }
+    say('[data-work-msg]', S.saved, 'good');
   });
 
   q('[data-email-form]')?.addEventListener('submit', async (e) => {

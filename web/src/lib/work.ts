@@ -104,3 +104,32 @@ export function matches(
   const hay = fold(`${trail.name} ${trail.city?.bg ?? ''} ${trail.city?.en ?? ''}`);
   return fold(query).split(' ').filter(Boolean).every((w) => hay.includes(w));
 }
+
+/**
+ * Just enough of the Supabase client for the two calls below, so this file
+ * stays free of the supabase import and the node unit tests can load it.
+ */
+export type WorkClient = {
+  auth: { getSession(): Promise<{ data: { session: { user: { id: string } } | null } }> };
+  from(table: 'profiles'): {
+    select(columns: string): { eq(col: string, val: string): { maybeSingle(): Promise<{ data: { work?: string | null } | null; error?: unknown }> } };
+    update(patch: { work: Work }): { eq(col: string, val: string): PromiseLike<{ error: { message: string } | null }> };
+  };
+};
+
+/** The signed-in person's line of work; null when never asked (or not signed in). */
+export async function loadWork(client: WorkClient): Promise<Work | null> {
+  const { data: { session } } = await client.auth.getSession();
+  if (!session) return null;
+  const { data } = await client.from('profiles').select('work').eq('id', session.user.id).maybeSingle();
+  const work = data?.work;
+  return (WORKS as string[]).includes(work ?? '') ? (work as Work) : null;
+}
+
+/** Stores the choice on the person's own profile. Returns an error message, or null. */
+export async function saveWork(client: WorkClient, work: Work): Promise<string | null> {
+  const { data: { session } } = await client.auth.getSession();
+  if (!session) return 'not signed in';
+  const { error } = await client.from('profiles').update({ work }).eq('id', session.user.id);
+  return error ? error.message : null;
+}
