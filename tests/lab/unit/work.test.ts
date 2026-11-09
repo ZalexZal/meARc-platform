@@ -1,6 +1,8 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { featuresFor, defaultCategory, WORKS, CATEGORIES, fold, matches } from '../../../web/src/lib/work.ts';
+import { featuresFor, defaultCategory, WORKS, CATEGORIES, fold, matches, categoryLabel, workLabel } from '../../../web/src/lib/work.ts';
+import { trailLine, modeLine } from '../../../web/src/lib/modes.ts';
+import { ui } from '../../../web/src/i18n/ui.ts';
 
 test('broker sees only the AI-first start', () => {
   assert.deepEqual(featuresFor('broker'), {
@@ -73,4 +75,63 @@ test('matches: no match, empty query, missing city', () => {
   assert.equal(matches('sofia', { name: 'Безистен', city: { bg: 'Ямбол' } }), false);
   assert.equal(matches('', { name: 'Безистен' }), true);
   assert.equal(matches('безистен', { name: 'Безистен', city: null }), true);
+});
+
+const yambol = { key: 'yambol', bg: 'Ямбол', en: 'Yambol', lat: 42.48, lng: 26.5 };
+
+test('labels: every work and category in both languages', () => {
+  assert.deepEqual(WORKS.map((w) => workLabel(w, 'bg')), ['Брокер на недвижими имоти', 'Учител', 'Екскурзовод', 'Друго']);
+  assert.deepEqual(WORKS.map((w) => workLabel(w, 'en')), ['Estate broker', 'Teacher', 'Tour guide', 'Other']);
+  assert.deepEqual(CATEGORIES.map((c) => categoryLabel(c, 'bg')), ['Образование', 'Туризъм', 'Недвижими имоти', 'Друго']);
+  assert.deepEqual(CATEGORIES.map((c) => categoryLabel(c, 'en')), ['Education', 'Tourism', 'Real estate', 'Other']);
+});
+
+test('trailLine: estate shows category and city, never the mode', () => {
+  assert.equal(trailLine('educational', 'estate', yambol, 'bg'), 'Недвижими имоти · Ямбол');
+  assert.equal(trailLine('ctf', 'estate', yambol, 'en'), 'Real estate · Yambol');
+});
+
+test('trailLine: estate without a city is just the category', () => {
+  assert.equal(trailLine('educational', 'estate', null, 'bg'), 'Недвижими имоти');
+});
+
+test('trailLine: other categories lead with the mode line', () => {
+  assert.ok(trailLine('ctf', 'education', null, 'bg').startsWith('Отбори и класиране'));
+  assert.equal(trailLine('ctf', 'education', null, 'bg'), `${modeLine('ctf', 'bg')} · Образование`);
+  assert.equal(
+    trailLine('educational', 'tourism', yambol, 'en'),
+    'No teams · Any order · Tourism · Yambol',
+  );
+});
+
+test('trailLine: empty parts are dropped, no stray separators', () => {
+  const noName = { ...yambol, en: '', bg: '' };
+  assert.equal(trailLine('guide', 'other', noName, 'bg'), `${modeLine('guide', 'bg')} · Друго`);
+  assert.equal(trailLine('guide', 'estate', noName, 'en'), 'Real estate');
+});
+
+test('strings: new keys exist in both languages and the labels match work.ts', () => {
+  const keys = [
+    'work.title', 'work.broker', 'work.teacher', 'work.guide', 'work.other', 'work.otherHint', 'work.ask', 'work.change',
+    'cat.education', 'cat.tourism', 'cat.estate', 'cat.other', 'cat.all', 'cat.label',
+    'city.label', 'city.none', 'city.auto',
+    'find.search', 'find.allCities', 'find.nothing', 'find.clear',
+    'ed.hiddenQuestions', 'err.work',
+  ] as const;
+  for (const lang of ['bg', 'en'] as const) {
+    const t = ui[lang] as Record<string, string>;
+    for (const k of keys) assert.ok(t[k] && t[k].length > 0, `${lang} ${k}`);
+    for (const w of WORKS) assert.equal(t[`work.${w}`], workLabel(w, lang));
+    for (const c of CATEGORIES) assert.equal(t[`cat.${c}`], categoryLabel(c, lang));
+    assert.ok(t['find.nothing'].includes('{0}'), `${lang} find.nothing takes the search`);
+  }
+});
+
+test('strings: verbatim texts', () => {
+  assert.equal(ui.bg['err.work'], 'Изберете с какво се занимавате.');
+  assert.equal(ui.en['err.work'], 'Choose your line of work.');
+  assert.equal(ui.bg['work.otherHint'], 'Всички възможности — и ако само ще вървите по маршрути.');
+  assert.equal(ui.en['work.otherHint'], 'Every option — and for people who only walk trails.');
+  assert.equal(ui.bg['ed.hiddenQuestions'], 'Този маршрут има въпроси. Сменете заниманието си на Учител или Друго, за да ги редактирате.');
+  assert.equal(ui.en['ed.hiddenQuestions'], 'This trail has questions. Switch your line of work to Teacher or Other to edit them.');
 });

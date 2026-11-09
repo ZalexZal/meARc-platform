@@ -23,6 +23,21 @@ export type Features = {
 export const WORKS: Work[] = ['broker', 'teacher', 'guide', 'other'];
 export const CATEGORIES: Category[] = ['education', 'tourism', 'estate', 'other'];
 
+/** The one place the labels live; ui.ts reads them from here. */
+const LABELS = {
+  work: {
+    bg: { broker: 'Брокер на недвижими имоти', teacher: 'Учител', guide: 'Екскурзовод', other: 'Друго' },
+    en: { broker: 'Estate broker', teacher: 'Teacher', guide: 'Tour guide', other: 'Other' },
+  },
+  category: {
+    bg: { education: 'Образование', tourism: 'Туризъм', estate: 'Недвижими имоти', other: 'Друго' },
+    en: { education: 'Education', tourism: 'Tourism', estate: 'Real estate', other: 'Other' },
+  },
+} as const;
+
+export const workLabel = (work: Work, lang: 'bg' | 'en'): string => LABELS.work[lang][work];
+export const categoryLabel = (category: Category, lang: 'bg' | 'en'): string => LABELS.category[lang][category];
+
 const EVERYTHING: Features = {
   teams: true, order: true, questions: true, results: true,
   teamSettings: true, oneAtATime: true, aiFirst: false,

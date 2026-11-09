@@ -10,6 +10,8 @@
  * typeset in every layout rather than checked at the end.
  */
 
+import { categoryLabel, workLabel } from '../lib/work.ts';
+
 export const languages = { bg: 'Български', en: 'English' } as const;
 export const defaultLang = 'bg';
 export type Lang = keyof typeof languages;
@@ -707,6 +709,30 @@ export const ui = {
     'ed.tipShot': 'Така я вижда посетителят',
 
 
+
+    'work.title': 'С какво се занимавате?',
+    'work.broker': workLabel('broker', 'bg'),
+    'work.teacher': workLabel('teacher', 'bg'),
+    'work.guide': workLabel('guide', 'bg'),
+    'work.other': workLabel('other', 'bg'),
+    'work.otherHint': 'Всички възможности — и ако само ще вървите по маршрути.',
+    'work.ask': 'Кажете ни с какво се занимавате, за да ви показваме само нужното.',
+    'work.change': 'Смяна на занимание',
+    'err.work': 'Изберете с какво се занимавате.',
+    'cat.education': categoryLabel('education', 'bg'),
+    'cat.tourism': categoryLabel('tourism', 'bg'),
+    'cat.estate': categoryLabel('estate', 'bg'),
+    'cat.other': categoryLabel('other', 'bg'),
+    'cat.all': 'Всички категории',
+    'cat.label': 'Категория',
+    'city.label': 'Град',
+    'city.none': 'Без град',
+    'city.auto': 'Определя се автоматично от спирките',
+    'find.search': 'Търсете по име или град',
+    'find.allCities': 'Всички градове',
+    'find.nothing': 'Няма маршрути за „{0}“.',
+    'find.clear': 'Изчисти търсенето',
+    'ed.hiddenQuestions': 'Този маршрут има въпроси. Сменете заниманието си на Учител или Друго, за да ги редактирате.',
   },
 
   en: {
@@ -1400,6 +1426,30 @@ export const ui = {
     'ed.tipShot': 'What a visitor sees',
 
 
+
+    'work.title': 'What do you do?',
+    'work.broker': workLabel('broker', 'en'),
+    'work.teacher': workLabel('teacher', 'en'),
+    'work.guide': workLabel('guide', 'en'),
+    'work.other': workLabel('other', 'en'),
+    'work.otherHint': 'Every option — and for people who only walk trails.',
+    'work.ask': 'Tell us what you do, so we show you only what you need.',
+    'work.change': 'Change line of work',
+    'err.work': 'Choose your line of work.',
+    'cat.education': categoryLabel('education', 'en'),
+    'cat.tourism': categoryLabel('tourism', 'en'),
+    'cat.estate': categoryLabel('estate', 'en'),
+    'cat.other': categoryLabel('other', 'en'),
+    'cat.all': 'All categories',
+    'cat.label': 'Category',
+    'city.label': 'City',
+    'city.none': 'No city',
+    'city.auto': 'Set automatically from the stops',
+    'find.search': 'Search by name or city',
+    'find.allCities': 'All cities',
+    'find.nothing': 'No trails for “{0}”.',
+    'find.clear': 'Clear search',
+    'ed.hiddenQuestions': 'This trail has questions. Switch your line of work to Teacher or Other to edit them.',
   },
 } as const;
 
