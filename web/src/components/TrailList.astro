@@ -60,7 +60,7 @@ const t = useTranslations(lang);
   </div>
 
   <!-- Something was published, but the search or the chips hid all of it. -->
-  <div class="mt-8 hidden" data-find-empty>
+  <div class="mt-8 hidden" data-find-empty aria-live="polite">
     <div class="card max-w-lg p-8">
       <p class="text-base" data-find-empty-text></p>
       <button type="button" class="btn btn-quiet mt-5" data-find-clear>{t('find.clear')}</button>
@@ -242,7 +242,7 @@ const t = useTranslations(lang);
     if (rows.length === 0) {
       const query = filters.q.trim();
       document.querySelector('[data-find-empty-text]').textContent =
-        query ? strings.nothing.replace('{0}', query) : strings.nothingFiltered;
+        query ? strings.nothing.replace('{0}', () => query) : strings.nothingFiltered;
       only(findEmpty);
       return;
     }
@@ -254,7 +254,7 @@ const t = useTranslations(lang);
         <span class="eyebrow flex items-center gap-2">${icon(catOf(trail))}<span class="min-w-0">${escapeHtml(trailLine(trail.mode, catOf(trail), trail.city ?? null, strings.lang))}</span></span>
         <h2 class="mt-2 text-xl">${escapeHtml(trail.name)}</h2>
         <p class="data mt-4 text-xs text-[var(--ink-dim)]">
-          ${count(trail.stop_count, labels.stop, labels.stops)}${isScored(trail.mode) && Number(trail.team_count) > 0 ? ` · ${count(trail.team_count, labels.team, labels.teams)}` : ''}${away != null ? ` · ${strings.away.replace('{0}', distance(away))}` : ''}
+          ${count(trail.stop_count, labels.stop, labels.stops)}${isScored(trail.mode) && catOf(trail) !== 'estate' && Number(trail.team_count) > 0 ? ` · ${count(trail.team_count, labels.team, labels.teams)}` : ''}${away != null ? ` · ${strings.away.replace('{0}', distance(away))}` : ''}
         </p>
         <div class="mt-6 flex flex-wrap gap-2">
           <a class="btn btn-primary touch-only" href="${appLink(trail.id)}">${strings.openApp}</a>

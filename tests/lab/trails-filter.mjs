@@ -10,11 +10,12 @@ const YAMBOL = { key: 'yambol', bg: 'Ямбол', en: 'Yambol', lat: 42.4842, ln
 const b = await browser();
 try {
   const owner = await makeUser('filter');
-  const seed = (name, category, city) => sql(
+  const seed = (name, category, city, mode = 'guide') => sql(
     `insert into public.worlds (owner_id, name, join_code, visibility, mode, status, category, city)
-     values ($1, $2, 'LF' || substr(md5(random()::text), 1, 6), 'public', 'guide', 'published', $3, $4::jsonb)`,
-    [owner.id, name, category, city ? JSON.stringify(city) : null]);
-  await seed('Lab filter Alpha', 'estate', YAMBOL);
+     values ($1, $2, 'LF' || substr(md5(random()::text), 1, 6), 'public', $5, 'published', $3, $4::jsonb) returning id`,
+    [owner.id, name, category, city ? JSON.stringify(city) : null, mode]);
+  const [{ id: alphaId }] = await seed('Lab filter Alpha', 'estate', YAMBOL, 'ctf');
+  await sql(`insert into public.teams (world_id, name, invite_code, created_by) values ($1, 'Lab filter team', 'T' || substr(md5(random()::text), 1, 6), $2)`, [alphaId, owner.id]);
   await seed('Lab filter Beta', 'tourism', YAMBOL);
   await seed('Lab filter <u>Gamma</u> & co', 'education', null);
 
@@ -46,6 +47,8 @@ try {
   // Each card says what it is: Category · City (no mode on the estate card).
   const lines = await p.$$eval('[data-trails-list] li', (l) => l.filter((x) => x.textContent.includes('Lab filter')).map((x) => x.querySelector('.eyebrow').textContent.trim()));
   check('estate card reads "Недвижими имоти · Ямбол"', lines.includes('Недвижими имоти · Ямбол'), lines.join(' | '));
+  const alphaText = await p.$$eval('[data-trails-list] li', (l) => l.find((x) => x.textContent.includes('Lab filter Alpha')).textContent);
+  check('the estate card (stored as a scored trail with a team) says nothing about teams', !/отбор/i.test(alphaText), alphaText.replace(/\s+/g, ' ').trim());
   check('tourism card shows its category and city', lines.some((x) => x.endsWith('Туризъм · Ямбол')), lines.join(' | '));
   check('a card with no city shows just the category', lines.some((x) => x.endsWith('Образование') && !x.includes('Ямбол')), lines.join(' | '));
 
@@ -121,6 +124,10 @@ try {
   await q('zzzz-nothing');
   await p.waitForSelector('[data-find-empty]:not(.hidden)');
   check('English empty state', (await p.textContent('[data-find-empty]')).includes('No trails for “zzzz-nothing”.') && (await p.textContent('[data-find-clear]')).includes('Clear filters'));
+  await q('$& zzzz');
+  await p.waitForSelector('[data-find-empty]:not(.hidden)');
+  check('a query with $& in it is shown as typed', (await p.textContent('[data-find-empty-text]')).includes('“$& zzzz”'), await p.textContent('[data-find-empty-text]'));
+  check('the empty state is a polite live region', (await p.getAttribute('[data-find-empty]', 'aria-live')) === 'polite');
   await ctx.close();
 
   // Phone: no sideways scroll for the page, 44 px targets, light and dark.

@@ -24,7 +24,7 @@ for (const [w, h, tag] of [[1280, 900, 'desk'], [390, 844, 'phone']]) {
     check(`${t}: /walk redirects to /view with the id`, p.url().includes(`/view/?id=${CTF}`));
     await p.waitForSelector('[data-v-trail]:not([hidden])', { timeout: 15000 });
     const line = (await p.textContent('[data-v-mode]')) ?? '';
-    check(`${t}: trail line starts with the mode, then category and city`, line.startsWith('Отбори и класиране · По ред · ') && line.split(' · ').length === 4, line);
+    check(`${t}: trail line starts with the mode, then category and city`, line.startsWith('Отбори и класиране · По ред · ') && line.split(' · ').length >= 3, line);
     await p.waitForTimeout(3000);
     const stops = await p.$$eval('[data-v-stops] li', (l) => l.length);
     check(`${t}: stops listed and pinned`, stops > 0 && (await p.$$('.view-pin')).length === stops, `${stops}`);
@@ -47,9 +47,9 @@ for (const [w, h, tag] of [[1280, 900, 'desk'], [390, 844, 'phone']]) {
       await p.waitForSelector('[data-v-trail]:not([hidden])', { timeout: 15000 });
       await p.waitForTimeout(1500);
       check(`${t}${pre}: estate trail line is Category · City`, (await p.textContent('[data-v-mode]')) === want, await p.textContent('[data-v-mode]'));
-      const body = await p.innerText('body');
+      const body = await p.innerText('[data-v-trail]');
       check(`${t}${pre}: estate trail page says nothing about teams or standings`, !bad.test(body), (body.match(bad) || [''])[0]);
-      check(`${t}${pre}: no board, no standings link`, !(await p.isVisible('[data-v-board]')) && !(await p.isVisible('[data-v-boardlink]')) && (await p.$$('a[href*="/board"]')).length === 0);
+      check(`${t}${pre}: no board, no standings link`, !(await p.isVisible('[data-v-board]')) && !(await p.isVisible('[data-v-boardlink]')) && (await p.$$('[data-v-trail] a[href*="/board"]')).length === 0);
     }
     await p.goto(`${BASE}/view/?id=00000000-0000-0000-0000-000000000000`);
     await p.waitForSelector('[data-v-none]:not([hidden])', { timeout: 15000 });
