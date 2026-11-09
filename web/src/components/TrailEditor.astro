@@ -1124,9 +1124,12 @@ const strings = {
     if (name) {
       const known = knownCities.find((c) => fold(c.bg) === fold(name) || fold(c.en) === fold(name));
       const at = firstStop();
+      // lat/lng are left out when unknown (no stops, no earlier city), never saved as null.
+      const lat = at?.lat ?? city?.lat;
+      const lng = at?.lng ?? city?.lng;
+      const where = lat != null && lng != null ? { lat, lng } : {};
       next = known ? { ...known }
-        : { key: fold(name), bg: name, en: name,
-            lat: at?.lat ?? city?.lat ?? null, lng: at?.lng ?? city?.lng ?? null } as City;
+        : { key: fold(name), bg: name, en: name, ...where } as City;
     }
     const { error } = await client.from('worlds').update({ city: next, city_auto: false }).eq('id', worldId);
     if (error) { alert(error.message); paintCity(); return; }

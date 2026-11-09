@@ -77,6 +77,12 @@ test('matches: no match, empty query, missing city', () => {
   assert.equal(matches('безистен', { name: 'Безистен', city: null }), true);
 });
 
+test('matches: a missing name counts as empty, like the app', () => {
+  assert.equal(matches('yambol', { name: undefined, city: { bg: 'Ямбол', en: 'Yambol' } }), true);
+  assert.equal(matches('undefined', { name: undefined }), false);
+  assert.equal(matches('null', { name: null }), false);
+});
+
 const yambol = { key: 'yambol', bg: 'Ямбол', en: 'Yambol', lat: 42.48, lng: 26.5 };
 
 test('labels: every work and category in both languages', () => {

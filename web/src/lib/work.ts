@@ -99,9 +99,9 @@ export function fold(text: string): string {
 /** True when every word of the query appears somewhere in the trail's name or city. */
 export function matches(
   query: string,
-  trail: { name: string; city?: { bg?: string; en?: string } | null },
+  trail: { name?: string | null; city?: { bg?: string; en?: string } | null },
 ): boolean {
-  const hay = fold(`${trail.name} ${trail.city?.bg ?? ''} ${trail.city?.en ?? ''}`);
+  const hay = fold(`${trail.name ?? ''} ${trail.city?.bg ?? ''} ${trail.city?.en ?? ''}`);
   return fold(query).split(' ').filter(Boolean).every((w) => hay.includes(w));
 }
 
