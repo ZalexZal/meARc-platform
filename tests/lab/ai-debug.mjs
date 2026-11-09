@@ -2,6 +2,7 @@
 // every console error, failed request and HTTP error along the way.
 // Spends real AI allowance: run by hand only.
 import { browser, BASE, makeUser, cleanUsers, signIn, api, sql } from './lib.mjs';
+// AI_TEXT=... to try another description.
 const b = await browser();
 try {
   const u = await makeUser('aidebug');
@@ -28,7 +29,7 @@ try {
   await p.click('[data-step="1"]');
   await p.waitForSelector('[data-panel="visual"]:not(.hidden)');
   await p.click('label:has(input[name=shape][value=ai])');
-  await p.fill('[data-ai-text]', 'Generate me a generic white house with brown doors and a green roof.');
+  await p.fill('[data-ai-text]', process.env.AI_TEXT || 'Generate me a generic white house with brown doors and a green roof.');
   await p.click('[data-ai-make]');
   let last = '';
   for (let i = 0; i < 200; i++) {
@@ -38,4 +39,15 @@ try {
     await p.waitForTimeout(1500);
   }
   console.log(at(), 'final:', await p.textContent('[data-model-check]'));
+  await p.waitForTimeout(3000);
+  await (await p.$('[data-model-fields]')).screenshot({ path: new URL('./shots/ai-debug.png', import.meta.url).pathname });
+  if (/MB/.test(await p.textContent('[data-model-check]'))) {
+    await p.click('[data-marker-save]');
+    let row;
+    for (let i = 0; i < 30 && !row; i++) {
+      [row] = await sql(`select credit_source, ai_source, height_m, triangles, bytes from marker_models where marker_id = $1`, [m.id]);
+      if (!row) await p.waitForTimeout(1000);
+    }
+    console.log(at(), 'saved:', JSON.stringify(row ?? null), '|', await p.textContent('[data-marker-error]').catch(() => ''));
+  }
 } finally { await cleanUsers(); await b.close(); }

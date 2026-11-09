@@ -3,7 +3,7 @@
 //   node tools/set-ai-keys.mjs           (from noit-platform; web/node_modules has pg)
 //
 //   ~/keys/gemini-api-key.txt  -> Vault 'gemini_api_key'  (translate function)
-//   ~/keys/hf-token.txt        -> Vault 'hf_token'        (ai3d function)
+//   ~/keys/hf-token.txt        -> Vault 'hf_token'        (ai3d function, photo -> model)
 //
 // The database URL comes from ~/keys/supabase-db-url.txt. A missing file is
 // skipped. Prints nothing secret: only which keys were stored or replaced.

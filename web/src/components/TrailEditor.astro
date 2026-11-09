@@ -122,7 +122,7 @@ const strings = {
     picture: t('ai3d.picture'), model: t('ai3d.model'), server: t('ai3d.server'), done: t('ai3d.done'),
     quota: t('ai3d.quota'), allowance: t('ai3d.allowance'), busy: t('ai3d.busy'), down: t('ai3d.down'), failed: t('ai3d.failed'),
     signin: t('ai3d.signin'), notReady: t('ai3d.notReady'), pick: t('ai3d.pick'),
-    emptyStage: t('ai3d.emptyStage'), needInput: t('ai3d.needInput'), frames: t('ai3d.frames'), videoBad: t('ai3d.videoBad'),
+    shapes: t('ai3d.shapes'), lowpoly: t('ai3d.lowpoly'), emptyStage: t('ai3d.emptyStage'), needInput: t('ai3d.needInput'), frames: t('ai3d.frames'), videoBad: t('ai3d.videoBad'),
   },
   wiz: {
     next: t('wiz.next'), done: t('wiz.done'), saved: t('wiz.saved'), skipped: t('wiz.skipped'),
@@ -444,7 +444,6 @@ const strings = {
                         <span class="mb-1.5 block font-medium">{t('ai3d.describe')}</span>
                         <textarea class="field" rows="3" maxlength="300" data-ai-text placeholder={t('ai3d.textPh')}></textarea>
                       </label>
-                      <img class="ai-picture" alt="" data-ai-picture hidden />
                       <div class="flex flex-wrap items-center gap-x-4 gap-y-2">
                         <button class="btn btn-primary btn-sm" type="button" data-ai-make>
                           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l1.8 4.7L18.5 9.5l-4.7 1.8L12 16l-1.8-4.7L5.5 9.5l4.7-1.8L12 3ZM19 15l.8 2.2L22 18l-2.2.8L19 21l-.8-2.2L16 18l2.2-.8L19 15Z"/></svg>
@@ -811,7 +810,7 @@ const strings = {
   import { mapStyle, followTheme } from '../lib/mapstyle';
   import { stlToGlb, isStl } from '../lib/stl';
   import { glbForApp } from '../lib/glbclean';
-  import { photoTo3d, describeToPicture, Ai3dError, type Ai3dSource } from '../lib/ai3d';
+  import { photoTo3d, describeToShapes, Ai3dError, type Ai3dSource } from '../lib/ai3d';
 
   /**
    * MapLibre is loaded from a CDN rather than bundled, which is a decision and
@@ -2626,7 +2625,10 @@ const strings = {
     // Its own size, if it was made at a size that makes sense in a street.
     // An AI model has no real size of its own: it starts at 2 m.
     const h = found.info.height;
-    mq('height').value = String(!ai && h >= 0.2 && h <= 200 ? Math.round(h * 10) / 10 : ai ? 2 : 1);
+    // Gemini sizes its shapes in metres, so its own height is kept; TRELLIS's
+    // has no real size and starts at 2 m.
+    const ownSize = !ai || ai === 'gemini';
+    mq('height').value = String(ownSize && h >= 0.2 && h <= 200 ? Math.round(h * 10) / 10 : ai ? 2 : 1);
     if (modelUrl.startsWith('blob:')) URL.revokeObjectURL(modelUrl);
     modelUrl = URL.createObjectURL(file);
     showPreview(modelUrl);
@@ -2728,23 +2730,35 @@ const strings = {
     const button = e.currentTarget as HTMLButtonElement;
     const say = (stage: string) => modelSay(S.ai3d[stage] ?? '', false);
     const words = (q('[data-ai-text]') as HTMLTextAreaElement).value.trim();
-    let picture: Blob | null = aiPictures[aiChosen] ?? null;
+    const picture: Blob | null = aiPictures[aiChosen] ?? null;
     if (!picture && words.length < 3) { modelSay(S.ai3d.needInput, true); return; }
     button.disabled = true;
     try {
+      let made: { glb: Blob; source: Ai3dSource };
+      let note = '';
       if (!picture) {
-        picture = await describeToPicture(words, say);
-        const pic = q('[data-ai-picture]') as HTMLImageElement;
-        pic.src = URL.createObjectURL(picture); pic.hidden = false;
+        // A description: Gemini designs it as shapes (free, 9 Nov 2026).
+        made = await describeToShapes(words, null, say);
+      } else {
+        // A photo: TRELLIS for a realistic model; when its free allowance is
+        // used up, Gemini makes a low-poly one from the same photo.
+        try {
+          made = await photoTo3d(picture, say);
+        } catch (err) {
+          if (!(err instanceof Ai3dError) || (err.reason !== 'allowance' && err.reason !== 'busy')) throw err;
+          made = await describeToShapes(words, picture, say);
+          note = S.ai3d.lowpoly;
+        }
       }
-      const made = await photoTo3d(picture, say);
       await takeModel(new File([made.glb], `ai-${made.source}.glb`, { type: 'model/gltf-binary' }), made.source);
+      if (note) modelSay(note + ' ' + (mq<HTMLElement>('check').textContent ?? ''), false);
     } catch (err) {
       aiFail(err);
     } finally {
       button.disabled = false;
     }
   });
+
   mq('heading').addEventListener('input', () => { mq('heading-num').value = mq('heading').value; turnPreview(); });
   mq('heading-num').addEventListener('input', () => { mq('heading').value = mq('heading-num').value; turnPreview(); });
   form.querySelectorAll('input[name="modelCredit"]').forEach((r) => r.addEventListener('change', showCredit));

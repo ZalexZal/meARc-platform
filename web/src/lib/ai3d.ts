@@ -1,8 +1,9 @@
 /**
  * A 3D model made by AI, from a photo or from a description (7-9 Nov 2026).
  *
- *   photo        -> TRELLIS.2 (Microsoft, MIT licence)
- *   description  -> a FLUX.1 [schnell] picture first, then TRELLIS.2
+ *   photo        -> TRELLIS.2 (Microsoft, MIT licence), realistic
+ *   description  -> Gemini designs it as simple shapes (describeToShapes)
+ *   photo, when TRELLIS's free allowance is used up -> Gemini, from the photo
  *
  * Both are free Hugging Face Spaces, run by our ai3d Edge Function with
  * AR Trail's own Hugging Face token. The browser only sends the picture and
@@ -19,9 +20,10 @@
  * taken.
  */
 import { db } from './supabase';
+import { specToGlb, type Spec } from './shapes';
 
-export type Ai3dStage = 'picture' | 'model' | 'download';
-export type Ai3dSource = 'trellis2';
+export type Ai3dStage = 'picture' | 'model' | 'download' | 'shapes';
+export type Ai3dSource = 'trellis2' | 'gemini';
 
 export class Ai3dError extends Error {
   constructor(public reason: 'quota' | 'allowance' | 'busy' | 'down' | 'failed' | 'signin' | 'notReady', message?: string) {
@@ -74,11 +76,21 @@ export async function photoTo3d(photo: Blob, stage?: (s: Ai3dStage) => void): Pr
   return { glb, source: 'trellis2' };
 }
 
-/** A description -> a picture (shown to the creator before the model is made). */
-export async function describeToPicture(description: string, stage?: (s: Ai3dStage) => void): Promise<Blob> {
-  // TRELLIS.2 works best from one whole object on a plain background.
-  const prompt = `${description.trim()}. A single object, whole and centred, on a plain white background, ` +
-    `soft even studio light, realistic, no text.`;
-  stage?.('picture');
-  return viaServer({ action: 'picture', prompt }, 'image/webp');
+/**
+ * A description (and maybe a photo) -> a low-poly .glb that Gemini designs as
+ * simple shapes (9 Nov 2026). Free, a few seconds to under a minute.
+ */
+export async function describeToShapes(description: string, photo?: Blob | null,
+                                       stage?: (s: Ai3dStage) => void): Promise<{ glb: Blob; source: Ai3dSource }> {
+  stage?.('shapes');
+  const client = db();
+  if (!client) throw new Ai3dError('failed', 'no client');
+  const image = photo ? await dataUrl(await preparePhoto(photo)) : undefined;
+  const { data, error } = await client.functions.invoke('ai3d', { body: { action: 'shapes', prompt: description, image } });
+  if (error || !data?.ok) {
+    const reason = data?.reason ?? (await (error as any)?.context?.json?.().catch(() => null))?.reason;
+    throw new Ai3dError(reason === 'quota' ? 'quota' : reason === 'signin' ? 'signin'
+      : reason === 'not_configured' ? 'notReady' : reason === 'busy' ? 'busy' : 'failed', reason);
+  }
+  return { glb: await specToGlb(data.spec as Spec), source: 'gemini' };
 }

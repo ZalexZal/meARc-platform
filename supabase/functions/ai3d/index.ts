@@ -1,12 +1,14 @@
 // "A 3D model by AI" for the builder (7-9 Nov 2026).
 //
-// Runs Hugging Face's free Spaces with AR Trail's own Hugging Face token (in
-// Vault as 'hf_token', read through ai_secret, never sent anywhere else). The
-// browser cannot call them itself: the Spaces refuse cross-site requests from
-// artrails.netlify.app (CORS), found 9 Nov 2026.
+// Free only. A description: Gemini designs the model as shapes (shapes.ts,
+// the translate key). A photo: TRELLIS.2 on Hugging Face's free Spaces with
+// 'hf_token' (spaces.ts). Keys are read through ai_secret and never sent
+// anywhere else. The browser cannot call either itself (the Spaces refuse
+// cross-site requests; a key must not reach the browser).
 //
 //   { action: 'picture', prompt }   FLUX.1 [schnell]  -> { ok, url }  (a .webp)
 //   { action: 'model', image }      TRELLIS.2         -> { ok, url }  (a .glb)
+//   { action: 'shapes', prompt, image? }  Gemini       -> { ok, spec }  (shapes; the builder makes the .glb)
 //
 // image is a JPEG as a data URL; the browser has already scaled it down and
 // stripped its metadata. The returned url is the Space's own file link, which
@@ -19,6 +21,7 @@
 // token's allowance is shared by everyone.
 import { createClient } from 'npm:@supabase/supabase-js@2';
 import { picture, model, SpaceError } from './spaces.ts';
+import { shapes, ShapesError } from './shapes.ts';
 
 const CORS = {
   'Access-Control-Allow-Origin': '*',
@@ -40,7 +43,31 @@ Deno.serve(async (req) => {
 
   const body = await req.json().catch(() => null) as { action?: string; prompt?: string; image?: string } | null;
   const action = body?.action;
-  if (action !== 'picture' && action !== 'model') return reply({ ok: false, reason: 'action' }, 400);
+  if (action !== 'picture' && action !== 'model' && action !== 'shapes') return reply({ ok: false, reason: 'action' }, 400);
+
+  // Gemini writes the model as shapes (shapes.ts): free on the translate key,
+  // counted like a translation (100 a day each), only when it worked.
+  if (action === 'shapes') {
+    const prompt = (body?.prompt ?? '').trim().slice(0, 600);
+    const photo = /^data:image\/jpeg;base64,(.+)$/.exec(body?.image ?? '')?.[1];
+    if (!prompt && !photo) return reply({ ok: false, reason: 'prompt' }, 400);
+    const { data: used } = await asCaller.from('ai_usage').select('translations')
+      .eq('day', new Date().toISOString().slice(0, 10)).maybeSingle();
+    if ((used?.translations ?? 0) >= 100) return reply({ ok: false, reason: 'quota' }, 429);
+    const keys = createClient(url, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!);
+    const { data: gemini } = await keys.rpc('ai_secret', { p_name: 'gemini_api_key' });
+    if (!gemini) return reply({ ok: false, reason: 'not_configured' }, 503);
+    try {
+      const made = await shapes(gemini as string, prompt, photo);
+      await asCaller.rpc('ai_count_translation');
+      console.log('ai3d shapes by', made.model, made.spec.parts.length, 'parts');
+      return reply({ ok: true, spec: made.spec, model: made.model, source: 'gemini' });
+    } catch (e) {
+      const reason = e instanceof ShapesError ? e.reason : 'failed';
+      console.log('ai3d shapes', reason, String((e as Error)?.message ?? e).slice(0, 200));
+      return reply({ ok: false, reason }, 502);
+    }
+  }
 
   // Each person's 5 models a day. Checked first, counted only when a model was
   // actually made: a failed try must not cost one (9 Nov 2026). A picture is
