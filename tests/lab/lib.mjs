@@ -31,13 +31,14 @@ export async function sql(text, params = []) {
   try { return (await c.query(text, params)).rows; } finally { await c.end(); }
 }
 export const PW = 'Lab-test-password-1';
-export async function makeUser(tag) {
+// meta is merged into raw_user_meta_data (display_name stays), like sign-up options.data.
+export async function makeUser(tag, meta = {}) {
   const email = `lab-test-${tag}-${Date.now()}@example.com`;
   const [{ id }] = await sql(`insert into auth.users (id, instance_id, aud, role, email, encrypted_password, email_confirmed_at,
       raw_app_meta_data, raw_user_meta_data, created_at, updated_at, confirmation_token, recovery_token, email_change_token_new, email_change)
     values (gen_random_uuid(), '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated', $1,
-      extensions.crypt($2, extensions.gen_salt('bf')), now(), '{"provider":"email","providers":["email"]}', '{"display_name":"Lab tester"}',
-      now(), now(), '', '', '', '') returning id`, [email, PW]);
+      extensions.crypt($2, extensions.gen_salt('bf')), now(), '{"provider":"email","providers":["email"]}', $3::jsonb,
+      now(), now(), '', '', '', '') returning id`, [email, PW, JSON.stringify({ display_name: 'Lab tester', ...meta })]);
   await sql(`insert into auth.identities (id, user_id, provider_id, identity_data, provider, created_at, updated_at, last_sign_in_at)
     values (gen_random_uuid(), $1::uuid, $1::text, jsonb_build_object('sub', $1::text, 'email', $2::text), 'email', now(), now(), now())`, [id, email]);
   await sql(`update public.profiles set terms_version = '2026-09-29', terms_accepted_at = now(), age_band = '14+', display_name = 'Lab tester' where id = $1`, [id]);
