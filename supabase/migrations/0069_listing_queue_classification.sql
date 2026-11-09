@@ -1,3 +1,10 @@
+-- NOT APPLIED — awaiting Alex.
+--
+-- Once this is live, in web/src/components/Review.astro (the row() template) drop
+-- the modeLine fallback and always call
+--   trailLine(w.mode ?? '', w.category ?? 'other', w.city ?? null, S.lang)
+-- then remove the modeLine import. tests/lab/review-queue.mjs skips until then.
+--
 -- 0069 - the review queue knows a trail's category and city (9 Nov 2026)
 --
 -- Review shows each waiting trail as "Category · City" (no team wording for real
