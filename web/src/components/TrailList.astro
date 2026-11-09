@@ -1,6 +1,7 @@
 ---
 import Loading from './Loading.astro';
 import { useTranslations, localise, type Lang } from '../i18n/ui';
+import { CATEGORIES } from '../lib/work';
 import PageBand from './PageBand.astro';
 
 interface Props { lang: Lang; }
@@ -19,6 +20,28 @@ const t = useTranslations(lang);
 
   <p class="mt-4 hidden text-sm text-[var(--ink-dim)]" data-trails-where></p>
 
+  <!-- Search, category chips and a city. All of it runs in this page over the rows
+       already fetched, and the state lives in the address (?q=&cat=&city=), so a
+       filtered list can be sent to somebody. -->
+  <div class="find hidden" data-find-bar>
+    <div class="find-row">
+      <div class="find-search">
+        <label class="sr-only" for="find-q">{t('find.search')}</label>
+        <svg class="find-glass" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+        <input id="find-q" class="field find-input" type="search" data-find-q
+               placeholder={t('find.search')} autocomplete="off" enterkeyhint="search" />
+      </div>
+      <div class="find-city">
+        <label class="sr-only" for="find-city">{t('city.label')}</label>
+        <select id="find-city" class="field" data-find-city></select>
+      </div>
+    </div>
+    <div class="find-chips" role="group" aria-label={t('cat.label')}>
+      <button type="button" class="chip" data-find-cat="" aria-pressed="true">{t('cat.all')}</button>
+      {CATEGORIES.map((c) => <button type="button" class="chip" data-find-cat={c} aria-pressed="false">{t(`cat.${c}`)}</button>)}
+    </div>
+  </div>
+
   <div class="card mt-8 hidden max-w-lg p-6" data-trails-noapp>
     <p class="text-sm">{t('games.noApp')}</p>
     <a class="btn btn-primary mt-4" href="/ARTrail.apk" download>{t('app.download')}</a>
@@ -36,13 +59,21 @@ const t = useTranslations(lang);
     </div>
   </div>
 
+  <!-- Something was published, but the search or the chips hid all of it. -->
+  <div class="mt-8 hidden" data-find-empty>
+    <div class="card max-w-lg p-8">
+      <p class="text-base" data-find-empty-text></p>
+      <button type="button" class="btn btn-quiet mt-5" data-find-clear>{t('find.clear')}</button>
+    </div>
+  </div>
+
   <div class="mt-10 hidden" data-trails-failed>
     <div class="card max-w-lg border-[var(--alert)] p-8">
       <p class="text-sm text-[var(--alert)]">{t('games.failed')}</p>
     </div>
   </div>
 
-  <ul class="mt-10 hidden grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3" data-trails-list></ul>
+  <ul class="mt-8 hidden grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3" data-trails-list></ul>
 
   <!-- The words this component needs, handed over as data rather than through
        define:vars. define:vars forces the script inline, and an inline script is
@@ -58,6 +89,8 @@ const t = useTranslations(lang);
       map: t('games.map'), qr: t('games.qr'),
       qrHint: t('games.qrHint'), away: t('games.away'),
       locating: t('games.locating'), sorted: t('games.sorted'),
+      nothing: t('find.nothing'), nothingFiltered: t('find.nothingFiltered'),
+      allCities: t('find.allCities'), noCity: t('city.none'),
       denied: t('games.denied'), report: t('games.report'), reportSubject: t('games.reportSubject') })}
   ></script>
 </section>
@@ -65,7 +98,8 @@ const t = useTranslations(lang);
 <script>
   import { db, configured } from '../lib/supabase';
   import { count } from '../lib/session';
-  import { modeLine, isScored } from '../lib/modes';
+  import { trailLine, isScored } from '../lib/modes';
+  import { CATEGORIES, matches } from '../lib/work';
 
   const strings = JSON.parse(
     document.querySelector('[data-trails-strings]')?.textContent || '{}'
@@ -81,6 +115,11 @@ const t = useTranslations(lang);
   const list = document.querySelector('[data-trails-list]');
   const nearButton = document.querySelector('[data-trails-near]');
   const where = document.querySelector('[data-trails-where]');
+  const bar = document.querySelector('[data-find-bar]');
+  const qInput = document.querySelector('[data-find-q]');
+  const citySelect = document.querySelector('[data-find-city]');
+  const chips = [...document.querySelectorAll('[data-find-cat]')];
+  const findEmpty = document.querySelector('[data-find-empty]');
 
   const params = new URLSearchParams(location.search);
   const wanted = params.get('t');
@@ -89,8 +128,12 @@ const t = useTranslations(lang);
   let trails = [];
   let here = null;
 
+  // The filters. '' means "no filter"; the city is a key, or NONE for trails without one.
+  const NONE = '__none';
+  const filters = { q: '', cat: '', city: '' };
+
   const only = (el) => {
-    [loading, empty, failed, list].forEach((n) => n && n.classList.add('hidden'));
+    [loading, empty, failed, list, findEmpty].forEach((n) => n && n.classList.add('hidden'));
     if (el === list) { list.classList.remove('hidden'); list.classList.add('grid'); }
     else if (el) el.classList.remove('hidden');
   };
@@ -121,8 +164,71 @@ const t = useTranslations(lang);
     return `${km < 10 ? km.toFixed(1) : Math.round(km)} km`;
   }
 
+  // Stroke icons, one per category. The label is always beside them, so they are decoration.
+  const ICON = {
+    education: '<path d="M2 9.5 12 5l10 4.5L12 14 2 9.5Z"/><path d="M6 11.5V16c0 1.4 2.7 2.5 6 2.5s6-1.1 6-2.5v-4.5"/>',
+    tourism: '<path d="M3 21h18"/><path d="M5 21V9m4 12V9m6 12V9m4 12V9"/><path d="M3 9l9-5 9 5"/>',
+    estate: '<path d="M3 11.5 12 4l9 7.5"/><path d="M5.5 10v10h13V10"/><path d="M10 20v-6h4v6"/>',
+    other: '<circle cx="12" cy="12" r="3.5"/>',
+  };
+  const icon = (cat) =>
+    `<svg class="shrink-0" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${ICON[cat] ?? ICON.other}</svg>`;
+
+  const catOf = (trail) => (CATEGORIES.includes(trail.category) ? trail.category : 'other');
+  const cityKey = (trail) => trail.city?.key || trail.city?.bg || trail.city?.en || '';
+  const cityName = (city) => city?.[strings.lang] ?? city?.bg ?? city?.en ?? '';
+
+  function passes(trail) {
+    if (filters.cat && catOf(trail) !== filters.cat) return false;
+    if (filters.city === NONE) { if (cityKey(trail)) return false; }
+    else if (filters.city && cityKey(trail) !== filters.city) return false;
+    return !filters.q.trim() || matches(filters.q, { name: trail.name, city: trail.city });
+  }
+
+  // Only the cities that exist, by their Bulgarian name, and "no city" when some trail has none.
+  function fillCities() {
+    const seen = new Map();
+    let anyWithout = false;
+    for (const t of trails) {
+      const key = cityKey(t);
+      if (!key) anyWithout = true;
+      else if (!seen.has(key)) seen.set(key, t.city);
+    }
+    const byBg = [...seen].sort((a, b) => (a[1].bg ?? a[0]).localeCompare(b[1].bg ?? b[0], 'bg'));
+    const option = (value, label) => `<option value="${escapeHtml(value)}">${escapeHtml(label)}</option>`;
+    citySelect.innerHTML = option('', strings.allCities)
+      + byBg.map(([key, city]) => option(key, cityName(city))).join('')
+      + (anyWithout ? option(NONE, strings.noCity) : '');
+  }
+
+  function readUrl() {
+    const sp = new URLSearchParams(location.search);
+    filters.q = sp.get('q') ?? '';
+    const cat = sp.get('cat') ?? '';
+    filters.cat = CATEGORIES.includes(cat) ? cat : '';
+    const city = sp.get('city') === 'none' ? NONE : (sp.get('city') ?? '');
+    filters.city = [...citySelect.options].some((o) => o.value === city) ? city : '';
+  }
+
+  // Keeps the address in step without adding a history entry for every keystroke.
+  function writeUrl() {
+    const sp = new URLSearchParams(location.search);
+    const set = (k, v) => (v ? sp.set(k, v) : sp.delete(k));
+    set('q', filters.q.trim());
+    set('cat', filters.cat);
+    set('city', filters.city === NONE ? 'none' : filters.city);
+    const qs = sp.toString();
+    history.replaceState(null, '', location.pathname + (qs ? `?${qs}` : '') + location.hash);
+  }
+
+  function syncControls() {
+    qInput.value = filters.q;
+    citySelect.value = filters.city;
+    chips.forEach((c) => c.setAttribute('aria-pressed', String(c.dataset.findCat === filters.cat)));
+  }
+
   function render() {
-    const rows = trails.map((trail) => {
+    const rows = trails.filter(passes).map((trail) => {
       const hasStart = trail.start_lat != null && trail.start_lng != null;
       const away = here && hasStart
         ? metres(here, { lat: trail.start_lat, lng: trail.start_lng })
@@ -132,11 +238,20 @@ const t = useTranslations(lang);
 
     if (here) rows.sort((a, b) => (a.away ?? Infinity) - (b.away ?? Infinity));
 
+    // Everything was published and the filters hid all of it: say which kind of "nothing".
+    if (rows.length === 0) {
+      const query = filters.q.trim();
+      document.querySelector('[data-find-empty-text]').textContent =
+        query ? strings.nothing.replace('{0}', query) : strings.nothingFiltered;
+      only(findEmpty);
+      return;
+    }
+
     list.innerHTML = rows.map(({ trail, hasStart, away }) => {
       const id = escapeHtml(trail.id);
       return `
       <li class="card flex flex-col p-6 ${trail.id === wanted ? 'ring-2 ring-[var(--signal)]' : ''}" id="trail-${id}">
-        <span class="eyebrow">${modeLine(trail.mode, strings.lang)}</span>
+        <span class="eyebrow flex items-center gap-2">${icon(catOf(trail))}<span class="min-w-0">${escapeHtml(trailLine(trail.mode, catOf(trail), trail.city ?? null, strings.lang))}</span></span>
         <h2 class="mt-2 text-xl">${escapeHtml(trail.name)}</h2>
         <p class="data mt-4 text-xs text-[var(--ink-dim)]">
           ${count(trail.stop_count, labels.stop, labels.stops)}${isScored(trail.mode) && Number(trail.team_count) > 0 ? ` · ${count(trail.team_count, labels.team, labels.teams)}` : ''}${away != null ? ` · ${strings.away.replace('{0}', distance(away))}` : ''}
@@ -172,12 +287,31 @@ const t = useTranslations(lang);
     if (!data || data.length === 0) { only(empty); return; }
 
     trails = data;
+    fillCities();
+    readUrl();
+    syncControls();
+    bar.classList.remove('hidden');
     render();
 
     if ('geolocation' in navigator) nearButton?.classList.remove('hidden');
 
     if (wanted) document.getElementById(`trail-${wanted}`)?.scrollIntoView({ block: 'center' });
   }
+
+  const changed = () => { writeUrl(); render(); };
+  qInput.addEventListener('input', () => { filters.q = qInput.value; changed(); });
+  citySelect.addEventListener('change', () => { filters.city = citySelect.value; changed(); });
+  chips.forEach((chip) => chip.addEventListener('click', () => {
+    filters.cat = chip.dataset.findCat ?? '';
+    syncControls();
+    changed();
+  }));
+  document.querySelector('[data-find-clear]').addEventListener('click', () => {
+    filters.q = ''; filters.cat = ''; filters.city = '';
+    syncControls();
+    changed();
+    qInput.focus();
+  });
 
   nearButton?.addEventListener('click', () => {
     where.textContent = strings.locating;
@@ -201,3 +335,31 @@ const t = useTranslations(lang);
 
   load().catch(() => only(failed));
 </script>
+
+<style>
+  /* Pills all the way down: the search, the city and the chips share one height,
+     and the selected chip is dark ink rather than a second colour. */
+  .find { margin-top: 1.25rem; display: grid; gap: .75rem; }
+  .find-row { display: grid; gap: .75rem; grid-template-columns: minmax(0, 1fr); }
+  @media (min-width: 640px) { .find-row { grid-template-columns: minmax(0, 1fr) 15rem; } }
+  .find-search { position: relative; min-width: 0; }
+  .find-glass { position: absolute; left: 1rem; top: 50%; translate: 0 -50%; color: var(--ink-faint); pointer-events: none; }
+  .find-input { padding-left: 2.75rem; border-radius: 999px; }
+  .find-city select { border-radius: 999px; padding-left: 1.125rem; text-overflow: ellipsis; }
+  .find-chips {
+    display: flex; gap: .5rem; min-width: 0; max-width: 100%;
+    overflow-x: auto; scrollbar-width: none; padding-bottom: 2px;
+  }
+  .find-chips::-webkit-scrollbar { display: none; }
+  .chip {
+    flex: none; min-height: 44px; padding: 0 1.125rem;
+    border-radius: 999px; border: 1px solid var(--line);
+    background: var(--surface); color: var(--ink);
+    font-family: var(--font-body); font-size: var(--text-sm); font-weight: 600; line-height: 1;
+    white-space: nowrap; cursor: pointer;
+    transition: background-color .18s ease, border-color .18s ease, color .18s ease, transform .18s ease;
+  }
+  .chip:active { transform: scale(.95); }
+  .chip[aria-pressed="true"] { background: var(--ink); border-color: var(--ink); color: var(--surface); }
+  .chip:focus-visible { outline: 2px solid var(--signal-bright); outline-offset: 2px; }
+</style>
