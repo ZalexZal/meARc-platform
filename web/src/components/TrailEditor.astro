@@ -807,7 +807,6 @@ const strings = {
   import { requireUser, reveal, param, escapeHtml, text, duration } from '../lib/session';
   import { levelOf, isPending, isListed, setLevel } from '../lib/publishing';
   import { inspectGlb, type GlbInfo, type GlbProblem } from '../lib/glb';
-  import { mapStyle, followTheme } from '../lib/mapstyle';
   import { stlToGlb, isStl } from '../lib/stl';
   import { glbForApp } from '../lib/glbclean';
   import { photoTo3d, describeToShapes, Ai3dError, type Ai3dSource } from '../lib/ai3d';
@@ -1055,7 +1054,9 @@ const strings = {
   const maplibregl = await loadMapLibre();
   const map = new maplibregl.Map({
     container: q('[data-map]') as HTMLElement,
-    style: mapStyle(),
+    // Liberty in light and dark mode alike (9 Nov 2026): the dark style hid the
+    // landmarks a creator places stops by; Alex prefers the bright map.
+    style: 'https://tiles.openfreemap.org/styles/liberty',
     center: [26.5060, 42.4841],
     zoom: 15,
     // On a phone the map is the full width of the page, so a one-finger drag
@@ -1067,7 +1068,6 @@ const strings = {
     attributionControl: { compact: true },
   });
   map.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'top-right');
-  followTheme(map);
   requestAnimationFrame(() => map.resize());
   setTimeout(() => map.resize(), 400);
   new ResizeObserver(() => map.resize()).observe(q('[data-map]') as HTMLElement);

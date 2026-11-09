@@ -115,7 +115,6 @@ const strings = { ...copy, lang, boardHref: href('/board'), listHref: href('/tra
   import { db, configured } from '../lib/supabase';
   import { param, text } from '../lib/session';
   import { isScored, isOrdered, modeLine } from '../lib/modes';
-  import { mapStyle, followTheme } from '../lib/mapstyle';
 
   const S = JSON.parse(document.querySelector('[data-v-strings]')!.textContent || '{}');
   const q = <T extends Element = HTMLElement>(s: string) => document.querySelector(s) as T | null;
@@ -193,9 +192,8 @@ const strings = { ...copy, lang, boardHref: href('/board'), listHref: href('/tra
     if (!stops.length && listed?.start_lat == null) { show('[data-v-map]', false); return; }
     const ml = await loadMapLibre();
     const centre = stops[0] ?? { lat: listed.start_lat, lng: listed.start_lng };
-    const map = new ml.Map({ container: q('[data-v-map]'), style: mapStyle(),
+    const map = new ml.Map({ container: q('[data-v-map]'), style: 'https://tiles.openfreemap.org/styles/liberty',
       center: [centre.lng, centre.lat], zoom: 15, attributionControl: { compact: true }, cooperativeGestures: true });
-    followTheme(map);
     stops.forEach((m, i) => {
       const el = document.createElement('div');
       el.className = 'view-pin'; el.style.setProperty('--pin', m.colour_hex || '#0066cc');
