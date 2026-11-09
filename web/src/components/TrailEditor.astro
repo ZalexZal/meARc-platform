@@ -1417,9 +1417,7 @@ const strings = {
 
   async function select(id: string | null, fresh = false) {
     selected = id;
-    pins.forEach((pin, pid) => {
-      pin.getElement().style.filter = pid === id ? 'drop-shadow(0 0 7px var(--signal))' : '';
-    });
+    pins.forEach((p, pid) => p.getElement().classList.toggle('is-on', pid === id));
 
     q('[data-no-selection]')!.classList.toggle('hidden', Boolean(id));
     form.classList.toggle('hidden', !id);
@@ -1564,14 +1562,21 @@ const strings = {
     pins.forEach((p) => p.remove());
     pins = new Map();
 
-    for (const m of markers) {
+    markers.forEach((m, i) => {
+      // A numbered pin in the stop's colour, standing on its point (9 Nov
+      // 2026): the 18 px dot it was got lost among the map's own blue icons.
+      // The head is a child, so it can grow when chosen without fighting the
+      // transform maplibre sets on the marker itself.
       const el = document.createElement('div');
-      el.style.cssText =
-        'width:18px;height:18px;border-radius:50%;cursor:pointer;' +
-        `background:${m.colour_hex || '#0066CC'};border:2px solid #fff;` +
-        'box-shadow:0 1px 4px rgba(0,0,0,.5)';
+      el.className = 'ed-pin' + (m.id === selected ? ' is-on' : '');
+      el.style.setProperty('--pin', m.colour_hex || '#0066CC');
+      el.title = m.content?.[S.lang]?.title || m.content?.bg?.title || m.content?.en?.title || '';
+      const head = document.createElement('span');
+      head.className = 'ed-pin-head';
+      head.textContent = String(m.step ?? i + 1);
+      el.append(head);
 
-      const pin = new maplibregl.Marker({ element: el, draggable: true })
+      const pin = new maplibregl.Marker({ element: el, draggable: true, anchor: 'bottom' })
         .setLngLat([m.lng, m.lat]).addTo(map);
       el.addEventListener('click', (e) => { e.stopPropagation(); editorReady.then(() => select(m.id)); });
 
@@ -1593,7 +1598,7 @@ const strings = {
       });
 
       pins.set(m.id, pin);
-    }
+    });
 
     // Once, on the first draw with anything in it: every trail opened on
     // Yambol, so one built anywhere else showed an empty map of the wrong town.
@@ -3152,6 +3157,17 @@ const strings = {
 </script>
 
 <style>
+  /* The builder's pins: a teardrop in the stop's colour with its number, the
+     chosen one larger and raised above the rest. */
+  :global(.ed-pin) { width: 30px; height: 40px; cursor: grab; display: flex; justify-content: center; }
+  :global(.ed-pin.is-on) { z-index: 2; }
+  :global(.ed-pin-head) { position: relative; width: 30px; height: 30px; display: grid; place-items: center;
+    color: #fff; font: 700 13px/1 system-ui, sans-serif; transform-origin: 50% 130%; transition: transform .18s cubic-bezier(.3,1.4,.5,1); }
+  :global(.ed-pin-head)::before { content: ""; position: absolute; inset: 0; border-radius: 50% 50% 50% 0; transform: rotate(-45deg);
+    background: var(--pin, #0066cc); border: 2.5px solid #fff; box-shadow: 0 2px 6px rgba(0,0,0,.4); z-index: -1; }
+  :global(.ed-pin-head) { isolation: isolate; }
+  :global(.ed-pin.is-on .ed-pin-head) { transform: scale(1.25); }
+  :global(.ed-pin.is-on .ed-pin-head)::before { box-shadow: 0 0 0 4px rgba(0,102,204,.25), 0 3px 8px rgba(0,0,0,.45); }
   .hints-box { margin-top: 1.5rem; padding-top: 1.25rem; border-top: 1px solid var(--line-soft); }
   .hints-head h4 { font-size: 1.0625rem; font-weight: 600; letter-spacing: -.01em; }
   .hints-head p { margin-top: .25rem; font-size: var(--text-sm); color: var(--ink-dim); }
