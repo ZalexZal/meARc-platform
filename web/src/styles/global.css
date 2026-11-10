@@ -1233,69 +1233,11 @@ input[type="radio"][aria-invalid="true"] { outline: 2px solid var(--alert); outl
 
 /* ------------------------------------------------------------- role choice
 
-   Creator or viewer: sign-up and the choose-role screen. The seal panel on
-   the left (on top on a phone), the form on the right. Cards are this site's
-   white cards with a hairline ring; the chosen one takes a 2px blue ring.   */
+   Creator or viewer: sign-up, the choose-role screen and Account settings.
+   The stage beside sign-up and choose-role is in stage.css. Cards are this
+   site's white cards with a hairline ring; the chosen one takes a 2px blue
+   ring.                                                                      */
 
-.role-layout {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr);
-  min-height: calc(100svh - 64px);
-  background: var(--ground);
-}
-@media (min-width: 960px) {
-  .role-layout { grid-template-columns: 440px minmax(0, 1fr); }
-}
-
-.role-panel .seal { --seal: 76px; }
-.role-panel {
-  background: var(--surface);
-  border-bottom: 1px solid var(--line-soft);
-}
-.role-panel-in { padding: 1.25rem 1rem 1.25rem; }
-.role-brand { display: none; }
-.role-panel-head { display: flex; align-items: center; gap: 1rem; }
-.role-title {
-  font-family: var(--font-display); font-weight: 600;
-  font-size: 1.5rem; line-height: 1.15; letter-spacing: -0.015em;
-}
-.role-body { margin-top: .75rem; font-size: .9375rem; line-height: 1.47; color: var(--ink-dim); }
-.role-gets { display: none; }
-.role-foot { margin-top: .75rem; font-size: .8125rem; color: var(--ink-faint); }
-
-@media (min-width: 960px) {
-  .role-panel .seal { --seal: 148px; }
-  .role-panel { border-bottom: 0; border-right: 1px solid var(--line-soft); }
-  .role-panel-in {
-    position: sticky; top: 64px;
-    display: flex; flex-direction: column;
-    min-height: calc(100svh - 64px);
-    padding: 3rem 2.5rem 2.5rem;
-  }
-  .role-brand {
-    display: block; font-size: .875rem; font-weight: 600; letter-spacing: -0.01em; color: var(--ink-dim);
-  }
-  .role-panel-head { flex-direction: column; align-items: flex-start; gap: 1.75rem; margin-top: 2rem; }
-  .role-title { font-size: 2.125rem; letter-spacing: -0.374px; }
-  .role-body { margin-top: .875rem; font-size: 1.0625rem; }
-  .role-gets { display: flex; flex-direction: column; gap: .75rem; margin-top: 1.75rem; }
-  .role-gets[hidden] { display: none; }
-  .role-gets li { display: flex; align-items: flex-start; gap: .625rem; font-size: .9375rem; line-height: 1.4; }
-  .role-gets svg {
-    width: 20px; height: 20px; flex: none; margin-top: 1px;
-    fill: none; stroke: var(--signal); stroke-width: 2; stroke-linecap: round; stroke-linejoin: round;
-  }
-  .role-foot { margin-top: auto; padding-top: 2rem; }
-}
-
-.role-main { padding: 1.75rem 1rem 3.5rem; min-width: 0; }
-@media (min-width: 960px) { .role-main { padding: 3.5rem 3rem 5rem; } }
-.role-main-in { max-width: 47.5rem; }
-.role-h1 {
-  font-family: var(--font-display); font-weight: 600;
-  font-size: 1.875rem; line-height: 1.1; letter-spacing: -0.02em;
-}
-@media (min-width: 960px) { .role-h1 { font-size: 2.5rem; } }
 .role-form { display: flex; flex-direction: column; gap: 2rem; margin-top: 2rem; }
 .role-form[hidden] { display: none; }
 .role-cta { align-self: flex-start; min-width: 14rem; min-height: 50px; font-size: 1.0625rem; }

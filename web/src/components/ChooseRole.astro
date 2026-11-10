@@ -4,7 +4,7 @@
  * do. The base layout's role gate sends anybody whose role is still null here;
  * the answer goes on to ?next=, or to where that role starts.
  */
-import RoleLayout from './RoleLayout.astro';
+import RoleStage from './RoleStage.astro';
 import RolePicker from './RolePicker.astro';
 import { useTranslations, localise, type Lang } from '../i18n/ui';
 
@@ -18,13 +18,14 @@ const strings = {
   creatorHome: href('/my-trails/'), viewerHome: href('/trails/'),
 };
 ---
-<RoleLayout lang={lang} heading={t('role.question')}>
+<RoleStage lang={lang} heading={t('role.question')}>
   <form class="role-form" hidden data-guarded data-role-form novalidate>
     <RolePicker lang={lang} hideQuestion />
     <p class="hidden" data-role-error role="alert"></p>
     <button class="btn btn-primary role-cta" type="submit" data-role-submit>{t('role.continue')}</button>
+    <p class="stage-foot">{t('role.footer')}</p>
   </form>
-</RoleLayout>
+</RoleStage>
 
 <script type="application/json" data-role-strings set:html={JSON.stringify(strings)}></script>
 

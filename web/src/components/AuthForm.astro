@@ -1,7 +1,7 @@
 ---
 import { useTranslations, localise, type Lang } from '../i18n/ui';
 import AuthShell from './AuthShell.astro';
-import RoleLayout from './RoleLayout.astro';
+import RoleStage from './RoleStage.astro';
 import RolePicker from './RolePicker.astro';
 import { ASK_AGE } from '../lib/config';
 
@@ -12,8 +12,8 @@ const href = localise(lang);
 const up = mode === 'signup';
 // Whether sign-up asks how old you are (lib/config.ts). Off: it sends '14+'.
 const askAge = up && ASK_AGE;
-// Sign-up stands beside the live seal (RoleLayout); sign-in stays on the map.
-const Shell = up ? RoleLayout : AuthShell;
+// Sign-up stands beside the A5 stage (RoleStage); sign-in stays on the map.
+const Shell = up ? RoleStage : AuthShell;
 ---
 
 <Shell lang={lang} heading={t('auth.signup.heading')}>
@@ -30,7 +30,7 @@ const Shell = up ? RoleLayout : AuthShell;
           tooYoungHere: t('err.tooYoungHere'),
           slowDown: t('err.slowDown'), resent: t('auth.resent'), parentSentBody: t('auth.parentSentBody'),
         })}>
-    <div class={up ? 'card space-y-5 p-6' : 'space-y-5'}>
+    <div class={up ? 'signup-fields' : 'space-y-5'}>
     {up && (
       <div>
         <label class="mb-1.5 block text-sm font-medium" for="name">{t('auth.name')}</label>
@@ -44,7 +44,7 @@ const Shell = up ? RoleLayout : AuthShell;
       <input class="field" id="email" name="email" type="email" required autocomplete="email" />
     </div>
 
-    <div>
+    <div class={up ? 'signup-password' : undefined}>
       <label class="mb-1.5 block text-sm font-medium" for="password">{t('auth.password')}</label>
       <input
         class="field" id="password" name="password" type="password" required minlength="8"
@@ -57,7 +57,7 @@ const Shell = up ? RoleLayout : AuthShell;
     </div>
 
     {askAge && (
-      <fieldset class="space-y-2" data-age>
+      <fieldset class="signup-wide space-y-2" data-age>
         <legend class="mb-1.5 block text-sm font-medium">{t('auth.age')}</legend>
         <div class="flex flex-wrap gap-x-5 gap-y-2">
           <label class="flex items-center gap-2 text-sm">
@@ -106,17 +106,23 @@ const Shell = up ? RoleLayout : AuthShell;
          the top of a form the reader has already scrolled past. -->
     <p class="hidden" data-auth-error role="alert"></p>
 
-    <button class:list={['btn btn-primary', up ? 'role-cta' : 'w-full']} type="submit" data-auth-submit>
-      {up ? t('auth.submitUp') : t('auth.submitIn')}
-    </button>
-
-    <p class:list={['text-sm text-[var(--ink-dim)]', !up && 'text-center']}>
-      {up ? t('auth.haveAccount') : t('auth.noAccount')}
-      <a class="ml-1 font-medium text-[var(--signal)] underline-offset-2 hover:underline"
-         href={href(up ? '/signin' : '/signup')}>
-        {up ? t('auth.submitIn') : t('auth.submitUp')}
-      </a>
-    </p>
+    {up ? (
+      <div class="role-cta-row">
+        <button class="btn btn-primary role-cta" type="submit" data-auth-submit>{t('auth.submitUp')}</button>
+        <p class="text-sm text-[var(--ink-dim)]">
+          {t('auth.haveAccount')}
+          <a class="ml-1 font-medium text-[var(--signal)] underline-offset-2 hover:underline" href={href('/signin')}>{t('auth.submitIn')}</a>
+        </p>
+      </div>
+    ) : (
+      <Fragment>
+        <button class="btn btn-primary w-full" type="submit" data-auth-submit>{t('auth.submitIn')}</button>
+        <p class="text-sm text-[var(--ink-dim)] text-center">
+          {t('auth.noAccount')}
+          <a class="ml-1 font-medium text-[var(--signal)] underline-offset-2 hover:underline" href={href('/signup')}>{t('auth.submitUp')}</a>
+        </p>
+      </Fragment>
+    )}
   </form>
 
   <div class="card done-card mt-6 hidden p-6 text-center" data-auth-done>
