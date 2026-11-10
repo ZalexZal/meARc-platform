@@ -41,6 +41,11 @@ try {
   check('true: the age fieldset renders with three radios', (await page.$$('[data-age] input[name="age"]')).length === 3);
   check('true: the parent fields render (hidden until under 14)', (await page.$$('#parent, #pcode')).length === 2 && !(await page.isVisible('[data-parent]')));
   check('true: the form says it asks', (await page.getAttribute('[data-auth-form]', 'data-ask-age')) === 'true');
+  check('true: the "at 13 a parent must agree" note shows', (await page.textContent('[data-auth-form]')).includes('родител или настойник трябва да се съгласи'));
+  // The accept-terms gate is behind a sign-in, so its built page is checked as a file.
+  const gate = fs.readFileSync(path.join(out, 'accept-terms/index.html'), 'utf8');
+  check('true: accept-terms still has the age radios and parent fields',
+    (gate.match(/name="age"/g) ?? []).length === 3 && gate.includes('data-parent-email') && gate.includes('"askAge":true'));
   await page.fill('#email', 'lab-test-age@example.com');
   await page.fill('#password', 'Lab-test-password-1');
   await page.check('[data-auth-agree]');

@@ -98,7 +98,7 @@ const Shell = up ? RoleLayout : AuthShell;
                href={href('/privacy')} target="_blank" rel="noopener">{t('auth.agreePrivacy')}</a>.
           </span>
         </label>
-        <p class="text-xs text-[var(--ink-faint)]">{t('auth.agreeAge')}</p>
+        {askAge && <p class="text-xs text-[var(--ink-faint)]">{t('auth.agreeAge')}</p>}
       </div>
     )}
 

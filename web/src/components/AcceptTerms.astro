@@ -1,6 +1,7 @@
 ---
 import { useTranslations, localise, type Lang } from '../i18n/ui';
 import AuthShell from './AuthShell.astro';
+import { ASK_AGE } from '../lib/config';
 
 interface Props { lang: Lang; }
 const { lang } = Astro.props;
@@ -10,7 +11,7 @@ const href = localise(lang);
 const strings = {
   lang, age: t('err.age'), parentEmail: t('err.parentEmail'), mustAgree: t('err.mustAgree'),
   tooYoung: t('err.tooYoung'), parentEither: t('err.parentEither'), tooYoungHere: t('err.tooYoungHere'),
-  parentSentBody: t('auth.parentSentBody'), home: href('/'),
+  parentSentBody: t('auth.parentSentBody'), home: href('/'), askAge: ASK_AGE,
 };
 ---
 
@@ -27,6 +28,7 @@ const strings = {
       <a class="font-medium text-[var(--signal)] underline-offset-2 hover:underline" href={href('/terms')} target="_blank" rel="noopener">{t('auth.agreeTerms')}</a>{' · '}<a class="font-medium text-[var(--signal)] underline-offset-2 hover:underline" href={href('/privacy')} target="_blank" rel="noopener">{t('auth.agreePrivacy')}</a>
     </p>
 
+    {ASK_AGE && (
     <fieldset class="space-y-2">
       <legend class="mb-1.5 block text-sm font-medium">{t('auth.age')}</legend>
       <div class="flex flex-wrap gap-x-5 gap-y-2">
@@ -44,6 +46,7 @@ const strings = {
         <input class="field code uppercase tracking-widest" id="gate-code" autocomplete="off" maxlength="12" data-parent-code />
       </div>
     </fieldset>
+    )}
 
     <label class="flex items-start gap-2.5 text-sm">
       <input class="mt-1 shrink-0" type="checkbox" data-gate-agree />
@@ -82,15 +85,20 @@ const strings = {
   const onward = sameSitePath(next, location.origin) ?? S.home;
 
   // An answer already given is offered back, not asked from scratch.
-  const { data: profile } = await client.from('profiles')
-    .select('age_band').eq('id', user.id).maybeSingle();
-  if (profile?.age_band) {
-    (document.querySelector(`input[name="age"][value="${profile.age_band}"]`) as HTMLInputElement).checked = true;
+  // With the age question hidden (lib/config.ts ASK_AGE) everybody is accepted
+  // as '14+': no age radios, no parent, exactly what that choice does.
+  const askAge = S.askAge === true;
+  if (askAge) {
+    const { data: profile } = await client.from('profiles')
+      .select('age_band').eq('id', user.id).maybeSingle();
+    if (profile?.age_band) {
+      (document.querySelector(`input[name="age"][value="${profile.age_band}"]`) as HTMLInputElement).checked = true;
+    }
   }
 
   const form = q('[data-gate]') as HTMLFormElement;
-  const young = () => (form.querySelector('input[name="age"]:checked') as HTMLInputElement)?.value === 'under14';
-  const syncParent = () => q('[data-parent]').classList.toggle('hidden', !young());
+  const young = () => askAge && (form.querySelector('input[name="age"]:checked') as HTMLInputElement)?.value === 'under14';
+  const syncParent = () => q('[data-parent]')?.classList.toggle('hidden', !young());
   form.querySelectorAll('input[name="age"]').forEach((r) => r.addEventListener('change', syncParent));
   syncParent();
   reveal();
@@ -101,9 +109,9 @@ const strings = {
     const fail = (m: string, at?: Element | null) => formError(error, m, at);
     formClear(error);
 
-    const age = (form.querySelector('input[name="age"]:checked') as HTMLInputElement)?.value;
-    const parent = (q('[data-parent-email]') as HTMLInputElement).value.trim();
-    const pcode = (q('[data-parent-code]') as HTMLInputElement).value.trim().toUpperCase();
+    const age = askAge ? (form.querySelector('input[name="age"]:checked') as HTMLInputElement)?.value : '14+';
+    const parent = askAge ? (q('[data-parent-email]') as HTMLInputElement).value.trim() : '';
+    const pcode = askAge ? (q('[data-parent-code]') as HTMLInputElement).value.trim().toUpperCase() : '';
 
     if (!age) { fail(S.age, form.querySelector('input[name="age"]')); return; }
     if (age === 'under13') { markTooYoung(); fail(S.tooYoung); return; }

@@ -300,7 +300,6 @@ try {
     await rp.goto(`${BASE}/accept-terms/?next=${encodeURIComponent(bad)}`);
     await rp.waitForSelector('[data-gate]', { timeout: 15000 });
     await rp.waitForTimeout(500);
-    await rp.check('input[name="age"][value="14+"]');
     await rp.check('[data-gate-agree]');
     await rp.click('[data-gate-submit]');
     await rp.waitForURL((u) => !u.pathname.startsWith('/accept-terms'), { timeout: 15000 }).catch(() => {});
@@ -320,11 +319,14 @@ try {
   check('…with choose-role (then /trails/) as next', ta.searchParams.get('next') === '/choose-role/?next=%2Ftrails%2F', ta.searchParams.get('next'));
   await bp.waitForSelector('[data-gate]', { timeout: 15000 });
   await bp.waitForTimeout(500);
-  await bp.check('input[name="age"][value="14+"]');
+  check('accept-terms asks no age (ASK_AGE = false)', (await bp.$$('input[name="age"], [data-parent]')).length === 0);
+  const accepts = [];
+  await bp.route(`${SB}/rest/v1/rpc/accept_terms*`, (route) => { accepts.push(route.request().postDataJSON()); return route.continue(); });
   await bp.check('[data-gate-agree]');
   await bp.click('[data-gate-submit]');
   await bp.waitForURL((u) => u.pathname === '/choose-role/', { timeout: 15000 }).catch(() => {});
   check('accepting the terms leads on to choose-role', new globalThis.URL(bp.url()).pathname === '/choose-role/', bp.url());
+  check('accept-terms sends what a 14+ choice sent (p_under14 false)', accepts.length === 1 && accepts[0].p_under14 === false, JSON.stringify(accepts));
   await bp.waitForSelector('[data-role-form]:not([hidden])', { timeout: 15000 });
   await bp.check('input[name="role"][value="viewer"]');
   await bp.click('[data-role-submit]');

@@ -24,7 +24,7 @@ try {
   check('broker: category preset to estate', (await p.inputValue('[data-new-category]')) === 'estate');
   await p.fill('[data-new-name]', 'Лаб брокер имот');
   await p.click('[data-create-submit]');
-  await p.waitForURL(/trail/, { timeout: 20000 });
+  await p.waitForURL(/\/trail\/?\?id=/, { timeout: 20000 });
   const [w] = await sql(`select id, mode, category from worlds where owner_id = $1`, [br.id]);
   check('broker: mode educational', w?.mode === 'educational', w?.mode);
   check('broker: category estate', w?.category === 'estate', w?.category);
@@ -73,7 +73,7 @@ try {
   check('guide: category preset to tourism', (await pg.inputValue('[data-new-category]')) === 'tourism');
   await pg.fill('[data-new-name]', 'Лаб екскурзовод');
   await pg.click('[data-create-submit]');
-  await pg.waitForURL(/trail/, { timeout: 20000 });
+  await pg.waitForURL(/\/trail\/?\?id=/, { timeout: 20000 });
   const [gw] = await sql(`select id, mode, category from worlds where owner_id = $1`, [gu.id]);
   check('guide: no teams, in order = guide', gw?.mode === 'guide', gw?.mode);
   check('guide: category tourism', gw?.category === 'tourism', gw?.category);
@@ -94,7 +94,7 @@ try {
   await pt.fill('[data-new-name]', 'Lab teacher pts');
   await pt.click('label:has(input[name=scored][value=yes])');
   await pt.click('[data-create-submit]');
-  await pt.waitForURL(/trail/, { timeout: 20000 });
+  await pt.waitForURL(/\/trail\/?\?id=/, { timeout: 20000 });
   const [tw] = await sql(`select id, mode, category from worlds where owner_id = $1`, [te.id]);
   check('teacher: scored + in order = ctf', tw?.mode === 'ctf', tw?.mode);
   check('teacher: chosen category stored', tw?.category === 'tourism', tw?.category);
