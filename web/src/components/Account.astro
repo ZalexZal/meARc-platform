@@ -381,13 +381,12 @@ const rail = [
 
 <script>
   import { db, signOut, askParent, redeemParentCode } from '../lib/supabase';
-  import { requireUser, reveal, escapeHtml, text, count } from '../lib/session';
+  import { requireUser, reveal, escapeHtml, text, count, gateAnswers } from '../lib/session';
   import { busy, formError, formOk, formClear } from '../lib/form';
   import { loadWork } from '../lib/work';
   import { saveRole, loadRole } from '../lib/role';
   import { wirePicker } from '../lib/rolepick';
   import { announceRole } from '../lib/badge';
-  import { gateAnswers } from '../lib/session';
 
   const S = JSON.parse(document.querySelector('[data-acct-strings]')!.textContent || '{}');
   const q = (sel: string) => document.querySelector(sel);
@@ -568,7 +567,9 @@ const rail = [
     const answers = await gateAnswers();
     const role = answers ? answers.role : await loadRole(client as any);
     const work = answers ? answers.work : await loadWork(client as any);
-    if (role === 'creator' || role === 'viewer') pick.set(role, role === 'creator' ? (work as any) ?? null : null);
+    // A viewer's work is kept (only a creator's matters), so it is offered
+    // back the moment they switch to creator.
+    pick.set(role === 'creator' || role === 'viewer' ? role : null, (work as any) ?? null);
     form.querySelector('[data-role-picker]')?.addEventListener('change', () => formClear(q('[data-role-msg]') as HTMLElement));
 
     form.addEventListener('submit', async (e) => {

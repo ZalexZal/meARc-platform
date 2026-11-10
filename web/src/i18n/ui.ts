@@ -731,7 +731,7 @@ export const ui = {
     'role.nameCreator': roleLabel('creator', 'bg'),
     'role.nameViewer': roleLabel('viewer', 'bg'),
     'role.become': 'Стани създател',
-    'role.viewerNotice': 'Вие сте зрител. Стани създател, за да виждате инструментите за вашето занимание.',
+    'role.viewerNotice': 'Вие сте зрител. Станете създател, за да виждате инструментите за вашето занимание.',
     'role.settingsTitle': 'Как ползвате AR Trail',
     'role.continue': 'Продължи',
     'role.hintOther': 'Всички възможности',

@@ -1433,3 +1433,6 @@ input[type="radio"][aria-invalid="true"] { outline: 2px solid var(--alert); outl
 .become-dialog::backdrop { background: rgba(0, 0, 0, .45); }
 .become-dialog .become { box-shadow: none; padding-bottom: .5rem; }
 .become-close { margin: 0 1.5rem 1.5rem; }
+.become-go { align-self: flex-start; min-width: 10rem; }
+.become-go:disabled { opacity: .45; cursor: default; }
+@media (max-width: 639px) { .become-go { align-self: stretch; } }

@@ -1,8 +1,8 @@
 ---
 /**
  * "Become a creator": the four job seals, for a viewer who wants to build.
- * Picking one stores role=creator and that work at once (lib/become.ts); the
- * page then shows what a creator of that kind sees, without a reload.
+ * Picking a job only marks it; Continue stores role=creator and that work
+ * (lib/become.ts), and the page then shows what a creator of that kind sees.
  */
 import RolePicker from './RolePicker.astro';
 import { useTranslations, type Lang } from '../i18n/ui';
@@ -18,4 +18,5 @@ const body = sealState('creator', null, lang).body;
   <p class="become-body">{body}</p>
   <RolePicker lang={lang} jobsOnly />
   <p class="hidden" data-become-error role="alert"></p>
+  <button class="btn btn-primary become-go" type="submit" data-become-go disabled>{t('role.continue')}</button>
 </form>

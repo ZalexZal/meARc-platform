@@ -59,19 +59,33 @@ try {
   await shot(p, 'r3-mytrails-viewer-light.png');
   await p.screenshot({ path: path.join(SHOTS, 'r3-badge-viewer-light.png'), clip: { x: 900, y: 0, width: 380, height: 64 } });
 
+  // Picking only marks a job: Continue is what saves (R3 fix I2).
+  check('Continue disabled before a pick', await p.isDisabled('[data-become] [data-become-go]'));
+  await p.click('[data-become] label:has(input[value="guide"])');
+  await p.waitForTimeout(600);
+  check('a pick alone saves nothing', (await profile(v.id)).role === 'viewer' && await visible(p, '[data-become]'));
+  check('…and enables Continue', !(await p.isDisabled('[data-become] [data-become-go]')));
+
   // A failed save says so, inline, and keeps the card.
   await p.route(`${SB}/rest/v1/profiles*`, (route) => route.request().method() === 'PATCH'
     ? route.fulfill({ status: 500, contentType: 'application/json', body: '{"message":"boom"}' }) : route.continue());
-  await p.click('[data-become] label:has(input[value="guide"])');
+  await p.click('[data-become] [data-become-go]');
   await p.waitForFunction(() => (document.querySelector('[data-become-error]')?.textContent ?? '').length > 0, null, { timeout: 10000 }).catch(() => {});
   check('failed save: error shown inline', (await p.textContent('[data-become-error]').catch(() => '')).length > 0);
   check('failed save: card stays, form stays hidden', await visible(p, '[data-become]') && !(await visible(p, '[data-create]')));
   check('failed save: still a viewer', (await profile(v.id)).role === 'viewer');
   await p.unroute(`${SB}/rest/v1/profiles*`);
 
-  // Picking Учител: role=creator, work=teacher, the form with education, no reload.
+  // Keyboard: guide is checked; ArrowLeft moves to Учител without saving,
+  // then Enter on Continue saves role=creator, work=teacher - no reload.
   await p.evaluate(() => { window.__noReload = 1; });
-  await p.click('[data-become] label:has(input[value="teacher"])');
+  await p.focus('[data-become] input[value="guide"]');
+  await p.keyboard.press('ArrowLeft');
+  await p.waitForTimeout(600);
+  check('keyboard: arrow moves the pick to Учител', await p.isChecked('[data-become] input[value="teacher"]'));
+  check('keyboard: the arrow saved nothing', (await profile(v.id)).role === 'viewer' && await visible(p, '[data-become]'));
+  await p.focus('[data-become] [data-become-go]');
+  await p.keyboard.press('Enter');
   await p.waitForSelector('[data-create]:not([hidden])', { timeout: 10000 }).catch(() => {});
   check('picking Учител reveals the create form', await visible(p, '[data-create]'));
   check('…category preset to education', (await p.inputValue('[data-new-category]').catch(() => '')) === 'education');
@@ -86,6 +100,8 @@ try {
   // 2. A viewer in the builder of their own trail: a notice, and the builder works.
   const w = await makeUser('vp-builder', { role: 'viewer', work: 'broker' });
   const wt = await trail(w, 'Строя като зрител');
+  const [{ id: wstop }] = await sql(`insert into public.markers (world_id, location, style_key, colour_hex, content, status, step, radius_m, created_by)
+    values ($1, extensions.st_makepoint(26.5035, 42.4842)::extensions.geography, 'pin', '#0066cc', '{"bg":{"title":"Стара"}}', 'published', 1, 30, $2) returning id`, [wt, w.id]);
   const bp = await page();
   await signIn(bp, w);
   await bp.goto(`${BASE}/trail/?id=${wt}`);
@@ -93,7 +109,10 @@ try {
   await bp.waitForSelector('[data-map] canvas', { timeout: 20000 }).catch(() => {});
   await bp.waitForTimeout(800);
   check('builder: viewer notice shows', await visible(bp, '[data-viewer-notice]'));
-  check('…with the notice copy', (await bp.textContent('[data-viewer-notice]').catch(() => '')).includes('Вие сте зрител.'));
+  check('…with the notice copy', (await bp.textContent('[data-viewer-notice] p').catch(() => '')).trim()
+    === 'Вие сте зрител. Станете създател, за да виждате инструментите за вашето занимание.');
+  check('…an aside without role=status', await bp.$eval('[data-viewer-notice]', (el) => el.tagName === 'ASIDE' && !el.hasAttribute('role')));
+  check('…button still Стани създател', (await bp.textContent('[data-viewer-notice] [data-become-open]')).trim() === 'Стани създател');
   check('builder: not blocked (name shown)', (await bp.textContent('[data-trail-name]')).trim() === 'Строя като зрител');
   check('builder: full tool set for a viewer (question step present)',
     (await bp.$$eval('[data-step]', (l) => l.map((x) => x.dataset.step))).includes('question'));
@@ -101,12 +120,25 @@ try {
   await bp.waitForTimeout(400);
   check('builder: the button opens the four seals', await visible(bp, '[data-become-dialog] [data-become]')
     && (await bp.$$('[data-become-dialog] input[name="work"]')).length === 4);
+  // An open stop with an unsaved title (R3 fix I1): kept through the reload.
+  await bp.click('[data-become-dialog] [data-become-close]');
+  await bp.click(`[data-pick="${wstop}"]`);
+  await bp.waitForSelector('[data-marker-form]:not(.hidden)', { timeout: 15000 });
+  await bp.fill('input[name=titleBg]', 'Неспасено заглавие');
+  await bp.click('[data-viewer-notice] [data-become-open]');
+  await bp.waitForTimeout(400);
+  check('builder dialog: Continue disabled before a pick', await bp.isDisabled('[data-become-dialog] [data-become-go]'));
   await bp.click('[data-become-dialog] label:has(input[value="guide"])');
+  await bp.waitForTimeout(400);
+  check('builder dialog: a pick alone saves nothing', (await profile(w.id)).role === 'viewer');
+  await bp.click('[data-become-dialog] [data-become-go]');
   await bp.waitForFunction(() => !document.querySelector('[data-viewer-notice]') || document.querySelector('[data-viewer-notice]').hidden, null, { timeout: 15000 }).catch(() => {});
   await bp.waitForSelector('[data-guarded]:not([hidden])', { timeout: 20000 });
   const pw = await profile(w.id);
   check('builder: picking guide makes a creator', pw.role === 'creator' && pw.work === 'guide', JSON.stringify(pw));
   check('builder: notice gone after', !(await visible(bp, '[data-viewer-notice]')));
+  const [ms] = await sql(`select content from public.markers where id = $1`, [wstop]);
+  check('builder: unsaved stop title was saved before the reload', ms.content?.bg?.title === 'Неспасено заглавие', JSON.stringify(ms.content));
 
   // A creator never sees the notice.
   const c = await makeUser('vp-creator', { role: 'creator', work: 'teacher' });
@@ -145,7 +177,13 @@ try {
   const ab = await badge(ap);
   check('header badge live: round', ab?.shape === 'round' && ab?.label === 'Зрител', JSON.stringify(ab));
   check('account header badge live: round', (await badge(ap, '.hero-me'))?.shape === 'round');
+  // A viewer's kept work is offered back on switching to creator (fix M3).
+  await ap.reload();
+  await ap.waitForSelector('[data-role-settings] [data-role-picker]', { timeout: 20000 });
+  await ap.waitForTimeout(1200);
+  check('settings reload: viewer pre-selected', await ap.isChecked('[data-role-settings] input[name="role"][value="viewer"]'));
   await ap.click('[data-role-settings] label:has(input[name="role"][value="creator"])');
+  check('settings: viewer -> creator pre-fills the kept work (teacher)', await ap.isChecked('[data-role-settings] input[name="work"][value="teacher"]'));
   await ap.click('[data-role-settings] label:has(input[name="work"][value="broker"])');
   await ap.click('[data-role-settings] [data-role-save]');
   await ap.waitForTimeout(300);
@@ -166,6 +204,10 @@ try {
   const ep = await page();
   await signIn(ep, e, '/en');
   await mine(ep, '/en');
+  await ep.goto(`${BASE}/en/my-trails/?new=1`);
+  await ep.waitForSelector('[data-guarded]:not([hidden])', { timeout: 20000 });
+  await ep.waitForTimeout(1200);
+  check('viewer: ?new=1 is cleared too', !ep.url().includes('new=1'), ep.url());
   check('EN: Become a creator', (await ep.textContent('[data-become] h2').catch(() => '')).trim() === 'Become a creator');
   check('EN: badge label Viewer', (await badge(ep))?.label === 'Viewer');
   await ep.goto(`${BASE}/en/account/#settings`);

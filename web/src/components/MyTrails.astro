@@ -395,7 +395,7 @@ const questions = [
 
   if (viewer) {
     const becomeSlot = q('[data-become-slot]') as HTMLElement;
-    wireBecome(becomeSlot.querySelector('[data-become]') as HTMLElement, client as any, S.saveFailed, (picked) => {
+    wireBecome(becomeSlot.querySelector('[data-become]') as HTMLFormElement, client as any, S.saveFailed, (picked) => {
       work = picked;
       const eyebrow = q('.band-eyebrow')?.lastChild;
       if (eyebrow) eyebrow.textContent = S.creatorName;
@@ -408,8 +408,9 @@ const questions = [
   }
 
   // Arrived from "Build a trail" on the home page: the form is already open.
-  if (!viewer && new URLSearchParams(location.search).get('new') === '1') {
-    openForm(true);
+  // A viewer is shown "Become a creator" instead; the flag goes either way.
+  if (new URLSearchParams(location.search).get('new') === '1') {
+    if (!viewer) openForm(true);
     history.replaceState(null, '', location.pathname);
   }
 

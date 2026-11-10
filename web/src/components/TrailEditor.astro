@@ -142,10 +142,10 @@ const strings = {
 <section class="mx-auto max-w-7xl px-4 py-10 sm:px-6" hidden data-guarded>
   <!-- A viewer is never kept out of a trail they own or edit; they are told
        where the tools for their line of work are, once, at the top. -->
-  <div class="viewer-notice" hidden data-viewer-notice role="status">
+  <aside class="viewer-notice" hidden data-viewer-notice>
     <p>{t('role.viewerNotice')}</p>
     <button type="button" class="btn btn-primary btn-sm" data-become-open>{t('role.become')}</button>
-  </div>
+  </aside>
   <dialog class="become-dialog" data-become-dialog aria-label={t('role.become')}>
     <BecomeCreator lang={lang} />
     <button type="button" class="btn btn-ghost btn-sm become-close" data-become-close>{t('mod.close')}</button>
@@ -923,8 +923,17 @@ const strings = {
     notice.hidden = false;
     q('[data-become-open]')?.addEventListener('click', () => dialog.showModal());
     q('[data-become-close]')?.addEventListener('click', () => dialog.close());
-    // The tools follow the new line of work, so the builder starts again.
-    wireBecome(dialog.querySelector('[data-become]') as HTMLElement, client as any, S.saveFailed, () => location.reload());
+    // The tools follow the new line of work, so the builder starts again - but
+    // only once an open stop with unsaved edits is saved, with the editor's own
+    // save. If that save fails, its message is shown and nothing changes.
+    wireBecome(dialog.querySelector('[data-become]') as HTMLFormElement, client as any, S.saveFailed,
+      () => location.reload(),
+      { before: async () => {
+        if (!selected || !dirty) return true;
+        if (await save()) return true;
+        dialog.close();
+        return false;
+      } });
   }
   const drop = (sel: string) => qa(sel).forEach((el) => el.remove());
   if (!features.questions) {
