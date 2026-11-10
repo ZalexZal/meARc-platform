@@ -9,8 +9,11 @@ const b = await browser();
 const guests = [];
 const errs = [];
 const profile = async (id) => (await sql(`select role, work from public.profiles where id = $1`, [id]))[0];
-const seal = (p) => p.$eval('[data-role-panel] [data-seal]', (el) => ({
+const seal = (p) => p.$eval('[data-stage] [data-seal]', (el) => ({
   shape: el.dataset.sealShape, glyph: el.dataset.sealGlyph, pip: el.dataset.sealPip, selected: el.dataset.selected }));
+// W2: the A5 stage replaced the seal panel. Its chip says the choice; only the shown state counts.
+const shown = (p, sel) => p.$$eval(`[data-stage] ${sel}`, (l) => l.filter((e) => e.getClientRects().length).map((e) => e.textContent.trim()));
+const chip = async (p) => (await shown(p, '[data-stage-tag]')).join('|');
 const noSideways = (p) => p.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1);
 
 async function page(width = 1280, height = 900, scheme = 'light') {
@@ -48,8 +51,8 @@ try {
   await p.check('input[name="role"][value="viewer"]');
   s = await seal(p);
   check('viewer: round seal with the eye', s.shape === 'round' && s.glyph === 'viewer' && s.pip === 'false' && s.selected === 'true', JSON.stringify(s));
-  check('viewer: panel title Зрител', (await p.textContent('[data-role-title]')).trim() === 'Зрител');
-  check('viewer: three things you get', (await p.$$('[data-role-gets] li')).length === 3);
+  check('viewer: stage chip Зрител', (await chip(p)) === 'Зрител', await chip(p));
+  check('viewer: three signs on the stage', (await shown(p, '.stage-sign')).length === 3);
   check('viewer: no work question, the note instead', !(await p.isVisible('[data-work-section]')) && await p.isVisible('[data-viewer-note]'));
   check('viewer: CTA ready', !(await p.$eval('[data-role-submit]', (el) => el.classList.contains('is-waiting'))));
   await p.check('input[name="role"][value="creator"]');
@@ -67,7 +70,7 @@ try {
   await p.check('input[name="work"][value="broker"]');
   s = await seal(p);
   check('creator + broker: square, house, pencil pip', s.shape === 'square' && s.glyph === 'broker' && s.pip === 'true', JSON.stringify(s));
-  check('broker panel title', (await p.textContent('[data-role-title]')).trim() === 'Недвижими имоти · създател');
+  check('broker stage chip', (await chip(p)) === 'Недвижими имоти · създател', await chip(p));
   await p.waitForTimeout(400);
   await p.screenshot({ path: path.join(SHOTS, 'r2-choose-role-light.png'), fullPage: true });
 
@@ -176,7 +179,7 @@ try {
       body: JSON.stringify({ code: 422, error_code: 'user_already_exists', msg: 'User already registered' }) });
   });
   await sp.goto(`${BASE}/signup/`);
-  await sp.waitForSelector('[data-role-panel] [data-seal]');
+  await sp.waitForSelector('[data-stage] [data-seal]');
   check('sign-up heading', (await sp.textContent('h1')).trim() === 'Създайте профил');
   check('sign-up keeps the account fields', (await sp.$$('#email, #password, #name, input[name="age"], [data-auth-agree]')).length === 4);  // name, email, password, agree - the age radios are hidden (ASK_AGE = false)
   s = await seal(sp);
@@ -217,10 +220,10 @@ try {
   // Phone and dark.
   const ph = await page(390, 900);
   await ph.goto(`${BASE}/signup/`);
-  await ph.waitForSelector('[data-role-panel] [data-seal]');
+  await ph.waitForSelector('[data-stage] [data-seal]');
   check('390px: no sideways scroll on sign-up', await noSideways(ph));
-  const sealBox = await ph.$eval('[data-role-panel] [data-seal]', (el) => Math.round(el.getBoundingClientRect().width));
-  check('390px: 76px seal on top', sealBox === 76, String(sealBox));
+  const sealBox = await ph.$eval('[data-stage] [data-seal]', (el) => Math.round(el.getBoundingClientRect().width));
+  check('390px: 24px seal in the hero chip', sealBox === 24, String(sealBox));
   await ph.check('input[name="role"][value="creator"]');
   await ph.check('input[name="work"][value="guide"]');
   await ph.waitForTimeout(400);
@@ -228,12 +231,12 @@ try {
   await ph.screenshot({ path: path.join(SHOTS, 'r2-signup-phone-light.png'), fullPage: true });
   const en = await page(1280, 900);
   await en.goto(`${BASE}/en/signup/`);
-  await en.waitForSelector('[data-role-panel] [data-seal]');
+  await en.waitForSelector('[data-stage] [data-seal]');
   check('EN sign-up question', (await en.textContent('[data-role-question]')).trim() === 'How will you use AR Trail?');
   for (const [w, h, name] of [[1280, 900, 'r2-signup-desktop-dark.png'], [390, 900, 'r2-signup-phone-dark.png']]) {
     const d = await page(w, h, 'dark');
     await d.goto(`${BASE}/signup/`);
-    await d.waitForSelector('[data-role-panel] [data-seal]');
+    await d.waitForSelector('[data-stage] [data-seal]');
     await d.check('input[name="role"][value="creator"]');
     await d.check('input[name="work"][value="broker"]');
     await d.waitForTimeout(400);
@@ -256,7 +259,7 @@ try {
   const dkState = await seal(dk);
   check('dark: seal state is the teacher creator', dkState.shape === 'square' && dkState.glyph === 'teacher' && dkState.selected === 'true', JSON.stringify(dkState));
   await dk.addStyleTag({ content: '*, *::before, *::after { transition: none !important; }' });
-  const darkSeal = await dk.$eval('[data-role-panel] [data-seal]', (el) => [getComputedStyle(el).backgroundColor, getComputedStyle(el).color]);
+  const darkSeal = await dk.$eval('[data-stage] [data-seal]', (el) => [getComputedStyle(el).backgroundColor, getComputedStyle(el).color]);
   check('dark: selected seal is white on #0066cc', darkSeal[0] === 'rgb(0, 102, 204)' && darkSeal[1] === 'rgb(255, 255, 255)', darkSeal.join(' / ') + ' | ' + dk.url() + ' | checked: ' + (await dk.$$eval('input:checked', (l) => l.map((i) => i.name + '=' + i.value).join(','))) + ' | bad: ' + dkBad.join(', '));
   await dk.screenshot({ path: path.join(SHOTS, 'r2-choose-role-dark.png'), fullPage: true });
 
@@ -265,7 +268,7 @@ try {
   // An empty error line never shows.
   const fresh = await page(1280, 900);
   await fresh.goto(`${BASE}/signup/`);
-  await fresh.waitForSelector('[data-role-panel] [data-seal]');
+  await fresh.waitForSelector('[data-stage] [data-seal]');
   check('sign-up: empty error line is not displayed', !(await fresh.isVisible('[data-auth-error]')));
   await fresh.$eval('[data-auth-error]', (el) => { el.classList.remove('hidden'); el.hidden = false; el.classList.add('form-msg', 'is-error'); });
   check('…even with its hidden class taken off', !(await fresh.isVisible('[data-auth-error]')));
