@@ -110,7 +110,7 @@ const en = () => location.pathname.startsWith('/en/');
  */
 function gateTarget(profile: GateProfile | null | undefined,
                     { terms = true, role = true } = {}): string | null {
-  const back = location.pathname + location.search;
+  const back = location.pathname + location.search + location.hash;
   const chooseRole = `${en() ? '/en' : ''}/choose-role/`;
   const acceptTerms = `${en() ? '/en' : ''}/accept-terms/`;
   const termsOwed = terms && profile?.terms_version !== TERMS_VERSION;

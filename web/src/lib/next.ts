@@ -12,7 +12,12 @@ export function sameSitePath(next: string | null | undefined, origin: string): s
   if (!next) return null;
   try {
     const u = new URL(next, origin);
-    return u.origin === origin ? u.pathname + u.search + u.hash : null;
+    if (u.origin !== origin) return null;
+    // Dot segments can resolve to a path that starts with two slashes
+    // ("/.//evil.com" -> "//evil.com"), which a later navigation reads as
+    // another host. Only a path with a single leading slash is followed.
+    const path = u.pathname + u.search + u.hash;
+    return /^\/(?![\/\\])/.test(path) ? path : null;
   } catch {
     return null;
   }

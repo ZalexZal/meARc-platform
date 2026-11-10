@@ -17,6 +17,9 @@ test('anything that leaves the site is refused', () => {
     '/\\evil.com',           // backslash: read as //evil.com
     '\\\\evil.com',
     '//evil.com',
+    '/.//evil.com',          // resolves to the path //evil.com
+    '/a/..//evil.com',
+    '/./\\evil.com',
     '//evil.com/trails/',
     'javascript:alert(1)',
     'JaVaScRiPt:alert(1)',

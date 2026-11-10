@@ -45,7 +45,10 @@ const strings = {
   await requireUser({ needsReal: true, role: false });
   const client = db()! as any;
   const pick = wirePicker(document, { cta: submit });
-  form.querySelector('[data-role-picker]')?.addEventListener('change', () => formClear(error));
+  // A "choose one" message goes once a choice is made; a failed save stays.
+  form.querySelector('[data-role-picker]')?.addEventListener('change', () => {
+    if (error.textContent === S.role || error.textContent === S.work) formClear(error);
+  });
 
   // An answer already given is offered back. A line of work from before this
   // question existed means a creator who does that.

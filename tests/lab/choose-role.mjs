@@ -113,6 +113,10 @@ try {
   check('failed save: error shown inline', (await p2.textContent('[data-role-error]')).trim().length > 0
     && await p2.isVisible('[data-role-error]'));
   check('failed save: still on the screen', new globalThis.URL(p2.url()).pathname === '/choose-role/');
+  await p2.check('input[name="role"][value="creator"]');
+  check('failed save: message stays when the picker changes', await p2.isVisible('[data-role-error]')
+    && (await p2.textContent('[data-role-error]')).includes('stubbed failure'));
+  await p2.check('input[name="role"][value="viewer"]');
   await p2.unroute(`${SB}/rest/v1/profiles*`);
   await p2.click('[data-role-submit]');
   await p2.waitForURL((u) => u.pathname === '/trails/', { timeout: 15000 }).catch(() => {});
@@ -130,9 +134,10 @@ try {
     check(`exempt: ${at} stays`, u.pathname === at, p3.url());
   }
   check('EN screen heading', (await p3.textContent('h1')).trim() === 'How will you use AR Trail?');
-  await p3.goto(`${BASE}/en/view/?id=00000000-0000-0000-0000-000000000000`);
+  await p3.goto(`${BASE}/en/view/?id=00000000-0000-0000-0000-000000000000#map`);
   await p3.waitForURL((u) => u.pathname.startsWith('/en/choose-role'), { timeout: 15000 }).catch(() => {});
   check('EN page sends to /en/choose-role/', new globalThis.URL(p3.url()).pathname === '/en/choose-role/', p3.url());
+  check('next keeps the query and the hash', new globalThis.URL(p3.url()).searchParams.get('next') === '/en/view/?id=00000000-0000-0000-0000-000000000000#map', p3.url());
 
   // A failed profile read never redirects.
   await p3.route(`${SB}/rest/v1/profiles*`, (route) => route.request().method() === 'GET'
@@ -235,6 +240,8 @@ try {
     await d.screenshot({ path: path.join(SHOTS, name), fullPage: true });
   }
   const dk = await page(1280, 900, 'dark');
+  const dkBad = [];
+  dk.on('response', (r) => { if (r.status() >= 400) dkBad.push(`${r.status()} ${r.request().method()} ${r.url().split('?')[0]}`); });
   const dku = await makeUser('cr-dark', { role: null, work: 'teacher' });
   await signIn(dk, dku);
   // Signing in lands on / and the gate moves on to choose-role; let that
@@ -243,8 +250,14 @@ try {
   await dk.goto(`${BASE}/choose-role/`);
   await dk.waitForSelector('[data-role-form]:not([hidden])', { timeout: 15000 });
   await dk.waitForTimeout(500);
+  // The end state of the colours, not a frame of the 0.2s transition: with
+  // many pages open the headless browser may not advance this page's
+  // animations, which left the old colours on screen in some runs.
+  const dkState = await seal(dk);
+  check('dark: seal state is the teacher creator', dkState.shape === 'square' && dkState.glyph === 'teacher' && dkState.selected === 'true', JSON.stringify(dkState));
+  await dk.addStyleTag({ content: '*, *::before, *::after { transition: none !important; }' });
   const darkSeal = await dk.$eval('[data-role-panel] [data-seal]', (el) => [getComputedStyle(el).backgroundColor, getComputedStyle(el).color]);
-  check('dark: selected seal is white on #0066cc', darkSeal[0] === 'rgb(0, 102, 204)' && darkSeal[1] === 'rgb(255, 255, 255)', darkSeal.join(' / '));
+  check('dark: selected seal is white on #0066cc', darkSeal[0] === 'rgb(0, 102, 204)' && darkSeal[1] === 'rgb(255, 255, 255)', darkSeal.join(' / ') + ' | ' + dk.url() + ' | checked: ' + (await dk.$$eval('input:checked', (l) => l.map((i) => i.name + '=' + i.value).join(','))) + ' | bad: ' + dkBad.join(', '));
   await dk.screenshot({ path: path.join(SHOTS, 'r2-choose-role-dark.png'), fullPage: true });
 
 
@@ -258,7 +271,7 @@ try {
   check('…even with its hidden class taken off', !(await fresh.isVisible('[data-auth-error]')));
 
   // Open redirects: ?next= that leaves the site falls back to the default.
-  const bads = { tab: '/\t/evil.com', backslash: '/\\evil.com', 'protocol-relative': '//evil.com', javascript: 'javascript:alert(1)', 'full URL': 'https://evil.com/trails/' };
+  const bads = { tab: '/\t/evil.com', backslash: '/\\evil.com', 'protocol-relative': '//evil.com', 'dot segment': '/.//evil.com', javascript: 'javascript:alert(1)', 'full URL': 'https://evil.com/trails/' };
   const r1 = await makeUser('cr-redir', { role: null, work: null });
   const rp = await page();
   await signIn(rp, r1);
