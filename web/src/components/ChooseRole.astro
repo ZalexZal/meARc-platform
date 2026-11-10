@@ -35,6 +35,7 @@ const strings = {
   import { loadWork } from '../lib/work';
   import { wirePicker } from '../lib/rolepick';
   import { busy, formError, formClear } from '../lib/form';
+  import { sameSitePath } from '../lib/next';
 
   const S = JSON.parse(document.querySelector('[data-role-strings]')!.textContent || '{}');
   const form = document.querySelector('[data-role-form]') as HTMLFormElement;
@@ -44,6 +45,7 @@ const strings = {
   await requireUser({ needsReal: true, role: false });
   const client = db()! as any;
   const pick = wirePicker(document, { cta: submit });
+  form.querySelector('[data-role-picker]')?.addEventListener('change', () => formClear(error));
 
   // An answer already given is offered back. A line of work from before this
   // question existed means a creator who does that.
@@ -52,8 +54,7 @@ const strings = {
   else if (work) pick.set('creator', work);
   reveal('[data-role-form]');
 
-  const next = param('next');
-  const sameSite = next && next.startsWith('/') && !next.startsWith('//') && !next.startsWith('/\\');
+  const onward = sameSitePath(param('next'), location.origin);
 
   form.addEventListener('submit', async (event) => {
     event.preventDefault();
@@ -65,6 +66,6 @@ const strings = {
     busy(submit, true);
     const failed = await saveRole(client, r, w);
     if (failed) { formError(error, `${S.failed} (${failed})`); return; }
-    location.replace(sameSite ? next! : r === 'creator' ? S.creatorHome : S.viewerHome);
+    location.replace(onward ?? (r === 'creator' ? S.creatorHome : S.viewerHome));
   });
 </script>

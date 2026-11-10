@@ -37,6 +37,8 @@ export async function requireUser(
   { needsReal = true, signInPath = location.pathname.startsWith('/en/') ? '/en/signin' : '/signin',
     terms = true, role = true } = {}
 ): Promise<User> {
+  // This page runs its own gates; the base layout's roleGate stands aside.
+  document.body.dataset.gateByPage = '1';
   const { user, anonymous, configured: ok } = await who();
 
   if (!ok) {
@@ -50,31 +52,22 @@ export async function requireUser(
     return new Promise(() => {});
   }
 
-  // The terms this site runs on now. An account that accepted older ones -
-  // or none, because confirmation held its sign-up back - is asked before it
-  // goes further. Guests are asked by the app, which is where guests are.
-  if (terms && !anonymous) {
-    const read = async () => (await db()!.from('profiles')
-      .select('terms_version').eq('id', user.id).maybeSingle()).data?.terms_version;
+  // The terms this site runs on now, then creator or viewer. An account that
+  // accepted older terms - or none, because confirmation held its sign-up back
+  // - is asked those first; one owed both is sent to the terms with the role
+  // question as the next stop. Guests are asked by the app, which is where
+  // guests are. One profile read, shared with the base layout's roleGate.
+  if ((terms || role) && !anonymous) {
+    let profile = await gateProfile(user.id);
 
-    if ((await read()) !== TERMS_VERSION) {
+    if (terms && profile?.terms_version !== TERMS_VERSION) {
       await finishPending(user);
-
-      if ((await read()) !== TERMS_VERSION) {
-        const back = encodeURIComponent(location.pathname + location.search);
-        const gate = location.pathname.startsWith('/en/') ? '/en/accept-terms' : '/accept-terms';
-        location.replace(`${gate}/?next=${back}`);
-        return new Promise(() => {});
-      }
+      profile = await gateProfile(user.id, true);
     }
-  }
 
-  // Creator or viewer, asked once of every account. After the terms, so a
-  // person owed both sees the terms first. A failed read lets them through.
-  if (role && !anonymous && !roleExempt(location.pathname)) {
-    const { data, error } = await db()!.from('profiles').select('role').eq('id', user.id).maybeSingle();
-    if (!error && data && data.role === null) {
-      toChooseRole();
+    const to = gateTarget(profile, { terms, role });
+    if (to) {
+      location.replace(to);
       return new Promise(() => {});
     }
   }
@@ -89,18 +82,54 @@ export async function requireUser(
 const ROLE_EXEMPT = /^\/(en\/)?(choose-role|signin|signup|confirmed|accept-terms|terms|privacy|reset|consent|parent)(\/|$)/;
 export const roleExempt = (path: string) => ROLE_EXEMPT.test(path);
 
-function toChooseRole() {
-  const back = encodeURIComponent(location.pathname + location.search);
-  const gate = location.pathname.startsWith('/en/') ? '/en/choose-role' : '/choose-role';
-  location.replace(`${gate}/?next=${back}`);
+type GateProfile = { terms_version: string | null; role: string | null };
+
+// One read of the two answers per page, shared by requireUser and roleGate
+// (both import this module, so both see the same promise). undefined = the
+// read failed.
+let gateRead: { id: string; p: Promise<GateProfile | null | undefined> } | null = null;
+function gateProfile(id: string, fresh = false): Promise<GateProfile | null | undefined> {
+  if (!gateRead || gateRead.id !== id || fresh) {
+    const p = Promise.resolve(db()!.from('profiles').select('terms_version, role').eq('id', id).maybeSingle())
+      .then(({ data, error }) => (error ? undefined : (data as GateProfile | null)))
+      .catch(() => undefined);
+    gateRead = { id, p };
+  }
+  return gateRead.p;
+}
+
+const en = () => location.pathname.startsWith('/en/');
+
+/**
+ * Where this account has to go first, or null to stay. Terms before role: a
+ * person owed both goes to the terms, and from there to the role question,
+ * and from there back here.
+ *
+ * A failed read is "terms owed" (as it always was: the terms page asks again)
+ * but never "role owed": the role question is only asked of a known null.
+ */
+function gateTarget(profile: GateProfile | null | undefined,
+                    { terms = true, role = true } = {}): string | null {
+  const back = location.pathname + location.search;
+  const chooseRole = `${en() ? '/en' : ''}/choose-role/`;
+  const acceptTerms = `${en() ? '/en' : ''}/accept-terms/`;
+  const termsOwed = terms && profile?.terms_version !== TERMS_VERSION;
+  const roleOwed = role && !!profile && profile.role === null && !roleExempt(location.pathname);
+
+  if (termsOwed) {
+    const after = roleOwed ? `${chooseRole}?next=${encodeURIComponent(back)}` : back;
+    return `${acceptTerms}?next=${encodeURIComponent(after)}`;
+  }
+  return roleOwed ? `${chooseRole}?next=${encodeURIComponent(back)}` : null;
 }
 
 /**
  * The site-wide half of the role question, run by the base layout on every
- * page: a signed-in account (not a guest) whose role is still null is sent to
- * choose it. Guests, exempt pages, a failed read and an account still owed the
- * terms (the terms gate goes first) are all left where they are. Resolves true
- * when it redirected.
+ * page. A signed-in account (not a guest) whose role is still null is sent to
+ * choose it - by way of the terms, when those are owed too. Guests, exempt
+ * pages, pages that run requireUser (they gate themselves), a failed read and
+ * an account whose role is set are all left alone. Resolves true when it
+ * redirected.
  */
 export async function roleGate(): Promise<boolean> {
   try {
@@ -109,12 +138,23 @@ export async function roleGate(): Promise<boolean> {
     const { data: { session } } = await c.auth.getSession();
     const user = session?.user ?? null;
     if (!user || isAnonymous(user)) return false;
-    const { data, error } = await c.from('profiles')
-      .select('role, terms_version').eq('id', user.id).maybeSingle();
-    if (error || !data) return false;
-    if (data.terms_version !== TERMS_VERSION) return false;
-    if (data.role !== null) return false;
-    toChooseRole();
+    if (document.body.dataset.gateByPage) return false;
+
+    let profile = await gateProfile(user.id);
+    if (document.body.dataset.gateByPage) return false;
+    if (!profile || profile.role !== null) return false;
+
+    // Owed the role. If the terms look owed as well, finish a held sign-up
+    // first, the way requireUser does, before sending anyone to accept them.
+    if (profile.terms_version !== TERMS_VERSION) {
+      await finishPending(user);
+      profile = await gateProfile(user.id, true);
+      if (!profile || profile.role !== null) return false;
+    }
+
+    const to = gateTarget(profile);
+    if (!to || document.body.dataset.gateByPage) return false;
+    location.replace(to);
     return true;
   } catch {
     return false;

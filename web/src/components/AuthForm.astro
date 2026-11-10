@@ -140,6 +140,7 @@ const Shell = up ? RoleLayout : AuthShell;
   import { busy, formError, formOk, formClear } from '../lib/form';
   import { TERMS_VERSION } from '../lib/terms';
   import { wirePicker } from '../lib/rolepick';
+  import { sameSitePath } from '../lib/next';
 
   const form = document.querySelector('[data-auth-form]') as HTMLFormElement | null;
   if (form) {
@@ -167,7 +168,7 @@ const Shell = up ? RoleLayout : AuthShell;
     // signed out meant signing in and then finding My trails again by hand.
     const next = new URLSearchParams(location.search).get('next');
     const home = location.pathname.startsWith('/en/') ? '/en/' : '/';
-    const onward = next && next.startsWith('/') && !next.startsWith('//') ? next : home;
+    const onward = sameSitePath(next, location.origin) ?? home;
 
     // This device has already said "12 or younger": no form to answer again.
     if (mode === 'signup' && isTooYoung()) {
@@ -182,6 +183,10 @@ const Shell = up ? RoleLayout : AuthShell;
     // Creator or viewer, with the seal beside the form following each click.
     const pick = mode === 'signup' && form.querySelector('[data-role-picker]')
       ? wirePicker(document, { cta: submit }) : null;
+    // A "choose one" message goes once a choice is made, rather than lingering under it.
+    form.querySelector('[data-role-picker]')?.addEventListener('change', () => {
+      if (errorBox.textContent === said.role || errorBox.textContent === said.work) formClear(errorBox);
+    });
 
     const field = (name: string) => form.querySelector(`[name="${name}"]`);
     const show = (message: string, at?: Element | null) => formError(errorBox, message, at);

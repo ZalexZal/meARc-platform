@@ -70,6 +70,7 @@ const strings = {
   import { requireUser, reveal, param, text } from '../lib/session';
   import { TERMS_VERSION } from '../lib/terms';
   import { busy, formError, formClear } from '../lib/form';
+  import { sameSitePath } from '../lib/next';
 
   const S = JSON.parse(document.querySelector('[data-gate-strings]')!.textContent || '{}');
   const q = (s: string) => document.querySelector(s) as HTMLElement;
@@ -77,7 +78,8 @@ const strings = {
   const user = await requireUser({ needsReal: true, terms: false });
   const client = db()!;
   const next = param('next');
-  const onward = next && next.startsWith('/') && !next.startsWith('//') ? next : S.home;
+  // Only somewhere on this site: see lib/next.ts for why a prefix check is not enough.
+  const onward = sameSitePath(next, location.origin) ?? S.home;
 
   // An answer already given is offered back, not asked from scratch.
   const { data: profile } = await client.from('profiles')

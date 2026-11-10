@@ -15,6 +15,7 @@ const noSideways = (p) => p.evaluate(() => document.documentElement.scrollWidth 
 
 async function page(width = 1280, height = 900, scheme = 'light') {
   const ctx = await b.newContext({ viewport: { width, height }, colorScheme: scheme });
+  await ctx.addInitScript(() => { try { localStorage.setItem('artrail-cookies-ok', '1'); } catch {} });
   const p = await ctx.newPage();
   p.on('pageerror', (e) => errs.push(`${p.url()}: ${e.message}`));
   return p;
@@ -67,6 +68,7 @@ try {
   s = await seal(p);
   check('creator + broker: square, house, pencil pip', s.shape === 'square' && s.glyph === 'broker' && s.pip === 'true', JSON.stringify(s));
   check('broker panel title', (await p.textContent('[data-role-title]')).trim() === 'Брокер · създател');
+  await p.waitForTimeout(400);
   await p.screenshot({ path: path.join(SHOTS, 'r2-choose-role-light.png'), fullPage: true });
 
   // 2. Creator + broker saves both and goes on to next.
@@ -86,6 +88,7 @@ try {
   const g = await makeUser('cr-guide', { role: null, work: 'guide' });
   const p2 = await page(390, 900);
   await signIn(p2, g);
+  await p2.waitForURL((u) => u.pathname === '/choose-role/', { timeout: 15000 }).catch(() => {});
   await p2.goto(`${BASE}/choose-role/`);
   await p2.waitForSelector('[data-role-form]:not([hidden])', { timeout: 15000 });
   await p2.waitForTimeout(500);
@@ -189,8 +192,10 @@ try {
   check('sign-up as creator without a work: err.work', (await sp.textContent('[data-auth-error]')).includes('Изберете с какво се занимавате.'));
   check('…and no request', signups.length === 0);
   await sp.check('input[name="work"][value="teacher"]');
+  check('choosing a job clears the "choose one" message', !(await sp.isVisible('[data-auth-error]')));
   s = await seal(sp);
   check('sign-up seal: teacher with pip', s.shape === 'square' && s.glyph === 'teacher' && s.pip === 'true', JSON.stringify(s));
+  await sp.waitForTimeout(400);
   await sp.screenshot({ path: path.join(SHOTS, 'r2-signup-desktop-teacher-light.png'), fullPage: true });
   await sp.click('[data-auth-submit]');
   await sp.waitForTimeout(1500);
@@ -213,6 +218,7 @@ try {
   check('390px: 76px seal on top', sealBox === 76, String(sealBox));
   await ph.check('input[name="role"][value="creator"]');
   await ph.check('input[name="work"][value="guide"]');
+  await ph.waitForTimeout(400);
   check('390px: still no sideways scroll after choosing', await noSideways(ph));
   await ph.screenshot({ path: path.join(SHOTS, 'r2-signup-phone-light.png'), fullPage: true });
   const en = await page(1280, 900);
@@ -225,15 +231,114 @@ try {
     await d.waitForSelector('[data-role-panel] [data-seal]');
     await d.check('input[name="role"][value="creator"]');
     await d.check('input[name="work"][value="broker"]');
+    await d.waitForTimeout(400);
     await d.screenshot({ path: path.join(SHOTS, name), fullPage: true });
   }
   const dk = await page(1280, 900, 'dark');
   const dku = await makeUser('cr-dark', { role: null, work: 'teacher' });
   await signIn(dk, dku);
+  // Signing in lands on / and the gate moves on to choose-role; let that
+  // finish first, or it can replace the page the next goto opens.
+  await dk.waitForURL((u) => u.pathname === '/choose-role/', { timeout: 15000 }).catch(() => {});
   await dk.goto(`${BASE}/choose-role/`);
   await dk.waitForSelector('[data-role-form]:not([hidden])', { timeout: 15000 });
   await dk.waitForTimeout(500);
+  const darkSeal = await dk.$eval('[data-role-panel] [data-seal]', (el) => [getComputedStyle(el).backgroundColor, getComputedStyle(el).color]);
+  check('dark: selected seal is white on #0066cc', darkSeal[0] === 'rgb(0, 102, 204)' && darkSeal[1] === 'rgb(255, 255, 255)', darkSeal.join(' / '));
   await dk.screenshot({ path: path.join(SHOTS, 'r2-choose-role-dark.png'), fullPage: true });
+
+
+  // ------------------------------------------------ fix round 1
+  // An empty error line never shows.
+  const fresh = await page(1280, 900);
+  await fresh.goto(`${BASE}/signup/`);
+  await fresh.waitForSelector('[data-role-panel] [data-seal]');
+  check('sign-up: empty error line is not displayed', !(await fresh.isVisible('[data-auth-error]')));
+  await fresh.$eval('[data-auth-error]', (el) => { el.classList.remove('hidden'); el.hidden = false; el.classList.add('form-msg', 'is-error'); });
+  check('…even with its hidden class taken off', !(await fresh.isVisible('[data-auth-error]')));
+
+  // Open redirects: ?next= that leaves the site falls back to the default.
+  const bads = { tab: '/\t/evil.com', backslash: '/\\evil.com', 'protocol-relative': '//evil.com', javascript: 'javascript:alert(1)', 'full URL': 'https://evil.com/trails/' };
+  const r1 = await makeUser('cr-redir', { role: null, work: null });
+  const rp = await page();
+  await signIn(rp, r1);
+  await rp.waitForURL((u) => u.pathname === '/choose-role/', { timeout: 15000 }).catch(() => {});
+  for (const [name, bad] of Object.entries(bads)) {
+    await sql(`update public.profiles set role = null where id = $1`, [r1.id]);
+    await rp.goto(`${BASE}/choose-role/?next=${encodeURIComponent(bad)}`);
+    await rp.waitForSelector('[data-role-form]:not([hidden])', { timeout: 15000 });
+    await rp.check('input[name="role"][value="viewer"]');
+    await rp.click('[data-role-submit]');
+    await rp.waitForURL((u) => !u.pathname.startsWith('/choose-role'), { timeout: 15000 }).catch(() => {});
+    const at = new globalThis.URL(rp.url());
+    check(`choose-role ignores next (${name})`, at.origin === BASE && at.pathname === '/trails/', rp.url());
+  }
+  await sql(`update public.profiles set role = null where id = $1`, [r1.id]);
+  await rp.goto(`${BASE}/choose-role/?next=${encodeURIComponent('/view/?id=x#top')}`);
+  await rp.waitForSelector('[data-role-form]:not([hidden])', { timeout: 15000 });
+  await rp.check('input[name="role"][value="viewer"]');
+  await rp.click('[data-role-submit]');
+  await rp.waitForURL((u) => u.pathname === '/view/', { timeout: 15000 }).catch(() => {});
+  check('choose-role still follows a same-site next with query', new globalThis.URL(rp.url()).pathname === '/view/' && rp.url().includes('id=x'), rp.url());
+
+  // The same on accept-terms (the bug was there first).
+  for (const [name, bad] of Object.entries({ tab: '/\t/evil.com', backslash: '/\\evil.com' })) {
+    await sql(`update public.profiles set terms_version = '2000-01-01' where id = $1`, [r1.id]);
+    await rp.goto(`${BASE}/accept-terms/?next=${encodeURIComponent(bad)}`);
+    await rp.waitForSelector('[data-gate]', { timeout: 15000 });
+    await rp.waitForTimeout(500);
+    await rp.check('input[name="age"][value="14+"]');
+    await rp.check('[data-gate-agree]');
+    await rp.click('[data-gate-submit]');
+    await rp.waitForURL((u) => !u.pathname.startsWith('/accept-terms'), { timeout: 15000 }).catch(() => {});
+    const at = new globalThis.URL(rp.url());
+    check(`accept-terms ignores next (${name})`, at.origin === BASE && !at.pathname.startsWith('/accept-terms'), rp.url());
+  }
+
+  // Terms and role both owed on a public page: terms, then role, then back.
+  const both = await makeUser('cr-both', { role: null, work: null });
+  const bp = await page();
+  await signIn(bp, both);
+  await sql(`update public.profiles set terms_version = '2000-01-01' where id = $1`, [both.id]);
+  await bp.goto(`${BASE}/trails/`);
+  await bp.waitForURL((u) => u.pathname === '/accept-terms/', { timeout: 15000 }).catch(() => {});
+  const ta = new globalThis.URL(bp.url());
+  check('terms + role owed on /trails/: lands on accept-terms', ta.pathname === '/accept-terms/', bp.url());
+  check('…with choose-role (then /trails/) as next', ta.searchParams.get('next') === '/choose-role/?next=%2Ftrails%2F', ta.searchParams.get('next'));
+  await bp.waitForSelector('[data-gate]', { timeout: 15000 });
+  await bp.waitForTimeout(500);
+  await bp.check('input[name="age"][value="14+"]');
+  await bp.check('[data-gate-agree]');
+  await bp.click('[data-gate-submit]');
+  await bp.waitForURL((u) => u.pathname === '/choose-role/', { timeout: 15000 }).catch(() => {});
+  check('accepting the terms leads on to choose-role', new globalThis.URL(bp.url()).pathname === '/choose-role/', bp.url());
+  await bp.waitForSelector('[data-role-form]:not([hidden])', { timeout: 15000 });
+  await bp.check('input[name="role"][value="viewer"]');
+  await bp.click('[data-role-submit]');
+  await bp.waitForURL((u) => u.pathname === '/trails/', { timeout: 15000 }).catch(() => {});
+  check('…and choosing returns to /trails/', new globalThis.URL(bp.url()).pathname === '/trails/', bp.url());
+  check('…with role saved', (await profile(both.id)).role === 'viewer');
+  // The same in English keeps the /en/ prefix.
+  await sql(`update public.profiles set terms_version = '2000-01-01', role = null where id = $1`, [both.id]);
+  await bp.goto(`${BASE}/en/trails/`);
+  await bp.waitForURL((u) => u.pathname === '/en/accept-terms/', { timeout: 15000 }).catch(() => {});
+  const te = new globalThis.URL(bp.url());
+  check('EN: terms + role owed keeps /en/', te.pathname === '/en/accept-terms/' && te.searchParams.get('next') === '/en/choose-role/?next=%2Fen%2Ftrails%2F', bp.url());
+  await sql(`update public.profiles set terms_version = '2026-09-29' where id = $1`, [both.id]);
+
+  // At most one gate read of the profile per page.
+  const set = await makeUser('cr-reads');
+  const cp = await page();
+  await signIn(cp, set);
+  for (const at of ['/trails/', '/my-trails/', '/account/']) {
+    const reads = [];
+    const onReq = (r) => { if (r.method() === 'GET' && /rest\/v1\/profiles/.test(r.url()) && /select=(terms_version|role)/.test(r.url())) reads.push(r.url()); };
+    cp.on('request', onReq);
+    await cp.goto(`${BASE}${at}`);
+    await cp.waitForTimeout(2500);
+    cp.off('request', onReq);
+    check(`one gate profile read on ${at}`, reads.length === 1, `${reads.length}: ${reads.map((u) => decodeURIComponent(u.split('?')[1])).join(' | ')}`);
+  }
 
   check('no page errors', errs.length === 0, errs.join(' | '));
 } finally {

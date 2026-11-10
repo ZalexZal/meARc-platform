@@ -1363,8 +1363,10 @@ input[type="radio"][aria-invalid="true"] { outline: 2px solid var(--alert); outl
 }
 .seal[data-seal-shape="round"] { border-radius: 50%; }
 .seal[data-seal-shape="ask"] { background: transparent; border: 2px dashed var(--line); color: var(--ink-faint); }
+/* White on #0066cc in both themes (5.6:1). The dark theme's lighter accent
+   would give white only 3:1, so the seal keeps the light blue there too. */
 .seal[data-selected="true"],
-.pick-card:has(.pick-input:checked) .seal { background: var(--signal); color: var(--signal-ink); }
+.pick-card:has(.pick-input:checked) .seal { background: #0066cc; color: #ffffff; }
 .seal-glyph {
   width: 46%; height: 46%;
   fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round;
@@ -1381,3 +1383,6 @@ input[type="radio"][aria-invalid="true"] { outline: 2px solid var(--alert); outl
   width: 52%; height: 52%;
   fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round;
 }
+
+/* An error line with nothing to say is not shown, whatever its classes say. */
+[data-auth-error]:empty, [data-role-error]:empty { display: none !important; }
