@@ -1,29 +1,33 @@
 ---
 import { useTranslations, localise, type Lang } from '../i18n/ui';
 import AuthShell from './AuthShell.astro';
-import { WORKS } from '../lib/work';
+import RoleLayout from './RoleLayout.astro';
+import RolePicker from './RolePicker.astro';
 
 interface Props { lang: Lang; mode: 'signin' | 'signup'; }
 const { lang, mode } = Astro.props;
 const t = useTranslations(lang);
 const href = localise(lang);
 const up = mode === 'signup';
+// Sign-up stands beside the live seal (RoleLayout); sign-in stays on the map.
+const Shell = up ? RoleLayout : AuthShell;
 ---
 
-<AuthShell>
-<section class="mx-auto flex max-w-md flex-col px-4 py-20 sm:px-6">
-  <h1 class="text-3xl">{up ? t('auth.signup.title') : t('auth.signin.title')}</h1>
+<Shell lang={lang} heading={t('auth.signup.heading')}>
+<section class={up ? 'role-form-wrap' : 'mx-auto flex max-w-md flex-col px-4 py-20 sm:px-6'}>
+  {!up && <h1 class="text-3xl">{t('auth.signin.title')}</h1>}
 
-  <form class="card mt-8 space-y-5 p-6" data-auth-form data-mode={mode}
+  <form class={up ? 'role-form' : 'card mt-8 space-y-5 p-6'} data-auth-form data-mode={mode}
         data-agree-error={t("err.mustAgree")} novalidate
         data-errors={JSON.stringify({
           fill: t('err.fill'), weak: t('err.weakPassword'), generic: t('err.generic'),
           network: t('err.network'), bad: t('err.badCredentials'), taken: t('err.emailTaken'),
-          age: t('err.age'), work: t('err.work'), parentEmail: t('err.parentEmail'), unconfirmed: t('err.unconfirmed'),
+          age: t('err.age'), work: t('err.work'), role: t('err.role'), parentEmail: t('err.parentEmail'), unconfirmed: t('err.unconfirmed'),
           tooYoung: t('err.tooYoung'), parentEither: t('err.parentEither'),
           tooYoungHere: t('err.tooYoungHere'),
           slowDown: t('err.slowDown'), resent: t('auth.resent'), parentSentBody: t('auth.parentSentBody'),
         })}>
+    <div class={up ? 'card space-y-5 p-6' : 'space-y-5'}>
     {up && (
       <div>
         <label class="mb-1.5 block text-sm font-medium" for="name">{t('auth.name')}</label>
@@ -48,10 +52,6 @@ const up = mode === 'signup';
            href={href('/reset')}>{t('auth.forgotLink')}</a>
       )}
     </div>
-
-    <!-- Errors sit next to the control that produced them, not in a banner at
-         the top of a form the reader has already scrolled past. -->
-    <p class="hidden" data-auth-error role="alert"></p>
 
     {up && (
       <fieldset class="space-y-2" data-age>
@@ -78,21 +78,9 @@ const up = mode === 'signup';
       </fieldset>
     )}
 
-    {up && (
-      <fieldset class="space-y-2" data-work>
-        <legend class="mb-1.5 block text-sm font-medium">{t('work.title')}</legend>
-        <div class="flex flex-col">
-          {WORKS.map((w) => (
-            <label class="flex min-h-[44px] flex-wrap items-center gap-x-2 text-sm">
-              <input type="radio" name="work" value={w} /> {t(`work.${w}`)}
-              {w === 'other' && (
-                <span class="basis-full pb-2 pl-6 text-xs text-[var(--ink-faint)]">{t('work.otherHint')}</span>
-              )}
-            </label>
-          ))}
-        </div>
-      </fieldset>
-    )}
+    </div>
+
+    {up && <RolePicker lang={lang} />}
 
     {up && (
       <div class="space-y-2">
@@ -111,11 +99,15 @@ const up = mode === 'signup';
       </div>
     )}
 
-    <button class="btn btn-primary w-full" type="submit" data-auth-submit>
+    <!-- Errors sit next to the control that produced them, not in a banner at
+         the top of a form the reader has already scrolled past. -->
+    <p class="hidden" data-auth-error role="alert"></p>
+
+    <button class:list={['btn btn-primary', up ? 'role-cta' : 'w-full']} type="submit" data-auth-submit>
       {up ? t('auth.submitUp') : t('auth.submitIn')}
     </button>
 
-    <p class="text-center text-sm text-[var(--ink-dim)]">
+    <p class:list={['text-sm text-[var(--ink-dim)]', !up && 'text-center']}>
       {up ? t('auth.haveAccount') : t('auth.noAccount')}
       <a class="ml-1 font-medium text-[var(--signal)] underline-offset-2 hover:underline"
          href={href(up ? '/signin' : '/signup')}>
@@ -140,13 +132,14 @@ const up = mode === 'signup';
     <p class="mt-2 text-sm text-[var(--ink-dim)]" data-auth-parent-body></p>
   </div>
 </section>
-</AuthShell>
+</Shell>
 
 <script>
   import { signUp, signIn, acceptTerms, askParent, resendConfirmation, redeemParentCode,
            markTooYoung, isTooYoung, configured } from '../lib/supabase';
   import { busy, formError, formOk, formClear } from '../lib/form';
   import { TERMS_VERSION } from '../lib/terms';
+  import { wirePicker } from '../lib/rolepick';
 
   const form = document.querySelector('[data-auth-form]') as HTMLFormElement | null;
   if (form) {
@@ -186,6 +179,10 @@ const up = mode === 'signup';
       form.querySelector('[data-parent]')?.classList.toggle('hidden', !young);
     }));
 
+    // Creator or viewer, with the seal beside the form following each click.
+    const pick = mode === 'signup' && form.querySelector('[data-role-picker]')
+      ? wirePicker(document, { cta: submit }) : null;
+
     const field = (name: string) => form.querySelector(`[name="${name}"]`);
     const show = (message: string, at?: Element | null) => formError(errorBox, message, at);
 
@@ -203,7 +200,7 @@ const up = mode === 'signup';
       const password = String(data.get('password') ?? '');
       const name = String(data.get('name') ?? '').trim();
       const age = String(data.get('age') ?? '');
-      const work = String(data.get('work') ?? '');
+      const { role, work } = pick?.read() ?? { role: null, work: null };
       const parent = String(data.get('parent') ?? '').trim();
       const pcode = String(data.get('pcode') ?? '').trim().toUpperCase();
       const under14 = age === 'under14';
@@ -215,8 +212,10 @@ const up = mode === 'signup';
       // Google Play will not let an app with location be aimed at under-13s,
       // and this app is nothing without location.
       if (mode === 'signup' && age === 'under13') { markTooYoung(); show(said.tooYoung); return; }
-      // Asked once, here, so the site and the app can show each person only what they use.
-      if (mode === 'signup' && !work) { show(said.work, field('work')); return; }
+      // Asked once, here, so the site and the app can show each person only
+      // what they use. Viewers are never asked what they do.
+      if (mode === 'signup' && !role) { show(said.role, field('role')); return; }
+      if (mode === 'signup' && role === 'creator' && !work) { show(said.work, field('work')); return; }
       if (mode === 'signup' && under14 && !parent && !pcode) { show(said.parentEither, field('parent')); return; }
       if (mode === 'signup' && under14 && !pcode
           && (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(parent) || parent.toLowerCase() === email.toLowerCase())) {
@@ -244,7 +243,9 @@ const up = mode === 'signup';
         ? await signUp(email, password, name || undefined, {
             terms_version: TERMS_VERSION,
             age_band: under14 ? 'under14' : '14+',
-            work,
+            role,
+            // A viewer sends no work, so the trigger leaves it null.
+            ...(role === 'creator' && work && { work }),
             ...(under14 && pcode && { parent_code: pcode }),
             ...(under14 && !pcode && { parent_email: parent }),
           })

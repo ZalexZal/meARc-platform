@@ -1,0 +1,19 @@
+---
+/**
+ * The badge that says creator or viewer: a square seal for a creator (the job
+ * glyph, with a pencil pip), a round one with an eye for a viewer, a dashed
+ * question mark before any choice. The markup comes from lib/role.ts, so the
+ * server render and the browser repaint (paintSeal) are the same drawing.
+ */
+import { sealMarkup, type SealShape, type Glyph } from '../lib/role';
+
+interface Props {
+  shape: SealShape;
+  glyph: Glyph;
+  pip?: boolean;
+  selected?: boolean;
+  size?: number;
+}
+const { shape, glyph, pip = false, selected = false, size } = Astro.props;
+---
+<Fragment set:html={sealMarkup({ shape, glyph, pip }, { selected, size })} />

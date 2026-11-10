@@ -2,7 +2,7 @@
 import Loading from './Loading.astro';
 import { useTranslations, localise, type Lang } from '../i18n/ui';
 import PageBand from './PageBand.astro';
-import { WORKS, CATEGORIES } from '../lib/work';
+import { CATEGORIES } from '../lib/work';
 
 interface Props { lang: Lang; }
 const { lang } = Astro.props;
@@ -25,7 +25,6 @@ const strings = {
   editorOnly: t('mine.editorOnly'),
   roleEditor: t('mine.roleEditor'),
   failed: t('mine.failed'),
-  errWork: t('err.work'),
   newBody: t('mine.newBody'), newBodyPlain: t('mine.newBodyPlain'),
   visLabel: t('vis.label'),
   visPrivate: t('vis.private'),
@@ -97,27 +96,6 @@ const questions = [
   <!-- The one way in for a new trail. It used to be a page of its own behind a
        header button; the name and the mode are two questions, so they are asked
        here, where the trails already are, and the answer opens the builder. -->
-  <!-- Asked once, to someone whose line of work was never recorded. Hidden
-       until the script knows the answer is null. -->
-  <form class="card work-ask mb-5 p-5" hidden data-work-ask novalidate>
-    <fieldset class="work-set">
-      <legend class="text-lg font-semibold">{t('work.title')}</legend>
-      <p class="mb-2 text-sm text-[var(--ink-dim)]">{t('work.ask')}</p>
-      {WORKS.map((w) => (
-        <label class="flex min-h-[44px] flex-wrap items-center gap-x-2 text-sm">
-          <input type="radio" name="work" value={w} /> {t(`work.${w}`)}
-          {w === 'other' && (
-            <span class="basis-full pb-2 pl-6 text-xs text-[var(--ink-faint)]">{t('work.otherHint')}</span>
-          )}
-        </label>
-      ))}
-    </fieldset>
-    <div class="mt-2 flex flex-wrap items-center gap-3">
-      <button class="btn btn-primary btn-sm" type="submit" data-work-save>{lang === 'bg' ? 'Запази' : 'Save'}</button>
-      <p class="text-sm" data-work-msg role="alert"></p>
-    </div>
-  </form>
-
   <div class="mine-grid" data-mine-grid>
     <div class="new-slot" data-new-slot>
       <button type="button" class="new-tile" data-new-open aria-expanded="false" aria-controls="new-trail">
@@ -182,7 +160,7 @@ const questions = [
 <script>
   import { db } from '../lib/supabase';
   import { modeFrom, trailLine, isScored } from '../lib/modes';
-  import { featuresFor, defaultCategory, loadWork, saveWork, WORKS, CATEGORIES } from '../lib/work';
+  import { featuresFor, defaultCategory, loadWork, CATEGORIES } from '../lib/work';
   import { requireUser, reveal, escapeHtml, text, count, who } from '../lib/session';
   import { levelOf, isPending, isListed, setLevel, unfinishedStops } from '../lib/publishing';
   import { busy, formError, formClear } from '../lib/form';
@@ -194,8 +172,7 @@ const questions = [
   const client = db()!;
   // Null until the person has said what they do; features treat it as "other".
   const loaded = await loadWork(client as any);
-  // undefined means the read failed: treated as "other", and the one-time card stays hidden.
-  const workKnown = loaded !== undefined;
+  // undefined means the read failed: treated as "other".
   let work = loaded ?? null;
 
   // ---------------------------------------------------------------- removals
@@ -379,27 +356,6 @@ const questions = [
   }
   drawForm();
 
-  // The one-time question: only for a real account that was never asked.
-  const workForm = q('[data-work-ask]') as HTMLFormElement;
-  if (work === null && workKnown && !anonymous) workForm.hidden = false;
-  workForm.addEventListener('submit', async (event) => {
-    event.preventDefault();
-    const msg = q('[data-work-msg]') as HTMLElement;
-    const picked = (workForm.querySelector('input[name="work"]:checked') as HTMLInputElement | null)?.value;
-    if (!picked || !(WORKS as string[]).includes(picked)) {
-      formError(msg, S.errWork, workForm.querySelector('input[name="work"]'));
-      return;
-    }
-    const save = q('[data-work-save]') as HTMLButtonElement;
-    busy(save, true);
-    const failed = await saveWork(client as any, picked as any);
-    if (failed) { formError(msg, failed); return; }
-    work = picked as typeof work;
-    workForm.hidden = true;
-    drawForm();
-    drawList();
-  });
-
   function openForm(open: boolean) {
     if (open && anonymous) {
       const back = encodeURIComponent(location.pathname + '?new=1');
@@ -533,8 +489,6 @@ const questions = [
 </script>
 
 <style>
-  .work-ask[hidden] { display: none; }
-  .work-set { border: 0; padding: 0; margin: 0; min-width: 0; }
   /* Two across: a trail card carries a row of three visibility choices that
      needs the width. */
   .mine-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1.25rem; }

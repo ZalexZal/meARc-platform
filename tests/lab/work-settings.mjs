@@ -1,4 +1,4 @@
-// Task 7: the line of work in Account -> Settings, and the one-time question on My trails.
+// Task 7: the line of work in Account -> Settings (the one-time My trails card went in R2).
 import { browser, BASE, check, done, makeUser, cleanUsers, signIn, sql } from './lib.mjs';
 
 const b = await browser();
@@ -8,46 +8,27 @@ try {
   const p = await b.newPage({ viewport: { width: 390, height: 900 } });
   p.on('pageerror', (e) => errs.push(e.message));
 
-  // 1. Never asked: the card shows, picking Tour guide stores it, reload hides it.
+  // 1. R2 removed the one-time card from My trails (the choose-role screen
+  //    asks now). A creator with work still null sees no card, both questions
+  //    in the create form, and guide's form once work is set elsewhere.
   const u = await makeUser('ws-null', { work: null });
   await signIn(p, u);
   await p.goto(`${BASE}/my-trails/`);
   await p.waitForSelector('[data-mine]', { state: 'attached', timeout: 15000 });
-  await p.waitForSelector('[data-work-ask]', { timeout: 15000 });
-  check('card shown when work is null', await p.isVisible('[data-work-ask]'));
-  const values = await p.$$eval('[data-work-ask] input[name="work"]', (r) => r.map((x) => x.value));
-  check('four radios in order', values.join() === 'broker,teacher,guide,other', values.join());
-  check('none pre-selected', (await p.$$('[data-work-ask] input[name="work"]:checked')).length === 0);
-  const heights = await p.$$eval('[data-work-ask] label', (l) => l.map((x) => Math.round(x.getBoundingClientRect().height)));
-  check('touch targets >= 44px', heights.length >= 4 && heights.every((h) => h >= 44), heights.join());
-  check('card asks in Bulgarian', (await p.textContent('[data-work-ask]')).includes('Кажете ни с какво се занимавате'));
-
-  // Saving with nothing chosen says so and stores nothing.
-  await p.click('[data-work-save]');
-  await p.waitForTimeout(400);
-  check('no choice: error shown', (await p.textContent('[data-work-ask] [data-work-msg]')).includes('Изберете с какво се занимавате.'));
-  check('no choice: nothing stored', (await workOf(u.id)) === null);
-
-  // The create form (open it first) shows both questions for the never-asked state.
+  await p.waitForTimeout(1500);
+  check('no one-time card on My trails', (await p.$$('[data-work-ask]')).length === 0);
+  check('stayed on My trails (role is set)', new globalThis.URL(p.url()).pathname === '/my-trails/', p.url());
   await p.click('[data-new-open]');
   const before = await p.$$eval('[data-create] legend', (l) => l.length);
-  check('never-asked sees both questions', before === 2, String(before));
-  await p.click('[data-new-close]');
-
-  await p.check('[data-work-ask] input[name="work"][value="guide"]');
-  await p.click('[data-work-save]');
-  await p.waitForSelector('[data-work-ask]', { state: 'hidden', timeout: 10000 });
-  check('card hides after saving', !(await p.isVisible('[data-work-ask]')));
-  check("stored 'guide'", (await workOf(u.id)) === 'guide', String(await workOf(u.id)));
-  await p.click('[data-new-open]');
-  const after = await p.$$eval('[data-create] legend', (l) => l.map((x) => x.textContent.trim()));
-  check('form refreshed without reload: guide sees only the order question', after.length === 1 && after[0].includes('ред'), after.join(' | '));
-  check('form refreshed: category now tourism', (await p.inputValue('[data-new-category]')) === 'tourism');
-
+  check('never-asked work sees both questions', before === 2, String(before));
+  await sql(`update public.profiles set work = 'guide' where id = $1`, [u.id]);
   await p.reload();
   await p.waitForSelector('[data-mine]', { state: 'attached', timeout: 15000 });
   await p.waitForTimeout(1500);
-  check('card gone on reload', (await p.$$('[data-work-ask]')).length === 0 || !(await p.isVisible('[data-work-ask]')));
+  await p.click('[data-new-open]');
+  const after = await p.$$eval('[data-create] legend', (l) => l.map((x) => x.textContent.trim()));
+  check('guide sees only the order question', after.length === 1 && after[0].includes('ред'), after.join(' | '));
+  check('category now tourism', (await p.inputValue('[data-new-category]')) === 'tourism');
 
   // 2. Account -> Settings shows Guide checked; change to Estate broker.
   await p.goto(`${BASE}/account/#settings`);
@@ -77,7 +58,7 @@ try {
   await p2.goto(`${BASE}/en/my-trails/`);
   await p2.waitForSelector('[data-mine]', { state: 'attached', timeout: 15000 });
   await p2.waitForTimeout(1500);
-  check('asked once: no card after settings save', (await p2.$$('[data-work-ask]')).length === 0 || !(await p2.isVisible('[data-work-ask]')));
+  check('no card on My trails', (await p2.$$('[data-work-ask]')).length === 0);
 
   // 4. An already-asked account never sees the card.
   const o = await makeUser('ws-other');
@@ -86,7 +67,7 @@ try {
   await p3.goto(`${BASE}/my-trails/`);
   await p3.waitForSelector('[data-mine]', { state: 'attached', timeout: 15000 });
   await p3.waitForTimeout(1500);
-  check("work='other' gets no card", (await p3.$$('[data-work-ask]')).length === 0 || !(await p3.isVisible('[data-work-ask]')));
+  check("work='other' gets no card", (await p3.$$('[data-work-ask]')).length === 0);
 
   check('no page errors', errs.length === 0, errs.join(' | '));
 } finally {

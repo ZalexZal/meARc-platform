@@ -1,0 +1,20 @@
+---
+/**
+ * Two columns on a wide screen - the seal panel on the left, the form on the
+ * right - and the seal on top on a phone. Shared by sign-up and choose-role.
+ */
+import RolePanel from './RolePanel.astro';
+import type { Lang } from '../i18n/ui';
+
+interface Props { lang: Lang; heading: string; }
+const { lang, heading } = Astro.props;
+---
+<div class="role-layout">
+  <RolePanel lang={lang} />
+  <div class="role-main">
+    <div class="role-main-in">
+      <h1 class="role-h1">{heading}</h1>
+      <slot />
+    </div>
+  </div>
+</div>

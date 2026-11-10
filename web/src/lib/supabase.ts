@@ -12,6 +12,7 @@
  */
 import { createClient, type SupabaseClient, type User } from '@supabase/supabase-js';
 import { WORKS, type Work } from './work';
+import { isRole, type Role } from './role';
 
 const isWork = (v: unknown): v is Work => typeof v === 'string' && (WORKS as string[]).includes(v);
 
@@ -111,12 +112,15 @@ export async function signUp(email: string, password: string, displayName?: stri
     await c.from('profiles').update({ display_name: displayName }).eq('id', result.data.user?.id ?? '');
   }
 
-  // A brand-new sign-up gets its line of work from the metadata, through the
-  // handle_new_user trigger. A guest turned into an account is not an INSERT,
-  // so the trigger never fires: write it here. Best effort, like the name.
-  const work = extra.work;
-  if (upgrading && result.data.user?.id && isWork(work)) {
-    await c.from('profiles').update({ work }).eq('id', result.data.user.id);
+  // A brand-new sign-up gets its role and line of work from the metadata,
+  // through the handle_new_user trigger. A guest turned into an account is not
+  // an INSERT, so the trigger never fires: write them here, in one update.
+  // Best effort, like the name. A viewer sends no work, so none is written.
+  const patch: { work?: Work; role?: Role } = {};
+  if (isWork(extra.work)) patch.work = extra.work;
+  if (isRole(extra.role)) patch.role = extra.role;
+  if (upgrading && result.data.user?.id && Object.keys(patch).length) {
+    await c.from('profiles').update(patch).eq('id', result.data.user.id);
   }
 
   return {

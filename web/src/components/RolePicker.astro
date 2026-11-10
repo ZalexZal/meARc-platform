@@ -1,0 +1,58 @@
+---
+/**
+ * Creator or viewer, and for a creator what they do. Standalone: sign-up,
+ * the choose-role screen and Account settings all drop it into their own form
+ * and wire it with lib/rolepick.ts. Nothing is pre-selected here; a caller
+ * that knows an answer sets it through the wiring.
+ */
+import Seal from './Seal.astro';
+import { workLabel, categoryLabel, type Work } from '../lib/work';
+import { useTranslations, type Lang } from '../i18n/ui';
+
+interface Props { lang: Lang; hideQuestion?: boolean; }
+const { lang, hideQuestion = false } = Astro.props;
+const t = useTranslations(lang);
+
+// The mockup's order: the three jobs by category, then everything.
+const jobs: { work: Work; hint: string }[] = [
+  { work: 'teacher', hint: categoryLabel('education', lang) },
+  { work: 'guide', hint: categoryLabel('tourism', lang) },
+  { work: 'broker', hint: categoryLabel('estate', lang) },
+  { work: 'other', hint: t('role.hintOther') },
+];
+---
+<div class="role-picker" data-role-picker>
+  <fieldset class="pick-set" data-role-cards>
+    <legend class:list={['pick-q', hideQuestion && 'sr-only']} data-role-question>{t('role.question')}</legend>
+    <div class="pick-grid pick-grid-2">
+      <label class="pick-card pick-role">
+        <input class="pick-input" type="radio" name="role" value="creator" />
+        <Seal shape="square" glyph="pencil" size={48} />
+        <span class="pick-name">{t('role.creator')}</span>
+        <span class="pick-hint">{t('role.creatorBody')}</span>
+      </label>
+      <label class="pick-card pick-role">
+        <input class="pick-input" type="radio" name="role" value="viewer" />
+        <Seal shape="round" glyph="viewer" size={48} />
+        <span class="pick-name">{t('role.viewer')}</span>
+        <span class="pick-hint">{t('role.viewerBody')}</span>
+      </label>
+    </div>
+  </fieldset>
+
+  <fieldset class="pick-set" data-work data-work-section hidden>
+    <legend class="pick-q">{t('work.title')}</legend>
+    <div class="pick-grid pick-grid-4">
+      {jobs.map(({ work, hint }) => (
+        <label class="pick-card pick-job">
+          <input class="pick-input" type="radio" name="work" value={work} />
+          <Seal shape="square" glyph={work} size={56} />
+          <span class="pick-name">{workLabel(work, lang)}</span>
+          <span class="pick-hint">{hint}</span>
+        </label>
+      ))}
+    </div>
+  </fieldset>
+
+  <p class="pick-note" data-viewer-note hidden>{t('role.viewerNote')}</p>
+</div>

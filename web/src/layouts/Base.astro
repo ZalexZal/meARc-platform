@@ -78,6 +78,13 @@ const other = path.startsWith('/404')
     </div>
 
     <script>
+      // Creator or viewer: an account that never answered is sent to answer,
+      // from whichever page it opens. See roleGate for who is left alone.
+      import { roleGate } from '../lib/session';
+      roleGate();
+    </script>
+
+    <script>
       // Sections marked data-reveal arrive as they scroll into view. theme.js
       // hid them before the first paint; this is the half that shows them, and
       // the class tells theme.js not to show them all at once as a fallback.

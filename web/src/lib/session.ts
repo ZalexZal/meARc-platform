@@ -35,7 +35,7 @@ export async function requireUser(
   // In the reader's language. It was '/signin' for everybody, so an English
   // reader who opened /en/account/ signed out landed on the Bulgarian form.
   { needsReal = true, signInPath = location.pathname.startsWith('/en/') ? '/en/signin' : '/signin',
-    terms = true } = {}
+    terms = true, role = true } = {}
 ): Promise<User> {
   const { user, anonymous, configured: ok } = await who();
 
@@ -69,7 +69,56 @@ export async function requireUser(
     }
   }
 
+  // Creator or viewer, asked once of every account. After the terms, so a
+  // person owed both sees the terms first. A failed read lets them through.
+  if (role && !anonymous && !roleExempt(location.pathname)) {
+    const { data, error } = await db()!.from('profiles').select('role').eq('id', user.id).maybeSingle();
+    if (!error && data && data.role === null) {
+      toChooseRole();
+      return new Promise(() => {});
+    }
+  }
+
   return user;
+}
+
+/**
+ * Pages a never-asked account may still open: the screen itself, the ways in
+ * and out of an account, and the documents those link to. Both languages.
+ */
+const ROLE_EXEMPT = /^\/(en\/)?(choose-role|signin|signup|confirmed|accept-terms|terms|privacy|reset|consent|parent)(\/|$)/;
+export const roleExempt = (path: string) => ROLE_EXEMPT.test(path);
+
+function toChooseRole() {
+  const back = encodeURIComponent(location.pathname + location.search);
+  const gate = location.pathname.startsWith('/en/') ? '/en/choose-role' : '/choose-role';
+  location.replace(`${gate}/?next=${back}`);
+}
+
+/**
+ * The site-wide half of the role question, run by the base layout on every
+ * page: a signed-in account (not a guest) whose role is still null is sent to
+ * choose it. Guests, exempt pages, a failed read and an account still owed the
+ * terms (the terms gate goes first) are all left where they are. Resolves true
+ * when it redirected.
+ */
+export async function roleGate(): Promise<boolean> {
+  try {
+    if (!configured() || roleExempt(location.pathname)) return false;
+    const c = db()!;
+    const { data: { session } } = await c.auth.getSession();
+    const user = session?.user ?? null;
+    if (!user || isAnonymous(user)) return false;
+    const { data, error } = await c.from('profiles')
+      .select('role, terms_version').eq('id', user.id).maybeSingle();
+    if (error || !data) return false;
+    if (data.terms_version !== TERMS_VERSION) return false;
+    if (data.role !== null) return false;
+    toChooseRole();
+    return true;
+  } catch {
+    return false;
+  }
 }
 
 /** Reveals a page once the guard has decided. Paired with `hidden` in the markup. */

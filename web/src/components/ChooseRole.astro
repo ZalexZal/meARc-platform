@@ -1,0 +1,70 @@
+---
+/**
+ * Asked once of every account: creator or viewer, and for a creator, what they
+ * do. The base layout's role gate sends anybody whose role is still null here;
+ * the answer goes on to ?next=, or to where that role starts.
+ */
+import RoleLayout from './RoleLayout.astro';
+import RolePicker from './RolePicker.astro';
+import { useTranslations, localise, type Lang } from '../i18n/ui';
+
+interface Props { lang: Lang; }
+const { lang } = Astro.props;
+const t = useTranslations(lang);
+const href = localise(lang);
+
+const strings = {
+  role: t('err.role'), work: t('err.work'), failed: t('err.generic'),
+  creatorHome: href('/my-trails/'), viewerHome: href('/trails/'),
+};
+---
+<RoleLayout lang={lang} heading={t('role.question')}>
+  <form class="role-form" hidden data-guarded data-role-form novalidate>
+    <RolePicker lang={lang} hideQuestion />
+    <p class="hidden" data-role-error role="alert"></p>
+    <button class="btn btn-primary role-cta" type="submit" data-role-submit>{t('role.continue')}</button>
+  </form>
+</RoleLayout>
+
+<script type="application/json" data-role-strings set:html={JSON.stringify(strings)}></script>
+
+<script>
+  import { db } from '../lib/supabase';
+  import { requireUser, reveal, param } from '../lib/session';
+  import { loadRole, saveRole } from '../lib/role';
+  import { loadWork } from '../lib/work';
+  import { wirePicker } from '../lib/rolepick';
+  import { busy, formError, formClear } from '../lib/form';
+
+  const S = JSON.parse(document.querySelector('[data-role-strings]')!.textContent || '{}');
+  const form = document.querySelector('[data-role-form]') as HTMLFormElement;
+  const submit = form.querySelector('[data-role-submit]') as HTMLButtonElement;
+  const error = form.querySelector('[data-role-error]') as HTMLElement;
+
+  await requireUser({ needsReal: true, role: false });
+  const client = db()! as any;
+  const pick = wirePicker(document, { cta: submit });
+
+  // An answer already given is offered back. A line of work from before this
+  // question existed means a creator who does that.
+  const [role, work] = await Promise.all([loadRole(client), loadWork(client)]);
+  if (role) pick.set(role, role === 'creator' ? work ?? null : null);
+  else if (work) pick.set('creator', work);
+  reveal('[data-role-form]');
+
+  const next = param('next');
+  const sameSite = next && next.startsWith('/') && !next.startsWith('//') && !next.startsWith('/\\');
+
+  form.addEventListener('submit', async (event) => {
+    event.preventDefault();
+    formClear(error);
+    const { role: r, work: w } = pick.read();
+    if (!r) { formError(error, S.role, pick.firstOf('role')); return; }
+    if (r === 'creator' && !w) { formError(error, S.work, pick.firstOf('work')); return; }
+
+    busy(submit, true);
+    const failed = await saveRole(client, r, w);
+    if (failed) { formError(error, `${S.failed} (${failed})`); return; }
+    location.replace(sameSite ? next! : r === 'creator' ? S.creatorHome : S.viewerHome);
+  });
+</script>

@@ -11,6 +11,7 @@
  */
 
 import { categoryLabel, workLabel } from '../lib/work.ts';
+import { roleLabel } from '../lib/role.ts';
 
 export const languages = { bg: 'Български', en: 'English' } as const;
 export const defaultLang = 'bg';
@@ -720,6 +721,21 @@ export const ui = {
     'work.ask': 'Кажете ни с какво се занимавате, за да ви показваме само нужното.',
     'work.change': 'Смяна на занимание',
     'err.work': 'Изберете с какво се занимавате.',
+    'role.question': 'Как ще използвате AR Trail?',
+    'role.creator': 'Създавам маршрути',
+    'role.creatorBody': 'Строя маршрути за ученици, туристи или клиенти',
+    'role.viewer': 'Разглеждам и вървя',
+    'role.viewerBody': 'Вървя по маршрути — с код или от библиотеката',
+    'role.viewerNote': 'Като зрител не ви питаме с какво се занимавате — ще виждате обществената библиотека и ще влизате в маршрути с код. Ако по-късно решите да създавате, ще изберете занимание тогава.',
+    'role.footer': 'Можете да смените избора си по всяко време от Настройки.',
+    'role.nameCreator': roleLabel('creator', 'bg'),
+    'role.nameViewer': roleLabel('viewer', 'bg'),
+    'role.become': 'Стани създател',
+    'role.continue': 'Продължи',
+    'role.hintOther': 'Всички възможности',
+    'role.gets': 'Какво получавате',
+    'auth.signup.heading': 'Създайте профил',
+    'err.role': 'Изберете как ще използвате AR Trail.',
     'cat.education': categoryLabel('education', 'bg'),
     'cat.tourism': categoryLabel('tourism', 'bg'),
     'cat.estate': categoryLabel('estate', 'bg'),
@@ -1444,6 +1460,21 @@ export const ui = {
     'work.ask': 'Tell us what you do, so we show you only what you need.',
     'work.change': 'Change line of work',
     'err.work': 'Choose your line of work.',
+    'role.question': 'How will you use AR Trail?',
+    'role.creator': 'I make trails',
+    'role.creatorBody': 'For students, visitors or clients',
+    'role.viewer': 'I explore and walk',
+    'role.viewerBody': 'Walk trails with a code or from the library',
+    'role.viewerNote': 'As a viewer we do not ask what you do — you will see the public library and join trails with a code. If you decide to create later, you will choose your line of work then.',
+    'role.footer': 'You can change this any time in Settings.',
+    'role.nameCreator': roleLabel('creator', 'en'),
+    'role.nameViewer': roleLabel('viewer', 'en'),
+    'role.become': 'Become a creator',
+    'role.continue': 'Continue',
+    'role.hintOther': 'Every option',
+    'role.gets': 'What you get',
+    'auth.signup.heading': 'Create your account',
+    'err.role': 'Choose how you will use AR Trail.',
     'cat.education': categoryLabel('education', 'en'),
     'cat.tourism': categoryLabel('tourism', 'en'),
     'cat.estate': categoryLabel('estate', 'en'),

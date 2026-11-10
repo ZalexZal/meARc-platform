@@ -46,6 +46,7 @@ async function upgrade(session, { failPatch }) {
   await page.fill('#email', 'lab-test-guest@example.com');
   await page.fill('#password', 'Lab-test-password-1');
   await page.check('input[name="age"][value="14+"]');
+  await page.check('input[name="role"][value="creator"]');
   await page.check('input[name="work"][value="teacher"]');
   await page.check('[data-auth-agree]');
   await page.click('[data-auth-submit]');
@@ -71,17 +72,19 @@ try {
     await page.fill('#password', 'Lab-test-password-1');
     await page.check('input[name="age"][value="14+"]');
     await page.check('[data-auth-agree]');
+    // R2: the work question is a creator's; it shows once creator is chosen.
+    await page.check('input[name="role"][value="creator"]');
   }
 
-  // 1. The fieldset: four radios, none checked, in the declared order.
+  // 1. The fieldset: four radios, none checked, in the mockup's order.
   await fill();
   const values = await page.$$eval('[data-work] input[name="work"]', (r) => r.map((x) => x.value));
-  check('four work radios in order', values.join() === 'broker,teacher,guide,other', values.join());
+  check('four work radios in order', values.join() === 'teacher,guide,broker,other', values.join());
   check('none pre-selected', (await page.$$('[data-work] input[name="work"]:checked')).length === 0);
   const legend = await page.textContent('[data-work] legend');
   check('legend is the BG question', legend.trim() === 'С какво се занимавате?', legend);
   const hint = await page.textContent('[data-work]');
-  check('Other hint shown', hint.includes('Всички възможности — и ако само ще вървите по маршрути.'));
+  check('Other hint shown', hint.includes('Всички възможности'));
   const heights = await page.$$eval('[data-work] label', (l) => l.map((x) => Math.round(x.getBoundingClientRect().height)));
   check('touch targets >= 44px', heights.length >= 4 && heights.every((h) => h >= 44), heights.join());
 
@@ -92,7 +95,7 @@ try {
   check('missing choice shows err.work', err.includes('Изберете с какво се занимавате.'), err.trim());
   check('no request sent without a choice', signups.length === 0);
   const focused = await page.evaluate(() => document.activeElement?.getAttribute('value'));
-  check('first radio is focused', focused === 'broker', String(focused));
+  check('first radio is focused', focused === 'teacher', String(focused));
 
   // 3. Teacher chosen: the request carries work in the metadata.
   await page.check('input[name="work"][value="teacher"]');
@@ -103,6 +106,7 @@ try {
 
   // 4. English page.
   await page.goto(`${BASE}/en/signup/`);
+  await page.check('input[name="role"][value="creator"]');
   const enLegend = await page.textContent('[data-work] legend');
   check('EN legend', enLegend.trim() === 'What do you do?', enLegend);
   check('EN labels', (await page.textContent('[data-work]')).includes('Tour guide'));
@@ -122,9 +126,11 @@ try {
   const g1 = await makeGuest();
   const up1 = await upgrade(g1, { failPatch: false });
   check('guest upgrade sent the metadata with work', up1.puts[0]?.data?.work === 'teacher', JSON.stringify(up1.puts[0]?.data));
+  check('…and role, in the same one PATCH', JSON.parse(up1.patches[0] ?? '{}').role === 'creator' && JSON.parse(up1.patches[0] ?? '{}').work === 'teacher', up1.patches[0]);
   check('guest upgrade sent one profiles PATCH', up1.patches.length === 1, String(up1.patches.length));
-  const [r1] = await sql(`select work from public.profiles where id = $1`, [g1.user.id]);
+  const [r1] = await sql(`select work, role from public.profiles where id = $1`, [g1.user.id]);
   check("guest's live profiles.work = 'teacher'", r1?.work === 'teacher', String(r1?.work));
+  check("guest's live profiles.role = 'creator'", r1?.role === 'creator', String(r1?.role));
   check('guest upgrade continued past the form', up1.left, up1.err.trim());
 
   // 7. The same, with the profiles write failing: the sign-up still goes on.
