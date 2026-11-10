@@ -1,0 +1,86 @@
+---
+/**
+ * One role's place, drawn flat along the bottom of the stage (A5 Scene,
+ * "colour" mode): the old town for a guide, the school for a teacher, the
+ * plot with its crane for a broker, a small town for "other", the hills and
+ * the path for a viewer, and a dashed ground line before any choice.
+ *
+ * The paths are the design's, unchanged. Colours are not in the markup: each
+ * shape names its role (f-far, s-line, ...) and stage.css gives the role's day
+ * and night palette through --sc-* variables, so one drawing serves both themes.
+ */
+import type { StageKey } from '../lib/role';
+
+interface Props { role: StageKey; }
+const { role } = Astro.props;
+
+// The broker's block of flats: the body, twelve windows, the roof plant.
+let block = 'M40 194V70H170V194Z';
+for (const y of [92, 118, 144, 170]) for (const x of [56, 96, 136]) block += `M${x} ${y}h20v16h-20z`;
+block += 'M60 54h90v16h-90z';
+---
+<svg class="scene" data-scene={role} data-stage-for={role} aria-hidden="true" viewBox="0 0 480 200" preserveAspectRatio="xMidYMax slice">
+  {role === 'guide' && <Fragment>
+    <path class="f-far" d="M0 200V150C70 132 150 140 230 146S390 128 480 140V200Z" />
+    <path class="f-fill" fill-rule="evenodd" d="M0 200V110H16V94H36V110H56V96H76V110H96V100L104 106H120V78H134V66H150V78H166V66H182V78H196V110H214V96H234V110H254V100L262 110H282V94H302V110H322V98H336L346 110H366V94H386V110H406V102L414 110H434V96H454V110H480V200ZM210 200V156A30 30 0 0 1 270 156V200ZM155 86h6v14h-6zM40 122h4v12h-4zM100 122h4v12h-4zM376 122h4v12h-4zM436 122h4v12h-4z" />
+    <path class="s-line" fill="none" stroke-width="1.5" stroke-linecap="round" d="M0 136H200M280 136H480M0 166H205M275 166H480M40 110V136M70 136V166M110 136V166M160 110V136M330 110V136M400 136V166M60 166V200M150 166V200M350 166V200M440 166V200M134 78V110M182 78V110M298 110l6 10-4 9M422 110l-5 8 4 6M205 150A35 35 0 0 1 275 150" />
+    <path class="s-line" fill="none" stroke-width="1.5" d="M142 66V46" />
+    <path class="f-line" d="M142 46h14l-4 4 4 4h-14z" />
+    <path class="f-fill" d="M300 200l4-7h10l3 7zM320 200l2-4h8l2 4zM470 200l2-5h6l2 5z" />
+    <path class="s-grass" fill="none" stroke-width="1.8" stroke-linecap="round" d="M8 200l3-8M14 200l1-10M20 200l-2-7M226 200l2-6M232 200v-8M366 200l3-7M372 200v-9M378 200l-2-6" />
+  </Fragment>}
+
+  {role === 'teacher' && <Fragment>
+    <path class="f-far" d="M0 200V170C100 160 200 166 300 162S420 158 480 166V200Z" />
+    <path class="f-fill" fill-rule="evenodd" d="M120 192V104H110L240 52L370 104H360V192ZM140 120h22v24h-22zM176 120h22v24h-22zM140 156h22v24h-22zM176 156h22v24h-22zM282 120h22v24h-22zM318 120h22v24h-22zM282 156h22v24h-22zM318 156h22v24h-22zM224 192V160a16 16 0 0 1 32 0V192zM230 84a10 10 0 1 0 20 0a10 10 0 1 0-20 0z" />
+    <path class="f-fill" fill-rule="evenodd" d="M224 62V30H256V62ZM232 56V44a8 8 0 0 1 16 0V56Z" />
+    <path class="f-fill" d="M218 30L240 12L262 30Z" />
+    <path class="s-line" fill="none" stroke-width="1.5" stroke-linecap="round" d="M151 120v24M140 132h22M187 120v24M176 132h22M151 156v24M140 168h22M187 156v24M176 168h22M293 120v24M282 132h22M329 120v24M318 132h22M293 156v24M282 168h22M329 156v24M318 168h22M240 84V78M240 84l5 3M120 104H360M214 192h52M206 196h68M240 50v-6" />
+    <path class="f-tree" d="M36 124a34 34 0 1 0 68 0a34 34 0 1 0-68 0z" />
+    <path class="f-trunk" d="M66 150h8v44h-8z" />
+    <path class="s-line" fill="none" stroke-width="1.5" stroke-linecap="round" d="M70 150v-18M70 140l-10-8M70 136l9-7" />
+    <path class="s-line" fill="none" stroke-width="1.6" stroke-linecap="round" d="M412 196V60" />
+    <path class="f-accent" d="M412 62h30l-8 9 8 9h-30z" />
+    <path class="s-line" fill="none" stroke-width="1.5" stroke-linecap="round" d="M0 196H480" />
+  </Fragment>}
+
+  {role === 'broker' && <Fragment>
+    <path class="f-fill" fill-rule="evenodd" d={block} />
+    <path class="s-line" fill="none" stroke-width="1.4" stroke-linecap="round" d="M40 86H170M40 112H170M40 138H170M40 164H170" />
+    <path class="f-crane" d="M342 194V34H350V194ZM262 34H472V42H262ZM338 44h16v12h-16zM452 42h18v16h-18z" />
+    <path class="s-line" fill="none" stroke-width="1.3" d="M342 50l8 12-8 12 8 12-8 12 8 12-8 12 8 12-8 12 8 12M270 34l8 8 8-8 8 8 8-8 8 8 8-8 8 8 8-8 8 8 8-8 8 8M346 34L262 34M346 26L272 34M346 26L466 34M346 26V34" />
+    <path class="s-line" fill="none" stroke-width="1.4" stroke-linecap="round" d="M300 42V84M294 84h12M296 84l4 6 4-6" />
+    <path class="s-accent" fill="none" stroke-width="1.6" stroke-dasharray="5 4" d="M196 92H316V194H196ZM196 118H316M196 144H316M196 170H316M236 92V194M276 92V194" />
+    <path class="s-accent" fill="none" stroke-width="2" stroke-linecap="round" d="M186 96V84H198M326 96V84H314M186 186V198H198M326 186V198H314" />
+    <path class="s-line" fill="none" stroke-width="1.5" stroke-linecap="round" d="M0 194H480" />
+    <path class="f-tree" d="M412 172a14 14 0 1 0 28 0a14 14 0 1 0-28 0z" />
+    <path class="f-trunk" d="M424 182h4v12h-4z" />
+  </Fragment>}
+
+  {role === 'other' && <Fragment>
+    <path class="f-far" d="M0 200V164C120 150 240 160 360 154S450 156 480 160V200Z" />
+    <path class="f-fill" d="M10 194V124H22V112H38V124H54V114H70V124H86V118L92 124H108V194Z" />
+    <path class="f-fill" fill-rule="evenodd" d="M140 194V132H132L190 98L248 132H240V194ZM174 194V170a16 16 0 0 1 32 0V194Z" />
+    <path class="f-fill" d="M280 194V146L314 120L348 146V194Z" />
+    <path class="f-fill" fill-rule="evenodd" d="M372 194V84H456V194ZM386 98h14v12h-14zM414 98h14v12h-14zM386 122h14v12h-14zM414 122h14v12h-14zM386 146h14v12h-14zM414 146h14v12h-14zM400 194v-20h16v20z" />
+    <path class="s-line" fill="none" stroke-width="1.5" stroke-linecap="round" d="M0 194H480M10 150H108M10 172H108M30 124V150M70 150V172M140 132H240M300 194v-18h12v18" />
+    <path class="f-accent" d="M314 60a10 10 0 0 1 10 10c0 8-10 17-10 17s-10-9-10-17a10 10 0 0 1 10-10z" />
+    <path class="f-bg" d="M310 70a4 4 0 1 0 8 0a4 4 0 1 0-8 0z" />
+    <path class="s-accent" fill="none" stroke-width="1.6" stroke-dasharray="2 5" stroke-linecap="round" d="M60 104C120 70 220 60 304 70" />
+  </Fragment>}
+
+  {role === 'viewer' && <Fragment>
+    <path class="s-line" fill="none" stroke-width="1.5" d="M396 54a18 18 0 1 0 36 0a18 18 0 1 0-36 0z" />
+    <path class="f-far" d="M0 200V140C60 116 120 122 180 136S300 100 360 108S450 128 480 120V200Z" />
+    <path class="f-ground" d="M0 200V168C80 150 160 164 240 158S400 148 480 162V200Z" />
+    <path class="f-line" d="M268 102h4v-8h3v-4h-3v-4h3v4h4v-4h3v4h-3v4h3v8h4v12h-18z" />
+    <path class="s-accent" fill="none" stroke-width="2" stroke-dasharray="2 6" stroke-linecap="round" d="M70 198C120 182 160 176 200 166S292 140 338 112" />
+    <path class="f-accent" d="M340 78a12 12 0 0 1 12 12c0 10-12 21-12 21s-12-11-12-21a12 12 0 0 1 12-12z" />
+    <path class="f-bg" d="M335 90a5 5 0 1 0 10 0a5 5 0 1 0-10 0z" />
+    <path class="s-line" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" d="M110 196V150M98 156h26l5 5-5 5H98zM122 170H96l-5 5 5 5h26z" />
+    <path class="s-line" fill="none" stroke-width="1.4" stroke-linecap="round" d="M30 190l3-8M36 190v-10M42 190l-2-7M420 186l3-8M426 186v-9" />
+  </Fragment>}
+
+  {role === 'none' &&
+    <path class="s-line" fill="none" stroke-width="1.5" stroke-dasharray="4 6" stroke-linecap="round" d="M0 194H480" />}
+</svg>

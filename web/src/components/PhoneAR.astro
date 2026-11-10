@@ -1,0 +1,87 @@
+---
+/**
+ * What the phone in the stage shows for one role (A5 PhoneAR): the tower
+ * redrawn over the ruin, a question for points, a building rising on its
+ * plot, a pin where something was placed, the arrow to the next stop, or
+ * "choose a role". One screen, 154 x 322; RoleStage draws the phone around it.
+ *
+ * The screen is the same in both themes (it is a camera picture), so its
+ * colours are the design's own. Every word comes from i18n (stage.*).
+ */
+import type { StageKey } from '../lib/role';
+import { useTranslations, type Lang } from '../i18n/ui';
+
+interface Props { role: StageKey; lang: Lang; }
+const { role, lang } = Astro.props;
+const t = useTranslations(lang);
+---
+<div class="phone-screen" data-phone={role} data-stage-for={role} aria-hidden="true">
+  {role === 'guide' && <Fragment>
+    <svg viewBox="0 0 154 322" width="154" height="322" class="ph-fill">
+      <path fill="#3d434b" fill-rule="evenodd" d="M0 322V210H12V198H26V210H40V200H54V210H62V150H76V138H92V150H100V210H114V198H128V210H154V322ZM70 322V266a14 14 0 0 1 28 0V322Z" />
+      <path class="stage-ar-draw" fill="none" stroke="#2997ff" stroke-width="1.8" d="M62 150V96H66V84H74V96H82V84H90V96H96V150" />
+    </svg>
+    <span class="ph-tag stage-ar-pop" style="left: 10px; top: 30px;">{t('stage.guide.pop')}</span>
+    <div class="ph-sheet">
+      <div class="ph-over">{t('stage.guide.over')}</div>
+      <div class="ph-name">{t('stage.guide.name')}</div>
+    </div>
+  </Fragment>}
+
+  {role === 'teacher' && <Fragment>
+    <span class="ph-tag ph-tag-soft" style="left: 8px; top: 26px;">{t('stage.teacher.team')}</span>
+    <div class="ph-quiz stage-ar-pop">
+      <div class="ph-over">{t('stage.teacher.q')}</div>
+      <div class="ph-ask">{t('stage.teacher.ask')}</div>
+      <span class="ph-opt">1470</span>
+      <span class="ph-opt ph-opt-on">1510</span>
+      <span class="ph-opt">1680</span>
+      <div class="ph-hint">{t('stage.teacher.hint')}</div>
+    </div>
+  </Fragment>}
+
+  {role === 'broker' && <Fragment>
+    <svg viewBox="0 0 154 322" width="154" height="322" class="ph-fill">
+      <path fill="none" stroke="#5b636d" stroke-width="1.2" d="M0 250L154 236M0 286L154 264" />
+      <g class="stage-ar-rise">
+        <path fill="rgba(41,151,255,0.14)" stroke="#2997ff" stroke-width="1.6" d="M36 246V120L84 104L120 116V238L84 254Z" />
+        <path fill="none" stroke="#2997ff" stroke-width="1.2" d="M84 104V254M36 150L84 136L120 146M36 180L84 168L120 176M36 210L84 200L120 206M50 125V243M66 118V249M98 108V250" />
+      </g>
+      <path fill="none" stroke="#2997ff" stroke-width="2" stroke-linecap="round" d="M26 112V100H38M130 112V100H118M26 252V264H38M130 252V264H118" />
+    </svg>
+    <span class="ph-tag stage-ar-pop" style="left: 8px; top: 26px;">{t('stage.broker.pop')}</span>
+    <div class="ph-sheet">
+      <div class="ph-over">{t('stage.broker.over')}</div>
+      <div class="ph-name">{t('stage.broker.name')}</div>
+    </div>
+  </Fragment>}
+
+  {role === 'other' && <Fragment>
+    <svg viewBox="0 0 154 322" width="154" height="322" class="ph-fill">
+      <path class="stage-ar-draw" fill="none" stroke="#2997ff" stroke-width="2" stroke-linecap="round" d="M30 300C50 260 70 220 77 170" />
+      <g class="stage-ar-pop"><path fill="#2997ff" d="M77 110a20 20 0 0 1 20 20c0 16-20 34-20 34s-20-18-20-34a20 20 0 0 1 20-20z" /><path fill="#2b3036" d="M69 130a8 8 0 1 0 16 0a8 8 0 1 0-16 0z" /></g>
+    </svg>
+    <div class="ph-sheet">
+      <div class="ph-over">{t('stage.other.over')}</div>
+      <div class="ph-name">{t('stage.other.name')}</div>
+    </div>
+  </Fragment>}
+
+  {role === 'viewer' && <Fragment>
+    <svg viewBox="0 0 154 322" width="154" height="322" class="ph-fill">
+      <path fill="none" stroke="#5b636d" stroke-width="1.2" d="M20 322L64 160M134 322L90 160" />
+      <path class="stage-ar-draw" fill="none" stroke="#2997ff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" d="M77 150V70M64 84l13-14 13 14" />
+    </svg>
+    <div class="ph-sheet">
+      <div class="ph-over">{t('stage.viewer.over')}</div>
+      <div class="ph-name">{t('stage.viewer.name')}</div>
+      <span class="ph-go">{t('stage.viewer.go')}</span>
+    </div>
+  </Fragment>}
+
+  {role === 'none' &&
+    <div class="ph-none">
+      <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="#a1a1a6" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2a6 6 0 0 1 6 6c0 5-6 11-6 11S6 13 6 8a6 6 0 0 1 6-6zM12 10.5a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5z" /></svg>
+      <span>{t('stage.chooseRole')}</span>
+    </div>}
+</div>
