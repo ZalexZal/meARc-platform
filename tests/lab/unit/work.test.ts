@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { featuresFor, defaultCategory, WORKS, CATEGORIES, fold, matches, categoryLabel, workLabel } from '../../../web/src/lib/work.ts';
+import { featuresFor, defaultCategory, WORKS, CATEGORIES, fold, matches, categoryLabel, workLabel, workField } from '../../../web/src/lib/work.ts';
 import { trailLine, modeLine } from '../../../web/src/lib/modes.ts';
 import { ui } from '../../../web/src/i18n/ui.ts';
 
@@ -86,10 +86,20 @@ test('matches: a missing name counts as empty, like the app', () => {
 const yambol = { key: 'yambol', bg: 'Ямбол', en: 'Yambol', lat: 42.48, lng: 26.5 };
 
 test('labels: every work and category in both languages', () => {
-  assert.deepEqual(WORKS.map((w) => workLabel(w, 'bg')), ['Брокер на недвижими имоти', 'Учител', 'Екскурзовод', 'Друго']);
-  assert.deepEqual(WORKS.map((w) => workLabel(w, 'en')), ['Estate broker', 'Teacher', 'Tour guide', 'Other']);
+  // workLabel is the role word, now the small line under the field.
+  assert.deepEqual(WORKS.map((w) => workLabel(w, 'bg')), ['Брокер', 'Учител', 'Екскурзовод', 'Всички възможности']);
+  assert.deepEqual(WORKS.map((w) => workLabel(w, 'en')), ['Estate broker', 'Teacher', 'Tour guide', 'Every option']);
   assert.deepEqual(CATEGORIES.map((c) => categoryLabel(c, 'bg')), ['Образование', 'Туризъм', 'Недвижими имоти', 'Друго']);
   assert.deepEqual(CATEGORIES.map((c) => categoryLabel(c, 'en')), ['Education', 'Tourism', 'Real estate', 'Other']);
+});
+
+test('workField: the field is the header, the role word is the subtext', () => {
+  assert.deepEqual(WORKS.map((w) => workField(w, 'bg')), ['Недвижими имоти', 'Образование', 'Туризъм', 'Друго']);
+  assert.deepEqual(WORKS.map((w) => workField(w, 'en')), ['Real estate', 'Education', 'Tourism', 'Other']);
+  // The same words the trail categories use.
+  assert.equal(workField('teacher', 'bg'), categoryLabel('education', 'bg'));
+  assert.equal(workField('guide', 'en'), categoryLabel('tourism', 'en'));
+  assert.equal(workField('broker', 'en'), categoryLabel('estate', 'en'));
 });
 
 test('trailLine: estate shows category and city, never the mode', () => {

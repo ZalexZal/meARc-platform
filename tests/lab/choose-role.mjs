@@ -67,7 +67,7 @@ try {
   await p.check('input[name="work"][value="broker"]');
   s = await seal(p);
   check('creator + broker: square, house, pencil pip', s.shape === 'square' && s.glyph === 'broker' && s.pip === 'true', JSON.stringify(s));
-  check('broker panel title', (await p.textContent('[data-role-title]')).trim() === 'Брокер · създател');
+  check('broker panel title', (await p.textContent('[data-role-title]')).trim() === 'Недвижими имоти · създател');
   await p.waitForTimeout(400);
   await p.screenshot({ path: path.join(SHOTS, 'r2-choose-role-light.png'), fullPage: true });
 
@@ -178,13 +178,12 @@ try {
   await sp.goto(`${BASE}/signup/`);
   await sp.waitForSelector('[data-role-panel] [data-seal]');
   check('sign-up heading', (await sp.textContent('h1')).trim() === 'Създайте профил');
-  check('sign-up keeps the account fields', (await sp.$$('#email, #password, #name, input[name="age"], [data-auth-agree]')).length === 7);  // name, email, password, 3 age radios, agree
+  check('sign-up keeps the account fields', (await sp.$$('#email, #password, #name, input[name="age"], [data-auth-agree]')).length === 4);  // name, email, password, agree - the age radios are hidden (ASK_AGE = false)
   s = await seal(sp);
   check('sign-up seal starts as the question', s.shape === 'ask', JSON.stringify(s));
   await sp.screenshot({ path: path.join(SHOTS, 'r2-signup-desktop-light.png'), fullPage: true });
   await sp.fill('#email', 'lab-test-stub@example.com');
   await sp.fill('#password', 'Lab-test-password-1');
-  await sp.check('input[name="age"][value="14+"]');
   await sp.check('[data-auth-agree]');
   await sp.click('[data-auth-submit]');
   await sp.waitForTimeout(500);
@@ -205,6 +204,7 @@ try {
   await sp.click('[data-auth-submit]');
   await sp.waitForTimeout(1500);
   check('creator sign-up sends role + work', signups[0]?.data?.role === 'creator' && signups[0]?.data?.work === 'teacher', JSON.stringify(signups[0]?.data));
+  check("creator sign-up sends age_band '14+' with no age question", signups[0]?.data?.age_band === '14+', JSON.stringify(signups[0]?.data));
   await sp.check('input[name="role"][value="viewer"]');
   s = await seal(sp);
   check('sign-up seal: viewer', s.shape === 'round' && s.glyph === 'viewer', JSON.stringify(s));

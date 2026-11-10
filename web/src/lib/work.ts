@@ -23,11 +23,20 @@ export type Features = {
 export const WORKS: Work[] = ['broker', 'teacher', 'guide', 'other'];
 export const CATEGORIES: Category[] = ['education', 'tourism', 'estate', 'other'];
 
-/** The one place the labels live; ui.ts reads them from here. */
+/**
+ * The one place the labels live; ui.ts reads them from here.
+ *
+ * A job is presented by its field first (workField, the header) with the role
+ * word under it (workLabel, the subtext). The stored values never change.
+ */
 const LABELS = {
   work: {
-    bg: { broker: 'Брокер на недвижими имоти', teacher: 'Учител', guide: 'Екскурзовод', other: 'Друго' },
-    en: { broker: 'Estate broker', teacher: 'Teacher', guide: 'Tour guide', other: 'Other' },
+    bg: { broker: 'Брокер', teacher: 'Учител', guide: 'Екскурзовод', other: 'Всички възможности' },
+    en: { broker: 'Estate broker', teacher: 'Teacher', guide: 'Tour guide', other: 'Every option' },
+  },
+  field: {
+    bg: { broker: 'Недвижими имоти', teacher: 'Образование', guide: 'Туризъм', other: 'Друго' },
+    en: { broker: 'Real estate', teacher: 'Education', guide: 'Tourism', other: 'Other' },
   },
   category: {
     bg: { education: 'Образование', tourism: 'Туризъм', estate: 'Недвижими имоти', other: 'Друго' },
@@ -35,7 +44,10 @@ const LABELS = {
   },
 } as const;
 
+/** The role word ("Учител"): the small line under the field. */
 export const workLabel = (work: Work, lang: 'bg' | 'en'): string => LABELS.work[lang][work];
+/** The field ("Образование"): the header a job is shown and chosen by. */
+export const workField = (work: Work, lang: 'bg' | 'en'): string => LABELS.field[lang][work];
 export const categoryLabel = (category: Category, lang: 'bg' | 'en'): string => LABELS.category[lang][category];
 
 const EVERYTHING: Features = {

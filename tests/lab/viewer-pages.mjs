@@ -95,7 +95,7 @@ try {
   const pv = await profile(v.id);
   check('DB: role=creator, work=teacher', pv.role === 'creator' && pv.work === 'teacher', JSON.stringify(pv));
   const cb = await badge(p);
-  check('header badge repaints live: square teacher', cb?.shape === 'square' && cb?.glyph === 'teacher' && cb?.label === 'Създател', JSON.stringify(cb));
+  check('header badge repaints live: square teacher', cb?.shape === 'square' && cb?.glyph === 'teacher' && cb?.label === 'Образование · създател', JSON.stringify(cb));
 
   // 2. A viewer in the builder of their own trail: a notice, and the builder works.
   const w = await makeUser('vp-builder', { role: 'viewer', work: 'broker' });
@@ -150,7 +150,7 @@ try {
   await cp.waitForTimeout(800);
   check('builder: no notice for a creator', !(await visible(cp, '[data-viewer-notice]')));
   const cbadge = await badge(cp);
-  check('header badge: square teacher for a creator', cbadge?.shape === 'square' && cbadge?.glyph === 'teacher' && cbadge?.label === 'Създател', JSON.stringify(cbadge));
+  check('header badge: square teacher for a creator', cbadge?.shape === 'square' && cbadge?.glyph === 'teacher' && cbadge?.label === 'Образование · създател', JSON.stringify(cbadge));
   await mine(cp);
   check('creator: no become card', !(await visible(cp, '[data-become]')));
   check('creator: New trail tile shows', await visible(cp, '[data-new-open]'));
@@ -191,7 +191,7 @@ try {
   const pb = await profile(c.id);
   check('DB: back to creator + broker', pb.role === 'creator' && pb.work === 'broker', JSON.stringify(pb));
   const bb = await badge(ap);
-  check('header badge live: square broker', bb?.shape === 'square' && bb?.glyph === 'broker' && bb?.label === 'Създател', JSON.stringify(bb));
+  check('header badge live: square broker', bb?.shape === 'square' && bb?.glyph === 'broker' && bb?.label === 'Недвижими имоти · създател', JSON.stringify(bb));
   // Creator without a job: asked to choose, nothing stored.
   await ap.evaluate(() => document.querySelectorAll('[data-role-settings] input[name="work"]').forEach((r) => { r.checked = false; }));
   await ap.click('[data-role-settings] [data-role-save]');

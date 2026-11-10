@@ -6,7 +6,7 @@
  * that knows an answer sets it through the wiring.
  */
 import Seal from './Seal.astro';
-import { workLabel, categoryLabel, type Work } from '../lib/work';
+import { workLabel, workField, type Work } from '../lib/work';
 import { useTranslations, type Lang } from '../i18n/ui';
 
 // jobsOnly: just the four jobs, already shown - for a viewer becoming a
@@ -15,13 +15,9 @@ interface Props { lang: Lang; hideQuestion?: boolean; jobsOnly?: boolean; }
 const { lang, hideQuestion = false, jobsOnly = false } = Astro.props;
 const t = useTranslations(lang);
 
-// The mockup's order: the three jobs by category, then everything.
-const jobs: { work: Work; hint: string }[] = [
-  { work: 'teacher', hint: categoryLabel('education', lang) },
-  { work: 'guide', hint: categoryLabel('tourism', lang) },
-  { work: 'broker', hint: categoryLabel('estate', lang) },
-  { work: 'other', hint: t('role.hintOther') },
-];
+// The mockup's order: the three jobs by field, then everything. Each job is
+// shown by its field (the bold line) with the role word as the small line.
+const jobs: Work[] = ['teacher', 'guide', 'broker', 'other'];
 ---
 <div class="role-picker" data-role-picker>
   {!jobsOnly && <fieldset class="pick-set" data-role-cards>
@@ -45,12 +41,12 @@ const jobs: { work: Work; hint: string }[] = [
   <fieldset class="pick-set" data-work data-work-section hidden={!jobsOnly}>
     <legend class:list={['pick-q', jobsOnly && 'sr-only']}>{t('work.title')}</legend>
     <div class="pick-grid pick-grid-4">
-      {jobs.map(({ work, hint }) => (
+      {jobs.map((work) => (
         <label class="pick-card pick-job">
           <input class="pick-input" type="radio" name="work" value={work} />
           <Seal shape="square" glyph={work} size={56} />
-          <span class="pick-name">{workLabel(work, lang)}</span>
-          <span class="pick-hint">{hint}</span>
+          <span class="pick-name">{workField(work, lang)}</span>
+          <span class="pick-hint">{workLabel(work, lang)}</span>
         </label>
       ))}
     </div>

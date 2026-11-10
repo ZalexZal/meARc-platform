@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { sealState, roleLabel, isRole, ROLES, GLYPHS, sealMarkup, saveRole, loadRole } from '../../../web/src/lib/role.ts';
+import { sealState, roleLabel, isRole, ROLES, GLYPHS, sealMarkup, saveRole, loadRole, stageFor, ICONS } from '../../../web/src/lib/role.ts';
 
 test('roles and labels', () => {
   assert.deepEqual(ROLES, ['creator', 'viewer']);
@@ -59,11 +59,11 @@ test('creator without a work: square, pencil, no list', () => {
 
 test('creator states: square, job glyph, pencil pip', () => {
   const cases = {
-    teacher: ['Учител · създател', 'Уроци на открито: отбори, въпроси за точки, подсказки и класиране на живо.',
+    teacher: ['Образование · създател', 'Уроци на открито: отбори, въпроси за точки, подсказки и класиране на живо.',
       ['Отбори и класиране', 'Въпроси за точки и подсказки', 'По ред или свободно']],
-    guide: ['Екскурзовод · създател', 'Разходки с истории: въпроси и подсказки без точки, по ред или свободно.',
+    guide: ['Туризъм · създател', 'Разходки с истории: въпроси и подсказки без точки, по ред или свободно.',
       ['Въпроси и подсказки, без точки', 'По ред или свободно', '3D, снимки, видео и звук']],
-    broker: ['Брокер · създател', 'Покажете сградата на мястото ѝ: 3D модел на парцела, без отбори и въпроси.',
+    broker: ['Недвижими имоти · създател', 'Покажете сградата на мястото ѝ: 3D модел на парцела, без отбори и въпроси.',
       ['3D модел на място', 'Модел от снимка с AI', 'Само нужното — без въпроси']],
     other: ['Създател', 'Всички възможности, без ограничения.',
       ['Всичко от останалите три', 'Сменяте по всяко време']],
@@ -83,9 +83,9 @@ test('English: every state has its own words', () => {
   assert.equal(sealState(null, null, 'en').title, 'How will you use AR Trail?');
   assert.equal(sealState('viewer', null, 'en').title, 'Viewer');
   assert.equal(sealState('creator', null, 'en').title, 'Creator');
-  assert.equal(sealState('creator', 'teacher', 'en').title, 'Teacher · creator');
-  assert.equal(sealState('creator', 'guide', 'en').title, 'Tour guide · creator');
-  assert.equal(sealState('creator', 'broker', 'en').title, 'Broker · creator');
+  assert.equal(sealState('creator', 'teacher', 'en').title, 'Education · creator');
+  assert.equal(sealState('creator', 'guide', 'en').title, 'Tourism · creator');
+  assert.equal(sealState('creator', 'broker', 'en').title, 'Real estate · creator');
   assert.equal(sealState('creator', 'other', 'en').title, 'Creator');
   for (const r of [null, 'viewer', 'creator'] as const) {
     for (const w of [null, 'teacher', 'guide', 'broker', 'other'] as const) {
@@ -146,4 +146,97 @@ test('loadRole: null for never asked, undefined for a failed read', async () => 
   assert.equal(await loadRole(fake({ data: { role: 'admin' }, error: null }).client as any), null);
   assert.equal(await loadRole(fake({ data: null, error: { message: 'x' } }).client as any), undefined);
   assert.equal(await loadRole(fake({ data: null, error: null }, false).client as any), undefined);
+});
+
+test('stageFor: the skies are the A5 day and night colours', () => {
+  const sky = (r: any, w: any) => stageFor(r, w, 'bg').sky;
+  assert.deepEqual(sky('creator', 'teacher'), { day: '#d3ecd6', night: '#0f2a22' });
+  assert.deepEqual(sky('creator', 'guide'), { day: '#f9e2bd', night: '#2b2114' });
+  assert.deepEqual(sky('creator', 'broker'), { day: '#cfe5f8', night: '#0d2238' });
+  assert.deepEqual(sky('creator', 'other'), { day: '#e3e8f0', night: '#1b2130' });
+  assert.deepEqual(sky('viewer', null), { day: '#d0ece2', night: '#0f2a24' });
+  assert.deepEqual(sky(null, null), { day: '#ecedf0', night: '#17191c' });
+});
+
+test('stageFor: keys, a viewer ignores work, a creator without work is none', () => {
+  assert.equal(stageFor('creator', 'teacher', 'bg').key, 'teacher');
+  assert.equal(stageFor('creator', 'other', 'bg').key, 'other');
+  assert.equal(stageFor('viewer', 'broker', 'bg').key, 'viewer');
+  assert.equal(stageFor('creator', null, 'bg').key, 'none');
+  assert.equal(stageFor(null, 'guide', 'bg').key, 'none');
+  assert.equal(stageFor(null, null, 'bg').key, 'none');
+});
+
+test('stageFor BG: the A5 copy, with the label swap on the tag', () => {
+  const t = stageFor('creator', 'teacher', 'bg');
+  assert.equal(t.tag, 'Образование · създател');
+  assert.equal(t.head, 'Уроците излизат навън.');
+  assert.equal(t.sub, 'Класът тръгва на отбори, въпросите изскачат на място, класирането се движи на живо.');
+  assert.deepEqual(t.signs, [
+    { glyph: 'book', label: 'Уроци на открито' }, { glyph: 'team', label: 'Отбори' }, { glyph: 'chart', label: 'Класиране на живо' }]);
+  assert.deepEqual(t.card, { title: 'Урок в парка', meta: '4 спирки · ~30 мин · отбори', stops: 4 });
+  assert.deepEqual(t.moment, { glyph: 'plus', text: 'Отбор Север · +10 т.' });
+  const g = stageFor('creator', 'guide', 'bg');
+  assert.equal(g.tag, 'Туризъм · създател');
+  assert.equal(g.head, 'Историята — там, където се е случила.');
+  assert.deepEqual(g.card, { title: 'Разходка из стария град', meta: '6 спирки · 1,4 км · ~40 мин', stops: 4 });
+  assert.deepEqual(g.moment, { glyph: 'pin', text: 'Наблизо · Източната порта' });
+  const b = stageFor('creator', 'broker', 'bg');
+  assert.equal(b.tag, 'Недвижими имоти · създател');
+  assert.equal(b.head, 'Сградата — на парцела, преди да е построена.');
+  assert.deepEqual(b.signs.map((x) => x.glyph), ['house', 'ar', 'camera']);
+  assert.deepEqual(b.card, { title: 'Оглед на парцела', meta: '1 спирка · 3D модел · за клиент', stops: 1 });
+  assert.deepEqual(b.moment, { glyph: 'check', text: 'Клиентът е на парцела' });
+  const o = stageFor('creator', 'other', 'bg');
+  assert.equal(o.tag, 'Създател');
+  assert.equal(o.head, 'Каквото поставите, хората го виждат на място.');
+  assert.deepEqual(o.signs.map((x) => x.glyph), ['sliders', 'route', 'swap']);
+  assert.deepEqual(o.card, { title: 'Моят маршрут', meta: '5 спирки · свободен ред', stops: 3 });
+  assert.deepEqual(o.moment, { glyph: 'pin', text: 'Спирка 2 от 5' });
+  const v = stageFor('viewer', null, 'bg');
+  assert.equal(v.tag, 'Зрител');
+  assert.equal(v.head, 'Тръгнете. Телефонът ще ви покаже останалото.');
+  assert.deepEqual(v.signs.map((x) => x.glyph), ['map', 'key', 'camera']);
+  assert.deepEqual(v.card, { title: 'Ямбол през вековете', meta: 'наблизо · 350 м до началото', stops: 4 });
+  assert.deepEqual(v.moment, { glyph: 'arrow', text: 'Следваща · 180 м' });
+});
+
+test('stageFor: nothing chosen and creator without work', () => {
+  const n = stageFor(null, null, 'bg');
+  assert.equal(n.tag, 'Нов профил');
+  assert.equal(n.head, 'Едно място. Една история. Вашият телефон.');
+  assert.equal(n.sub, 'Изберете вдясно как ще ползвате AR Trail — и вижте какво ви чака.');
+  assert.deepEqual(n.signs, []);
+  assert.equal(n.card, null);
+  assert.equal(n.moment, null);
+  const c = stageFor('creator', null, 'bg');
+  assert.equal(c.tag, 'Създател');
+  assert.equal(c.head, n.head);
+  assert.equal(stageFor(null, null, 'en').tag, 'New profile');
+});
+
+test('stageFor: every icon is drawn, EN is plain English, same shape as BG', () => {
+  for (const r of [null, 'viewer', 'creator'] as const) {
+    for (const w of [null, 'teacher', 'guide', 'broker', 'other'] as const) {
+      const bg = stageFor(r, w, 'bg'), en = stageFor(r, w, 'en');
+      assert.equal(en.key, bg.key);
+      assert.equal(en.signs.length, bg.signs.length);
+      assert.equal(en.card?.stops, bg.card?.stops);
+      const words = [en.tag, en.head, en.sub, ...en.signs.map((x) => x.label), en.card?.title ?? '', en.card?.meta ?? '', en.moment?.text ?? ''].join(' ');
+      assert.ok(!/[а-я]/i.test(words), `${r}/${w} EN has Cyrillic`);
+      for (const s of en.signs) assert.ok(ICONS[s.glyph], `${r}/${w} icon ${s.glyph}`);
+      if (en.moment) assert.ok(ICONS[en.moment.glyph], `${r}/${w} moment icon`);
+    }
+  }
+  assert.equal(stageFor('creator', 'teacher', 'en').tag, 'Education · creator');
+  assert.equal(stageFor('creator', 'other', 'en').tag, 'Creator');
+  assert.equal(stageFor('viewer', null, 'en').tag, 'Viewer');
+});
+
+test('stageFor is a fresh object, not shared', () => {
+  const a = stageFor('creator', 'teacher', 'bg');
+  a.signs.push({ glyph: 'book', label: 'x' });
+  a.card!.stops = 99;
+  assert.equal(stageFor('creator', 'teacher', 'bg').signs.length, 3);
+  assert.equal(stageFor('creator', 'teacher', 'bg').card!.stops, 4);
 });

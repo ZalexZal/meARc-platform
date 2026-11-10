@@ -1,5 +1,7 @@
 # build output
 dist/
+# tests/lab/age-flag.mjs builds the ASK_AGE=true copy here.
+dist-age/
 # generated types
 .astro/
 

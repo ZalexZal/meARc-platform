@@ -45,7 +45,6 @@ async function upgrade(session, { failPatch }) {
   await page.goto(`${BASE}/signup/`);
   await page.fill('#email', 'lab-test-guest@example.com');
   await page.fill('#password', 'Lab-test-password-1');
-  await page.check('input[name="age"][value="14+"]');
   await page.check('input[name="role"][value="creator"]');
   await page.check('input[name="work"][value="teacher"]');
   await page.check('[data-auth-agree]');
@@ -70,7 +69,6 @@ try {
     await page.goto(`${BASE}/signup/`);
     await page.fill('#email', 'lab-test-stub@example.com');
     await page.fill('#password', 'Lab-test-password-1');
-    await page.check('input[name="age"][value="14+"]');
     await page.check('[data-auth-agree]');
     // R2: the work question is a creator's; it shows once creator is chosen.
     await page.check('input[name="role"][value="creator"]');
@@ -85,6 +83,11 @@ try {
   check('legend is the BG question', legend.trim() === 'С какво се занимавате?', legend);
   const hint = await page.textContent('[data-work]');
   check('Other hint shown', hint.includes('Всички възможности'));
+  // Label swap: the field is the bold header, the role word the small line under it.
+  const cards = await page.$$eval('[data-work] .pick-job', (l) => l.map((x) => [x.querySelector('.pick-name').textContent.trim(), x.querySelector('.pick-hint').textContent.trim()].join(' / ')));
+  check('BG cards: field header, role subtext', cards.join(' | ') === 'Образование / Учител | Туризъм / Екскурзовод | Недвижими имоти / Брокер | Друго / Всички възможности', cards.join(' | '));
+  // The age question is hidden for the competition (ASK_AGE = false).
+  check('no age question on sign-up', (await page.$$('[data-age], input[name="age"], [data-parent], #parent, #pcode')).length === 0);
   const heights = await page.$$eval('[data-work] label', (l) => l.map((x) => Math.round(x.getBoundingClientRect().height)));
   check('touch targets >= 44px', heights.length >= 4 && heights.every((h) => h >= 44), heights.join());
 
@@ -103,6 +106,11 @@ try {
   await page.waitForTimeout(1500);
   check('one sign-up request sent', signups.length === 1, String(signups.length));
   check("request body carries work: 'teacher'", signups[0]?.data?.work === 'teacher', JSON.stringify(signups[0]?.data));
+  // Without the age question the request is exactly what a "14 or older" choice sent: no parent fields.
+  const sent = signups[0]?.data ?? {};
+  check("sign-up sends age_band '14+'", sent.age_band === '14+', JSON.stringify(sent));
+  check('...and no parent_email or parent_code', !('parent_email' in sent) && !('parent_code' in sent), JSON.stringify(sent));
+  check('...and exactly the same keys as a 14+ choice sent', Object.keys(sent).sort().join() === 'age_band,role,terms_version,work', Object.keys(sent).sort().join());
 
   // 4. English page.
   await page.goto(`${BASE}/en/signup/`);
@@ -110,6 +118,8 @@ try {
   const enLegend = await page.textContent('[data-work] legend');
   check('EN legend', enLegend.trim() === 'What do you do?', enLegend);
   check('EN labels', (await page.textContent('[data-work]')).includes('Tour guide'));
+  const enCards = await page.$$eval('[data-work] .pick-job', (l) => l.map((x) => [x.querySelector('.pick-name').textContent.trim(), x.querySelector('.pick-hint').textContent.trim()].join(' / ')));
+  check('EN cards: field header, role subtext', enCards.join(' | ') === 'Education / Teacher | Tourism / Tour guide | Real estate / Estate broker | Other / Every option', enCards.join(' | '));
 
   // 5. Database path: sign-up metadata becomes profiles.work.
   const t = await makeUser('sw-teacher', { work: 'teacher' });

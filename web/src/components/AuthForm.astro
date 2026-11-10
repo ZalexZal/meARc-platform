@@ -3,12 +3,15 @@ import { useTranslations, localise, type Lang } from '../i18n/ui';
 import AuthShell from './AuthShell.astro';
 import RoleLayout from './RoleLayout.astro';
 import RolePicker from './RolePicker.astro';
+import { ASK_AGE } from '../lib/config';
 
 interface Props { lang: Lang; mode: 'signin' | 'signup'; }
 const { lang, mode } = Astro.props;
 const t = useTranslations(lang);
 const href = localise(lang);
 const up = mode === 'signup';
+// Whether sign-up asks how old you are (lib/config.ts). Off: it sends '14+'.
+const askAge = up && ASK_AGE;
 // Sign-up stands beside the live seal (RoleLayout); sign-in stays on the map.
 const Shell = up ? RoleLayout : AuthShell;
 ---
@@ -17,7 +20,7 @@ const Shell = up ? RoleLayout : AuthShell;
 <section class={up ? 'role-form-wrap' : 'mx-auto flex max-w-md flex-col px-4 py-20 sm:px-6'}>
   {!up && <h1 class="text-3xl">{t('auth.signin.title')}</h1>}
 
-  <form class={up ? 'role-form' : 'card mt-8 space-y-5 p-6'} data-auth-form data-mode={mode}
+  <form class={up ? 'role-form' : 'card mt-8 space-y-5 p-6'} data-auth-form data-mode={mode} data-ask-age={String(askAge)}
         data-agree-error={t("err.mustAgree")} novalidate
         data-errors={JSON.stringify({
           fill: t('err.fill'), weak: t('err.weakPassword'), generic: t('err.generic'),
@@ -53,7 +56,7 @@ const Shell = up ? RoleLayout : AuthShell;
       )}
     </div>
 
-    {up && (
+    {askAge && (
       <fieldset class="space-y-2" data-age>
         <legend class="mb-1.5 block text-sm font-medium">{t('auth.age')}</legend>
         <div class="flex flex-wrap gap-x-5 gap-y-2">
@@ -145,6 +148,7 @@ const Shell = up ? RoleLayout : AuthShell;
   const form = document.querySelector('[data-auth-form]') as HTMLFormElement | null;
   if (form) {
     const mode = form.dataset.mode;
+    const askAge = form.dataset.askAge === 'true';
     const errorBox = document.querySelector('[data-auth-error]') as HTMLElement;
     const submit = document.querySelector('[data-auth-submit]') as HTMLButtonElement;
     const done = document.querySelector('[data-auth-done]') as HTMLElement;
@@ -204,7 +208,9 @@ const Shell = up ? RoleLayout : AuthShell;
       const email = String(data.get('email') ?? '').trim();
       const password = String(data.get('password') ?? '');
       const name = String(data.get('name') ?? '').trim();
-      const age = String(data.get('age') ?? '');
+      // With the age question hidden (lib/config.ts ASK_AGE), everybody is sent
+      // as '14+', exactly what that answer sent: no parent, no age checks.
+      const age = askAge ? String(data.get('age') ?? '') : '14+';
       const { role, work } = pick?.read() ?? { role: null, work: null };
       const parent = String(data.get('parent') ?? '').trim();
       const pcode = String(data.get('pcode') ?? '').trim().toUpperCase();
