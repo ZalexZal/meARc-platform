@@ -203,3 +203,19 @@ export async function saveRole(client: RoleClient, role: Role, work?: Work | nul
   const { error } = await client.from('profiles').update(patch).eq('id', session.user.id);
   return error ? error.message : null;
 }
+
+/**
+ * The small seal beside a signed-in name: square with the job glyph for a
+ * creator (a pencil when no job is known), round with the eye for a viewer,
+ * nothing at all before the question is answered. No pip: at 26px it would
+ * be a speck, and the shape already says creator.
+ */
+export function badgeState(role: unknown, work: unknown): Pick<SealState, 'shape' | 'glyph' | 'pip'> | null {
+  if (!isRole(role)) return null;
+  const { shape, glyph } = sealState(role, isWork(work) ? work : null, 'en');
+  return { shape, glyph, pip: false };
+}
+
+/** Fired on window when this page saves a new role, so every badge repaints. */
+export const ROLE_EVENT = 'artrail:role';
+export type RoleEventDetail = { role: Role; work: Work | null };

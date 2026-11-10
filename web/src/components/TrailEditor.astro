@@ -3,6 +3,7 @@ import Loading from './Loading.astro';
 import AppShot from './AppShot.astro';
 import { useTranslations, localise, type Lang } from '../i18n/ui';
 import { CATEGORIES, categoryLabel } from '../lib/work';
+import BecomeCreator from './BecomeCreator.astro';
 
 interface Props { lang: Lang; }
 const { lang } = Astro.props;
@@ -64,6 +65,7 @@ const shapes = [
 ];
 
 const strings = {
+  saveFailed: t('err.generic'),
   lang,
   shapeLegacy: t('ed.shapeLegacy'),
   shapeNames: { sphere: t('ed.shape.sphere'), cone: t('ed.shape.cone') },
@@ -138,6 +140,16 @@ const strings = {
 ---
 
 <section class="mx-auto max-w-7xl px-4 py-10 sm:px-6" hidden data-guarded>
+  <!-- A viewer is never kept out of a trail they own or edit; they are told
+       where the tools for their line of work are, once, at the top. -->
+  <div class="viewer-notice" hidden data-viewer-notice role="status">
+    <p>{t('role.viewerNotice')}</p>
+    <button type="button" class="btn btn-primary btn-sm" data-become-open>{t('role.become')}</button>
+  </div>
+  <dialog class="become-dialog" data-become-dialog aria-label={t('role.become')}>
+    <BecomeCreator lang={lang} />
+    <button type="button" class="btn btn-ghost btn-sm become-close" data-become-close>{t('mod.close')}</button>
+  </dialog>
   <header class="flex flex-wrap items-start justify-between gap-4">
     <div class="min-w-0">
       <a class="eyebrow hover:text-[var(--ink)]" href={href('/my-trails')}>← {t('nav.mine')}</a>
@@ -826,7 +838,8 @@ const strings = {
   import { trailLine, isScored } from '../lib/modes';
   import { featuresFor, loadWork, fold, type Category } from '../lib/work';
   import { cityAt, farFrom, type City } from '../lib/place';
-  import { requireUser, reveal, param, escapeHtml, text, duration } from '../lib/session';
+  import { requireUser, reveal, param, escapeHtml, text, duration, gateAnswers } from '../lib/session';
+  import { wireBecome } from '../lib/become';
   import { levelOf, isPending, isListed, setLevel } from '../lib/publishing';
   import { inspectGlb, type GlbInfo, type GlbProblem } from '../lib/glb';
   import { stlToGlb, isStl } from '../lib/stl';
@@ -899,7 +912,20 @@ const strings = {
   // complete - the parts are taken out of the page, not folded away - and it is
   // only a preference: nothing here refuses a write the database would accept.
   // A failed read (undefined) and "never asked" (null) both see everything.
-  const features = featuresFor((await loadWork(client as any)) ?? null);
+  // A viewer sees everything (role is a preference, not a permission): they
+  // never lose a tool on a trail they already have, and are offered "Become a
+  // creator" to get the set for their own line of work.
+  const isViewer = (await gateAnswers())?.role === 'viewer';
+  const features = featuresFor(isViewer ? null : ((await loadWork(client as any)) ?? null));
+  if (isViewer) {
+    const notice = q('[data-viewer-notice]') as HTMLElement;
+    const dialog = q('[data-become-dialog]') as HTMLDialogElement;
+    notice.hidden = false;
+    q('[data-become-open]')?.addEventListener('click', () => dialog.showModal());
+    q('[data-become-close]')?.addEventListener('click', () => dialog.close());
+    // The tools follow the new line of work, so the builder starts again.
+    wireBecome(dialog.querySelector('[data-become]') as HTMLElement, client as any, S.saveFailed, () => location.reload());
+  }
   const drop = (sel: string) => qa(sel).forEach((el) => el.remove());
   if (!features.questions) {
     q('[data-step="question"]')?.closest('li')?.remove();

@@ -32,13 +32,14 @@ try {
 
   // 2. Account -> Settings shows Guide checked; change to Estate broker.
   await p.goto(`${BASE}/account/#settings`);
-  await p.waitForSelector('[data-work-form] input[name="work"]', { timeout: 15000 });
+  // R3: the standalone work radios became the shared role + work picker.
+  await p.waitForSelector('[data-role-settings] input[name="work"]', { state: 'attached', timeout: 15000 });
   await p.waitForTimeout(800);
-  check('settings: Tour guide checked', await p.isChecked('[data-work-form] input[value="guide"]'));
-  check('settings legend', (await p.textContent('[data-work-form] legend')).trim() === 'С какво се занимавате?');
-  await p.check('[data-work-form] input[value="broker"]');
-  await p.click('[data-work-form] button[type="submit"]');
-  await p.waitForFunction(() => document.querySelector('[data-work-msg]')?.textContent.includes('Запазено'), null, { timeout: 10000 });
+  check('settings: Tour guide checked', await p.isChecked('[data-role-settings] input[value="guide"]'));
+  check('settings legend', (await p.textContent('[data-role-settings] [data-work-section] legend')).trim() === 'С какво се занимавате?');
+  await p.check('[data-role-settings] input[value="broker"]');
+  await p.click('[data-role-settings] button[type="submit"]');
+  await p.waitForFunction(() => document.querySelector('[data-role-msg]')?.textContent.includes('Запазено'), null, { timeout: 10000 });
   check('shows Запазено', true);
   check("stored 'broker'", (await workOf(u.id)) === 'broker', String(await workOf(u.id)));
 
@@ -47,13 +48,13 @@ try {
   const p2 = await b.newPage({ viewport: { width: 1280, height: 900 } });
   await signIn(p2, n, '/en');
   await p2.goto(`${BASE}/en/account/#settings`);
-  await p2.waitForSelector('[data-work-form] input[name="work"]', { timeout: 15000 });
+  await p2.waitForSelector('[data-role-settings] input[name="work"]', { state: 'attached', timeout: 15000 });
   await p2.waitForTimeout(800);
-  check('EN legend', (await p2.textContent('[data-work-form] legend')).trim() === 'What do you do?');
-  check('never-asked: nothing checked in settings', (await p2.$$('[data-work-form] input:checked')).length === 0);
-  await p2.check('[data-work-form] input[value="teacher"]');
-  await p2.click('[data-work-form] button[type="submit"]');
-  await p2.waitForFunction(() => document.querySelector('[data-work-msg]')?.textContent.includes('Saved'), null, { timeout: 10000 });
+  check('EN legend', (await p2.textContent('[data-role-settings] [data-work-section] legend')).trim() === 'What do you do?');
+  check('never-asked work: no job checked in settings', (await p2.$$('[data-role-settings] input[name="work"]:checked')).length === 0);
+  await p2.check('[data-role-settings] input[value="teacher"]');
+  await p2.click('[data-role-settings] button[type="submit"]');
+  await p2.waitForFunction(() => document.querySelector('[data-role-msg]')?.textContent.includes('Saved'), null, { timeout: 10000 });
   check("EN: stored 'teacher'", (await workOf(n.id)) === 'teacher');
   await p2.goto(`${BASE}/en/my-trails/`);
   await p2.waitForSelector('[data-mine]', { state: 'attached', timeout: 15000 });

@@ -9,8 +9,10 @@ import Seal from './Seal.astro';
 import { workLabel, categoryLabel, type Work } from '../lib/work';
 import { useTranslations, type Lang } from '../i18n/ui';
 
-interface Props { lang: Lang; hideQuestion?: boolean; }
-const { lang, hideQuestion = false } = Astro.props;
+// jobsOnly: just the four jobs, already shown - for a viewer becoming a
+// creator, where the role is the answer already.
+interface Props { lang: Lang; hideQuestion?: boolean; jobsOnly?: boolean; }
+const { lang, hideQuestion = false, jobsOnly = false } = Astro.props;
 const t = useTranslations(lang);
 
 // The mockup's order: the three jobs by category, then everything.
@@ -22,7 +24,7 @@ const jobs: { work: Work; hint: string }[] = [
 ];
 ---
 <div class="role-picker" data-role-picker>
-  <fieldset class="pick-set" data-role-cards>
+  {!jobsOnly && <fieldset class="pick-set" data-role-cards>
     <legend class:list={['pick-q', hideQuestion && 'sr-only']} data-role-question>{t('role.question')}</legend>
     <div class="pick-grid pick-grid-2">
       <label class="pick-card pick-role">
@@ -38,10 +40,10 @@ const jobs: { work: Work; hint: string }[] = [
         <span class="pick-hint">{t('role.viewerBody')}</span>
       </label>
     </div>
-  </fieldset>
+  </fieldset>}
 
-  <fieldset class="pick-set" data-work data-work-section hidden>
-    <legend class="pick-q">{t('work.title')}</legend>
+  <fieldset class="pick-set" data-work data-work-section hidden={!jobsOnly}>
+    <legend class:list={['pick-q', jobsOnly && 'sr-only']}>{t('work.title')}</legend>
     <div class="pick-grid pick-grid-4">
       {jobs.map(({ work, hint }) => (
         <label class="pick-card pick-job">
@@ -54,5 +56,5 @@ const jobs: { work: Work; hint: string }[] = [
     </div>
   </fieldset>
 
-  <p class="pick-note" data-viewer-note hidden>{t('role.viewerNote')}</p>
+  {!jobsOnly && <p class="pick-note" data-viewer-note hidden>{t('role.viewerNote')}</p>}
 </div>

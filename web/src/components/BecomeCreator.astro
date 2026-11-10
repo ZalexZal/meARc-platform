@@ -1,0 +1,21 @@
+---
+/**
+ * "Become a creator": the four job seals, for a viewer who wants to build.
+ * Picking one stores role=creator and that work at once (lib/become.ts); the
+ * page then shows what a creator of that kind sees, without a reload.
+ */
+import RolePicker from './RolePicker.astro';
+import { useTranslations, type Lang } from '../i18n/ui';
+import { sealState } from '../lib/role';
+
+interface Props { lang: Lang; class?: string; }
+const { lang, class: cls } = Astro.props;
+const t = useTranslations(lang);
+const body = sealState('creator', null, lang).body;
+---
+<form class:list={['become', cls]} data-become novalidate>
+  <h2 class="become-title">{t('role.become')}</h2>
+  <p class="become-body">{body}</p>
+  <RolePicker lang={lang} jobsOnly />
+  <p class="hidden" data-become-error role="alert"></p>
+</form>

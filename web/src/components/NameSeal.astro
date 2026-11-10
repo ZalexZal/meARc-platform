@@ -1,0 +1,12 @@
+---
+/**
+ * The small seal beside a signed-in name. Hidden until the page knows the
+ * role (lib/badge.ts paints it); a person who never answered gets none.
+ */
+import Seal from './Seal.astro';
+interface Props { class?: string; }
+const { class: cls } = Astro.props;
+---
+<span class:list={['name-seal', cls]} role="img" hidden data-name-seal>
+  <Seal shape="square" glyph="pencil" size={26} />
+</span>

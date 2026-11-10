@@ -82,7 +82,7 @@ export async function requireUser(
 const ROLE_EXEMPT = /^\/(en\/)?(choose-role|signin|signup|confirmed|accept-terms|terms|privacy|reset|consent|parent)(\/|$)/;
 export const roleExempt = (path: string) => ROLE_EXEMPT.test(path);
 
-type GateProfile = { terms_version: string | null; role: string | null };
+type GateProfile = { terms_version: string | null; role: string | null; work?: string | null };
 
 // One read of the two answers per page, shared by requireUser and roleGate
 // (both import this module, so both see the same promise). undefined = the
@@ -90,12 +90,30 @@ type GateProfile = { terms_version: string | null; role: string | null };
 let gateRead: { id: string; p: Promise<GateProfile | null | undefined> } | null = null;
 function gateProfile(id: string, fresh = false): Promise<GateProfile | null | undefined> {
   if (!gateRead || gateRead.id !== id || fresh) {
-    const p = Promise.resolve(db()!.from('profiles').select('terms_version, role').eq('id', id).maybeSingle())
+    const p = Promise.resolve(db()!.from('profiles').select('terms_version, role, work').eq('id', id).maybeSingle())
       .then(({ data, error }) => (error ? undefined : (data as GateProfile | null)))
       .catch(() => undefined);
     gateRead = { id, p };
   }
   return gateRead.p;
+}
+
+/**
+ * The signed-in person's role and work, from the same one read the gates make
+ * (so the badge beside the name costs nothing extra). undefined when nobody is
+ * signed in, for a guest, or when the read failed.
+ */
+export async function gateAnswers(): Promise<{ role: string | null; work: string | null } | undefined> {
+  try {
+    if (!configured()) return undefined;
+    const { data: { session } } = await db()!.auth.getSession();
+    const user = session?.user ?? null;
+    if (!user || isAnonymous(user)) return undefined;
+    const p = await gateProfile(user.id);
+    return p ? { role: p.role ?? null, work: p.work ?? null } : undefined;
+  } catch {
+    return undefined;
+  }
 }
 
 const en = () => location.pathname.startsWith('/en/');
