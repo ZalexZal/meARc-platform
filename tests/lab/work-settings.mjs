@@ -36,7 +36,7 @@ try {
   await p.waitForSelector('[data-role-settings] input[name="work"]', { state: 'attached', timeout: 15000 });
   await p.waitForTimeout(800);
   check('settings: Tour guide checked', await p.isChecked('[data-role-settings] input[value="guide"]'));
-  check('settings legend', (await p.textContent('[data-role-settings] [data-work-section] legend')).trim() === 'С какво се занимавате?');
+  check('settings legend', (await p.textContent('[data-role-settings] [data-work-section] legend')).trim() === 'С какво се занимаваш?');
   await p.check('[data-role-settings] input[value="broker"]');
   await p.click('[data-role-settings] button[type="submit"]');
   await p.waitForFunction(() => document.querySelector('[data-role-msg]')?.textContent.includes('Запазено'), null, { timeout: 10000 });

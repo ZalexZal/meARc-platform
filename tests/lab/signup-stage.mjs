@@ -16,12 +16,12 @@ const rgb = (hex) => `rgb(${[1, 3, 5].map((i) => parseInt(hex.slice(i, i + 2), 1
 
 // What each state shows (BG), from lib/role.ts stageFor with the field-first labels.
 const STATES = {
-  none: { tag: 'Нов профил', head: 'Едно място. Една история. Вашият телефон.', moment: null },
+  none: { tag: 'Нов профил', head: 'Едно място. Една история. Твоят телефон.', moment: null },
   teacher: { tag: 'Образование · създател', head: 'Уроците излизат навън.', moment: 'Отбор Север · +10 т.' },
   guide: { tag: 'Туризъм · създател', head: 'Историята — там, където се е случила.', moment: 'Наблизо · Източната порта' },
   broker: { tag: 'Недвижими имоти · създател', head: 'Сградата — на парцела, преди да е построена.', moment: 'Клиентът е на парцела' },
-  other: { tag: 'Друго · създател', head: 'Каквото поставите, хората го виждат на място.', moment: 'Спирка 2 от 5' },
-  viewer: { tag: 'Зрител', head: 'Тръгнете. Телефонът ще ви покаже останалото.', moment: 'Следваща · 180 м' },
+  other: { tag: 'Друго · създател', head: 'Каквото поставиш, хората го виждат на място.', moment: 'Спирка 2 от 5' },
+  viewer: { tag: 'Зрител', head: 'Тръгни. Телефонът ще ти покаже останалото.', moment: 'Следваща · 180 м' },
 };
 const ORDER = ['none', 'teacher', 'guide', 'broker', 'other', 'viewer'];
 const PREVIEW = ['guide', 'teacher', 'broker', 'viewer', 'other'];

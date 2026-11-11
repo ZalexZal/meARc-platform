@@ -152,11 +152,11 @@ test('strings: find.clear and find.nothingFiltered', () => {
 });
 
 test('strings: verbatim texts', () => {
-  assert.equal(ui.bg['err.work'], 'Изберете с какво се занимавате.');
+  assert.equal(ui.bg['err.work'], 'Избери с какво се занимаваш.');
   assert.equal(ui.en['err.work'], 'Choose your line of work.');
-  assert.equal(ui.bg['work.otherHint'], 'Всички възможности — и ако само ще вървите по маршрути.');
+  assert.equal(ui.bg['work.otherHint'], 'Всички възможности — и ако само ще вървиш по маршрути.');
   assert.equal(ui.en['work.otherHint'], 'Every option — and for people who only walk trails.');
-  assert.equal(ui.bg['ed.hiddenQuestions'], 'Този маршрут има въпроси. Сменете заниманието си на Учител или Друго, за да ги редактирате.');
+  assert.equal(ui.bg['ed.hiddenQuestions'], 'Този маршрут има въпроси. Смени заниманието си на Учител или Друго, за да ги редактираш.');
   assert.equal(ui.en['ed.hiddenQuestions'], 'This trail has questions. Switch your line of work to Teacher or Other to edit them.');
 });
 

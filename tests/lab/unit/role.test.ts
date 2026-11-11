@@ -28,8 +28,8 @@ test('nothing chosen: a dashed question mark', () => {
   assert.equal(s.shape, 'ask');
   assert.equal(s.glyph, 'ask');
   assert.equal(s.pip, false);
-  assert.equal(s.title, 'Как ще използвате AR Trail?');
-  assert.equal(s.body, 'Изберете отдясно. Знакът тук се сменя с избора ви и после стои до името ви.');
+  assert.equal(s.title, 'Как ще използваш AR Trail?');
+  assert.equal(s.body, 'Избери отдясно. Знакът тук се сменя с избора ти и после стои до името ти.');
   assert.deepEqual(s.gets, []);
   // A work without a role is still "nothing chosen" here.
   assert.equal(sealState(null, 'guide', 'bg').shape, 'ask');
@@ -42,7 +42,7 @@ test('viewer: a round seal with an eye, work ignored', () => {
     assert.equal(s.glyph, 'viewer');
     assert.equal(s.pip, false);
     assert.equal(s.title, 'Зрител');
-    assert.equal(s.body, 'Разглеждате обществената библиотека и се включвате в маршрути с код.');
+    assert.equal(s.body, 'Разглеждаш обществената библиотека и се включваш в маршрути с код.');
     assert.deepEqual(s.gets, ['Обществени маршрути наблизо', 'Влизане с код', 'Без настройки']);
   }
 });
@@ -53,7 +53,7 @@ test('creator without a work: square, pencil, no list', () => {
   assert.equal(s.glyph, 'pencil');
   assert.equal(s.pip, false);
   assert.equal(s.title, 'Създател');
-  assert.equal(s.body, 'Изберете с какво се занимавате — ще ви показваме само нужното.');
+  assert.equal(s.body, 'Избери с какво се занимаваш — ще ти показваме само нужното.');
   assert.deepEqual(s.gets, []);
 });
 
@@ -63,10 +63,10 @@ test('creator states: square, job glyph, pencil pip', () => {
       ['Отбори и класиране', 'Въпроси за точки и подсказки', 'По ред или свободно']],
     guide: ['Туризъм · създател', 'Разходки с истории: въпроси и подсказки без точки, по ред или свободно.',
       ['Въпроси и подсказки, без точки', 'По ред или свободно', '3D, снимки, видео и звук']],
-    broker: ['Недвижими имоти · създател', 'Покажете сградата на мястото ѝ: 3D модел на парцела, без отбори и въпроси.',
+    broker: ['Недвижими имоти · създател', 'Покажи сградата на мястото ѝ: 3D модел на парцела, без отбори и въпроси.',
       ['3D модел на място', 'Модел от снимка с AI', 'Само нужното — без въпроси']],
     other: ['Създател', 'Всички възможности, без ограничения.',
-      ['Всичко от останалите три', 'Сменяте по всяко време']],
+      ['Всичко от останалите три', 'Сменяш по всяко време']],
   } as const;
   for (const [w, [title, body, gets]] of Object.entries(cases)) {
     const s = sealState('creator', w as any, 'bg');
@@ -190,13 +190,13 @@ test('stageFor BG: the A5 copy, with the label swap on the tag', () => {
   const o = stageFor('creator', 'other', 'bg');
   assert.equal(o.tag, 'Друго · създател');
   assert.equal(stageFor('creator', 'other', 'en').tag, 'Other · creator');
-  assert.equal(o.head, 'Каквото поставите, хората го виждат на място.');
+  assert.equal(o.head, 'Каквото поставиш, хората го виждат на място.');
   assert.deepEqual(o.signs.map((x) => x.glyph), ['sliders', 'route', 'swap']);
   assert.deepEqual(o.card, { title: 'Моят маршрут', meta: '5 спирки · свободен ред', stops: 3 });
   assert.deepEqual(o.moment, { glyph: 'pin', text: 'Спирка 2 от 5' });
   const v = stageFor('viewer', null, 'bg');
   assert.equal(v.tag, 'Зрител');
-  assert.equal(v.head, 'Тръгнете. Телефонът ще ви покаже останалото.');
+  assert.equal(v.head, 'Тръгни. Телефонът ще ти покаже останалото.');
   assert.deepEqual(v.signs.map((x) => x.glyph), ['map', 'key', 'camera']);
   assert.deepEqual(v.card, { title: 'Ямбол през вековете', meta: 'наблизо · 350 м до началото', stops: 4 });
   assert.deepEqual(v.moment, { glyph: 'arrow', text: 'Следваща · 180 м' });
@@ -205,8 +205,8 @@ test('stageFor BG: the A5 copy, with the label swap on the tag', () => {
 test('stageFor: nothing chosen and creator without work', () => {
   const n = stageFor(null, null, 'bg');
   assert.equal(n.tag, 'Нов профил');
-  assert.equal(n.head, 'Едно място. Една история. Вашият телефон.');
-  assert.equal(n.sub, 'Изберете вдясно как ще ползвате AR Trail — и вижте какво ви чака.');
+  assert.equal(n.head, 'Едно място. Една история. Твоят телефон.');
+  assert.equal(n.sub, 'Избери вдясно как ще ползваш AR Trail — и виж какво те чака.');
   assert.deepEqual(n.signs, []);
   assert.equal(n.card, null);
   assert.equal(n.moment, null);

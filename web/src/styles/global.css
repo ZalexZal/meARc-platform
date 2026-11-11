@@ -597,9 +597,44 @@ select.field {
 textarea.field { min-height: 88px; line-height: 1.5; resize: vertical; }
 
 /* A file input, which is otherwise the one control on the page that looks like
-   1997. The button half is styled; the text half is the browser's and is left
-   alone, because replacing it means hiding the input and reimplementing the
-   file dialog's keyboard behaviour by hand. */
+   1997. The browser's own button and "No file chosen" text are English on the
+   Bulgarian site, so FilePick.astro hides the input (still focusable, still
+   label-linked) and draws a translated button and a file name beside it. */
+.filepick { display: block; }
+.filepick-row {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: .75rem;
+  min-width: 0;
+  cursor: pointer;
+}
+.filepick-input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  border: 0;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+.filepick-input:focus-visible + .filepick-btn {
+  outline: 2px solid var(--signal);
+  outline-offset: 2px;
+}
+.filepick-btn { flex-shrink: 0; pointer-events: none; }
+.filepick-name {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: var(--text-xs);
+  color: var(--ink-dim);
+}
+
 input[type="file"].field {
   padding: .375rem .5rem;
   font-size: var(--text-xs);

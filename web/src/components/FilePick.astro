@@ -1,0 +1,31 @@
+---
+// A file input whose visible control is ours, so it reads in the page's language
+// instead of the browser's "Choose File / No file chosen". The real input stays in
+// the page, visually hidden but focusable, so keyboard use, labels and the
+// scripts' data-* selectors all keep working. lib/filepick.ts keeps the name current.
+import { useTranslations, type Lang } from '../i18n/ui';
+
+interface Props {
+  lang: Lang;
+  accept?: string;
+  multiple?: boolean;
+  /** The data attribute the editor's script finds the input by, e.g. "data-model-file". */
+  attr: string;
+  /** Wording for the button: one file, or photos. */
+  kind?: 'file' | 'photos';
+  /** Id of the element that names this control, when a wider label already does. */
+  labelledby?: string;
+  class?: string;
+}
+const { lang, accept, multiple = false, attr, kind = 'file', labelledby, class: className = '' } = Astro.props;
+const t = useTranslations(lang);
+const none = t('file.none');
+---
+
+<span class:list={['filepick', className]} data-filepick data-none={none} data-many={t('file.many')}>
+  <label class="filepick-row">
+    <input class="filepick-input" type="file" accept={accept} multiple={multiple} aria-labelledby={labelledby} {...{ [attr]: '' }} />
+    <span class="btn btn-quiet btn-sm filepick-btn">{kind === 'photos' ? t('file.choosePhotos') : t('file.choose')}</span>
+    <span class="filepick-name" data-filepick-name>{none}</span>
+  </label>
+</span>

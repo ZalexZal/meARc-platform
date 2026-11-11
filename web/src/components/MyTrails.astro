@@ -15,7 +15,7 @@ const href = localise(lang);
 // would silently become a syntax error and the whole page would render nothing.
 const strings = {
   stop: t('n.stop'), stops: t('n.stops'),
-  code: t('mine.code'), copyCode: t('mine.copyCode'), codeCopied: t('mine.codeCopied'),
+  code: t('mine.code'), copyCode: t('mine.copyCode'), codeCopied: t('mine.codeCopied'), copyManual: t('copy.manual'),
   edit: t('mine.edit'),
   board: t('mine.board'),
   viewLabel: lang === 'bg' ? 'Страница' : 'Trail page', viewHref: href('/view'),
@@ -164,6 +164,7 @@ const questions = [
   import { wireBecome } from '../lib/become';
   import { levelOf, setLevel } from '../lib/publishing';
   import { busy, formError, formClear } from '../lib/form';
+  import { copyOrSelect } from '../lib/copytext';
 
   const S = JSON.parse(document.querySelector('[data-mine-strings]')!.textContent || '{}');
   const q = (sel: string) => document.querySelector(sel);
@@ -446,15 +447,13 @@ const questions = [
     // ------------------------------------------------------------ the code
     const copy = target.closest('[data-copy]') as HTMLElement | null;
     if (copy) {
-      // Best effort. A page served without https has no clipboard at all, and a
-      // silent failure there would look like a dead button.
-      try {
-        await navigator.clipboard.writeText(copy.dataset.copy!);
-        const label = copy.querySelector('[data-copy-label]');
-        copy.classList.add('is-done');
-        text(label, S.codeCopied);
-        setTimeout(() => { copy.classList.remove('is-done'); text(label, S.copyCode); }, 1400);
-      } catch { /* the code is on screen; reading it out still works */ }
+      // A page served without https has no clipboard at all, and a silent failure
+      // there would look like a dead button. So: select the code and say so.
+      const label = copy.querySelector('[data-copy-label]');
+      const done = await copyOrSelect(copy.dataset.copy!, copy.closest('.code-row')?.querySelector('code') ?? null);
+      if (done) copy.classList.add('is-done');
+      text(label, done ? S.codeCopied : S.copyManual);
+      setTimeout(() => { copy.classList.remove('is-done'); text(label, S.copyCode); }, 1400);
     }
   });
 </script>

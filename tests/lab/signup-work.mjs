@@ -80,7 +80,7 @@ try {
   check('four work radios in order', values.join() === 'teacher,guide,broker,other', values.join());
   check('none pre-selected', (await page.$$('[data-work] input[name="work"]:checked')).length === 0);
   const legend = await page.textContent('[data-work] legend');
-  check('legend is the BG question', legend.trim() === 'С какво се занимавате?', legend);
+  check('legend is the BG question', legend.trim() === 'С какво се занимаваш?', legend);
   const hint = await page.textContent('[data-work]');
   check('Other hint shown', hint.includes('Всички възможности'));
   // Label swap: the field is the bold header, the role word the small line under it.
@@ -95,7 +95,7 @@ try {
   await page.click('[data-auth-submit]');
   await page.waitForTimeout(600);
   const err = await page.textContent('[data-auth-error]');
-  check('missing choice shows err.work', err.includes('Изберете с какво се занимавате.'), err.trim());
+  check('missing choice shows err.work', err.includes('Избери с какво се занимаваш.'), err.trim());
   check('no request sent without a choice', signups.length === 0);
   const focused = await page.evaluate(() => document.activeElement?.getAttribute('value'));
   check('first radio is focused', focused === 'teacher', String(focused));

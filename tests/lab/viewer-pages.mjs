@@ -110,7 +110,7 @@ try {
   await bp.waitForTimeout(800);
   check('builder: viewer notice shows', await visible(bp, '[data-viewer-notice]'));
   check('…with the notice copy', (await bp.textContent('[data-viewer-notice] p').catch(() => '')).trim()
-    === 'Вие сте зрител. Станете създател, за да виждате инструментите за вашето занимание.');
+    === 'Ти си зрител. Стани създател, за да виждаш инструментите за твоето занимание.');
   check('…an aside without role=status', await bp.$eval('[data-viewer-notice]', (el) => el.tagName === 'ASIDE' && !el.hasAttribute('role')));
   check('…button still Стани създател', (await bp.textContent('[data-viewer-notice] [data-become-open]')).trim() === 'Стани създател');
   check('builder: not blocked (name shown)', (await bp.textContent('[data-trail-name]')).trim() === 'Строя като зрител');
@@ -161,7 +161,7 @@ try {
   await ap.goto(`${BASE}/account/#settings`);
   await ap.waitForSelector('[data-role-settings] [data-role-picker]', { timeout: 20000 });
   await ap.waitForTimeout(1200);
-  check('settings: section titled Как ползвате AR Trail', (await ap.textContent('[data-role-settings] h2').catch(() => '')).trim() === 'Как ползвате AR Trail');
+  check('settings: section titled Как ползваш AR Trail', (await ap.textContent('[data-role-settings] h2').catch(() => '')).trim() === 'Как ползваш AR Trail');
   check('settings: creator pre-selected', await ap.isChecked('[data-role-settings] input[name="role"][value="creator"]'));
   check('settings: teacher pre-selected', await ap.isChecked('[data-role-settings] input[name="work"][value="teacher"]'));
   check('settings: old standalone work form gone', (await ap.$$('[data-work-form]')).length === 0);

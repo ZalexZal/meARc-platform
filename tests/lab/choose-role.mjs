@@ -39,7 +39,7 @@ try {
 
   // Nothing chosen: the dashed question mark, the waiting CTA.
   await p.waitForSelector('[data-role-form]:not([hidden])', { timeout: 15000 });
-  check('heading is the question', (await p.textContent('h1')).trim() === 'Как ще използвате AR Trail?');
+  check('heading is the question', (await p.textContent('h1')).trim() === 'Как ще използваш AR Trail?');
   check('nothing pre-selected for a never-asked account', (await p.$$('input[name="role"]:checked')).length === 0);
   let s = await seal(p);
   check('seal starts as the dashed question', s.shape === 'ask' && s.glyph === 'ask' && s.pip === 'false', JSON.stringify(s));
@@ -65,7 +65,7 @@ try {
   // Saving creator with no work says so and stores nothing.
   await p.click('[data-role-submit]');
   await p.waitForTimeout(500);
-  check('creator without a work: err.work', (await p.textContent('[data-role-error]')).includes('Изберете с какво се занимавате.'));
+  check('creator without a work: err.work', (await p.textContent('[data-role-error]')).includes('Избери с какво се занимаваш.'));
   check('…and nothing stored', (await profile(n.id)).role === null);
   await p.check('input[name="work"][value="broker"]');
   s = await seal(p);
@@ -180,7 +180,7 @@ try {
   });
   await sp.goto(`${BASE}/signup/`);
   await sp.waitForSelector('[data-stage] [data-seal]');
-  check('sign-up heading', (await sp.textContent('h1')).trim() === 'Създайте профил');
+  check('sign-up heading', (await sp.textContent('h1')).trim() === 'Създай профил');
   check('sign-up keeps the account fields', (await sp.$$('#email, #password, #name, input[name="age"], [data-auth-agree]')).length === 4);  // name, email, password, agree - the age radios are hidden (ASK_AGE = false)
   s = await seal(sp);
   check('sign-up seal starts as the question', s.shape === 'ask', JSON.stringify(s));
@@ -190,13 +190,13 @@ try {
   await sp.check('[data-auth-agree]');
   await sp.click('[data-auth-submit]');
   await sp.waitForTimeout(500);
-  check('sign-up without a role: err.role, no request', (await sp.textContent('[data-auth-error]')).includes('Изберете как ще използвате AR Trail.') && signups.length === 0);
+  check('sign-up without a role: err.role, no request', (await sp.textContent('[data-auth-error]')).includes('Избери как ще използваш AR Trail.') && signups.length === 0);
   await sp.check('input[name="role"][value="creator"]');
   s = await seal(sp);
   check('sign-up seal repaints on click (creator)', s.shape === 'square' && s.glyph === 'pencil', JSON.stringify(s));
   await sp.click('[data-auth-submit]');
   await sp.waitForTimeout(500);
-  check('sign-up as creator without a work: err.work', (await sp.textContent('[data-auth-error]')).includes('Изберете с какво се занимавате.'));
+  check('sign-up as creator without a work: err.work', (await sp.textContent('[data-auth-error]')).includes('Избери с какво се занимаваш.'));
   check('…and no request', signups.length === 0);
   await sp.check('input[name="work"][value="teacher"]');
   check('choosing a job clears the "choose one" message', !(await sp.isVisible('[data-auth-error]')));

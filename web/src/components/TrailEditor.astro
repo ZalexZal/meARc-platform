@@ -4,6 +4,7 @@ import AppShot from './AppShot.astro';
 import { useTranslations, localise, type Lang } from '../i18n/ui';
 import { CATEGORIES, categoryLabel } from '../lib/work';
 import BecomeCreator from './BecomeCreator.astro';
+import FilePick from './FilePick.astro';
 
 interface Props { lang: Lang; }
 const { lang } = Astro.props;
@@ -98,7 +99,7 @@ const strings = {
   lvCode: t('vis.unlisted'), lvCodeHint: t('vis.unlistedHint'),
   lvPublic: t('vis.public'), lvPublicHint: t('vis.publicHint'),
   lvMake: t('vis.makePublic'), lvMakeHint: t('vis.makePublicHint'),
-  lvNote: t('mine.reviewNote'), copy: t('pub.copy'), copied: t('pub.copied'),
+  lvNote: t('mine.reviewNote'), copy: t('pub.copy'), copied: t('pub.copied'), copyManual: t('copy.manual'),
   share: {
     scan: t('share.scan'), qrAlt: t('share.qrAlt'), copyCode: t('share.copyCode'),
     copyLink: t('share.copyLink'), hint: t('share.hint'),
@@ -301,7 +302,7 @@ const strings = {
 
         <label class="field-row mt-3">
           <span class="field-name">{t('imp.file')}</span>
-          <input class="field" type="file" accept=".csv,text/csv" data-imp-file />
+          <FilePick lang={lang} accept=".csv,text/csv" attr="data-imp-file" />
         </label>
 
         <div class="mt-3 flex flex-wrap gap-2">
@@ -500,17 +501,17 @@ const strings = {
                          "Insert a 3D model" takes a file (.glb or .stl), "Generate
                          with AI" takes photos and/or a video, and a description. -->
                     <div class="block text-sm" data-src-panel="file">
-                      <label class="block">
-                        <span class="mb-1.5 block font-medium">{t('mdl.file')}</span>
-                        <input class="field" type="file" accept=".glb,.stl,model/gltf-binary,model/stl" data-model-file />
-                      </label>
+                      <div class="block">
+                        <span class="mb-1.5 block font-medium" id="model-file-name">{t('mdl.file')}</span>
+                        <FilePick lang={lang} accept=".glb,.stl,model/gltf-binary,model/stl" attr="data-model-file" labelledby="model-file-name" />
+                      </div>
                       <p class="mt-1.5 text-xs text-[var(--ink-faint)]">{t('mdl.stlHint')}</p>
                     </div>
                     <div class="space-y-3" data-src-panel="ai" hidden>
-                      <label class="block text-sm">
-                        <span class="mb-1.5 block font-medium">{t('ai3d.media')}</span>
-                        <input class="field" type="file" accept="image/jpeg,image/png,image/webp,image/heic,video/mp4,video/quicktime,video/webm" multiple data-ai-media />
-                      </label>
+                      <div class="block text-sm">
+                        <span class="mb-1.5 block font-medium" id="ai-media-name">{t('ai3d.media')}</span>
+                        <FilePick lang={lang} kind="photos" accept="image/jpeg,image/png,image/webp,image/heic,video/mp4,video/quicktime,video/webm" multiple attr="data-ai-media" labelledby="ai-media-name" />
+                      </div>
                       <p class="text-xs text-[var(--ink-dim)]">{t('ai3d.mediaHint')}</p>
                       <div class="ai-thumbs" data-ai-thumbs></div>
                       <label class="block text-sm">
@@ -738,16 +739,16 @@ const strings = {
             <p class="text-sm text-[var(--ink-dim)]" data-media-empty>{t('ed.noMedia')}</p>
             <ul class="space-y-2" data-media></ul>
 
-            <!-- Two across until there is real room for three: the browser
-                 writes "No file chosen" beside the button and owns that text. -->
+            <!-- Two across until there is real room for three: the file name sits
+                 beside each button and can run long. -->
             <div class="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
               <div class="add-box">
                 <p class="eyebrow">{t('ed.addPhoto')}</p>
-                <input class="field mt-2" type="file" accept="image/*" data-file-image />
+                <FilePick class="mt-2" lang={lang} accept="image/*" attr="data-file-image" />
               </div>
               <div class="add-box">
                 <p class="eyebrow">{t('ed.addAudio')}</p>
-                <input class="field mt-2" type="file" accept="audio/*" data-file-audio />
+                <FilePick class="mt-2" lang={lang} accept="audio/*" attr="data-file-audio" />
               </div>
               <div class="add-box">
                 <p class="eyebrow">{t('ed.addVideo')}</p>
@@ -882,6 +883,8 @@ const strings = {
   import { compassDial } from '../lib/compassdial';
   import { renderStopReport, type ReportStop } from '../lib/stopreport';
   import { glbForApp } from '../lib/glbclean';
+  import { initFilePickers } from '../lib/filepick';
+  import { copyOrSelect } from '../lib/copytext';
   import { photoTo3d, describeToShapes, Ai3dError, type Ai3dSource } from '../lib/ai3d';
 
   /**
@@ -931,6 +934,7 @@ const strings = {
   // The shapes a creator can pick (8 Nov 2026): a spreadsheet row keeps to them.
   const IMPORTABLE = ['pin', 'cube', 'sign'];
   const q = (s: string) => document.querySelector(s);
+  initFilePickers();
   const qa = (s: string) => Array.from(document.querySelectorAll(s));
 
   await requireUser({ needsReal: true });
@@ -2488,11 +2492,9 @@ const strings = {
 
   q('[data-copy-code]')?.addEventListener('click', async (event) => {
     const button = event.currentTarget as HTMLElement;
-    try {
-      await navigator.clipboard.writeText(q('[data-trail-code]')!.textContent!.trim().toUpperCase());
-      text(button, S.copied);
-      setTimeout(() => text(button, S.copy), 1400);
-    } catch { /* the code is on screen; reading it out still works */ }
+    const done = await copyOrSelect(q('[data-trail-code]')!.textContent!.trim().toUpperCase(), q('[data-trail-code]'));
+    text(button, done ? S.copied : S.copyManual);
+    setTimeout(() => text(button, S.copy), 1400);
   });
 
   // --------------------------------------------------------- review and board
@@ -2618,17 +2620,15 @@ const strings = {
     }
   };
 
-  for (const [sel, label, value] of [
-    ['[data-share-copy-code]', S.share.copyCode, () => (q('[data-trail-code]')?.textContent ?? '').trim().toUpperCase()],
-    ['[data-share-copy-link]', S.share.copyLink, shareLink],
-  ] as [string, string, () => string][]) {
+  for (const [sel, label, value, shown] of [
+    ['[data-share-copy-code]', S.share.copyCode, () => (q('[data-trail-code]')?.textContent ?? '').trim().toUpperCase(), '[data-share-code]'],
+    ['[data-share-copy-link]', S.share.copyLink, shareLink, '[data-share-link]'],
+  ] as [string, string, () => string, string][]) {
     q(sel)?.addEventListener('click', async (event) => {
       const button = event.currentTarget as HTMLElement;
-      try {
-        await navigator.clipboard.writeText(value());
-        text(button, S.copied);
-        setTimeout(() => text(button, label), 1400);
-      } catch { /* the code and the link are on screen; copying by hand still works */ }
+      const done = await copyOrSelect(value(), q(shown));
+      text(button, done ? S.copied : S.copyManual);
+      setTimeout(() => text(button, label), 1400);
     });
   }
   paintShare();
