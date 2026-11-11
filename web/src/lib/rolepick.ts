@@ -37,7 +37,7 @@ export function wirePicker(root: ParentNode, { cta }: { cta?: HTMLElement | null
       if (document.hidden) return;
       previewAt = (previewAt + 1) % PREVIEW.length;
       stage.dataset.stageArt = PREVIEW[previewAt];
-    }, 4200);
+    }, 7000);   // one full loop of the moment and phone animations (6-7s) per role
   };
   const previewStop = () => { if (previewTimer) { clearInterval(previewTimer); previewTimer = null; } };
 

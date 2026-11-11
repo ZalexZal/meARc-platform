@@ -127,7 +127,7 @@ const PIN = 'M13 1a12 12 0 0 1 12 12c0 9-12 20-12 20S1 22 1 13A12 12 0 0 1 13 1z
         {states.filter((s) => s.card).map((s) => {
           const r = route(s.card!.stops);
           return (
-            <div class="stage-card" data-stage-card data-stage-for={s.key}>
+            <div class="stage-card" data-stage-card data-stage-for={s.key} aria-hidden="true">
               <div class="stage-card-label">{t('stage.sample')}</div>
               <div class="stage-card-title">{s.card!.title}</div>
               <svg aria-hidden="true" viewBox="0 0 208 64" width="208" height="64" class="stage-card-map">
@@ -145,7 +145,7 @@ const PIN = 'M13 1a12 12 0 0 1 12 12c0 9-12 20-12 20S1 22 1 13A12 12 0 0 1 13 1z
         })}
 
         {states.filter((s) => s.moment).map((s) => (
-          <span class="stage-moment" data-stage-moment data-stage-for={s.key}>
+          <span class="stage-moment" data-stage-moment data-stage-for={s.key} aria-hidden="true">
             <span class="stage-moment-dot"><svg aria-hidden="true" viewBox="0 0 24 24"><path d={ICONS[s.moment!.glyph]} /></svg></span>
             {s.moment!.text}
           </span>
