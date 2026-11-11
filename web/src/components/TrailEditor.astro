@@ -133,7 +133,7 @@ const strings = {
   rep: Object.fromEntries(['title', 'untitled', 'place', 'text', 'languages', 'words', 'chars', 'colour', 'media',
     'photos', 'audio', 'video', 'look', 'modelName', 'size', 'facing', 'question', 'kind', 'answers', 'points',
     'hints', 'noHints', 'noQuestionSet', 'noBg', 'noEn', 'noPhoto', 'noQuestion', 'noQuestionEn', 'decimal',
-    'kind_audio', 'kind_video', 'kind_link', 'next', 'newStop', 'open'].map((k) => [k, t(`rep.${k}` as any)])),
+    'kind_audio', 'kind_video', 'kind_link', 'next', 'newStop', 'open'].map((k) => [k, t((k === 'title' ? 'rep.summaryTitle' : `rep.${k}`) as any)])),
   ai3d: {
     picture: t('ai3d.picture'), model: t('ai3d.model'), server: t('ai3d.server'), done: t('ai3d.done'),
     quota: t('ai3d.quota'), allowance: t('ai3d.allowance'), busy: t('ai3d.busy'), down: t('ai3d.down'), failed: t('ai3d.failed'),
