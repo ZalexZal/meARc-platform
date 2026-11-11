@@ -15,12 +15,10 @@ const href = localise(lang);
 // would silently become a syntax error and the whole page would render nothing.
 const strings = {
   stop: t('n.stop'), stops: t('n.stops'),
-  code: t('mine.code'), copy: t('pub.copy'), copied: t('pub.copied'),
+  code: t('mine.code'), copyCode: t('mine.copyCode'), codeCopied: t('mine.codeCopied'),
   edit: t('mine.edit'),
   board: t('mine.board'),
   viewLabel: lang === 'bg' ? 'Страница' : 'Trail page', viewHref: href('/view'),
-  published: t('ed.published'),
-  draft: t('ed.draft'),
   pending: t('acct.pending'),
   saving: t('mine.saving'), pubDrafts: t('pub.drafts'),
   editorOnly: t('mine.editorOnly'),
@@ -28,17 +26,12 @@ const strings = {
   failed: t('mine.failed'),
   newBody: t('mine.newBody'), newBodyPlain: t('mine.newBodyPlain'),
   visLabel: t('vis.label'),
-  visPrivate: t('vis.private'),
-  visPrivateHint: t('vis.privateHint'),
   visUnlisted: t('vis.unlisted'),
   visUnlistedHint: t('vis.unlistedHint'),
   visPublic: t('vis.public'),
   visPublicHint: t('vis.publicHint'),
-  publicAsk: t('vis.publicAsk'),
-  publicAskHint: t('vis.publicAskHint'),
-  waiting: t('mine.pending'),
-  waitingBody: t('mine.pendingBody'),
-  withdraw: t('mine.withdraw'),
+  makePublic: t('vis.makePublic'),
+  makePublicHint: t('vis.makePublicHint'),
   reviewNote: t('mine.reviewNote'),
   review: t('mine.review'),
   editHref: href('/trail'),
@@ -169,7 +162,7 @@ const questions = [
   import { featuresFor, defaultCategory, loadWork, CATEGORIES } from '../lib/work';
   import { requireUser, reveal, escapeHtml, text, count, who, gateAnswers } from '../lib/session';
   import { wireBecome } from '../lib/become';
-  import { levelOf, isPending, isListed, setLevel, unfinishedStops } from '../lib/publishing';
+  import { levelOf, setLevel } from '../lib/publishing';
   import { busy, formError, formClear } from '../lib/form';
 
   const S = JSON.parse(document.querySelector('[data-mine-strings]')!.textContent || '{}');
@@ -230,73 +223,45 @@ const questions = [
   };
   drawNotices();
 
-  // Private and unlisted are the owner's to set. Public is not: it is a request
-  // that somebody else grants, so it is a different kind of control and is drawn
-  // as one.
-  // The ladder's own words, not the column's. These were 'private' and
-  // 'unlisted', which are two of the six values the two columns can hold - and
-  // comparing them against a rung name meant no rung was ever marked as current.
-  const LEVELS = [
-    { value: 'draft', label: S.visPrivate,  hint: S.visPrivateHint },
-    { value: 'code',  label: S.visUnlisted, hint: S.visUnlistedHint },
-  ];
-
+  // Two choices, both the owner's, both instant (12 Nov 2026): with the code, or
+  // public. Public used to be a request that a reviewer granted.
   function card(w: any) {
     // worlds_update_owner is owner-only, so an editor pressing these would get a
     // silent success updating nothing - PostgREST reports a row RLS filtered out
     // no differently from one that was written.
     const owner = w.role === 'owner';
-    const waiting = w.status === 'submitted';
-    const listed = w.visibility === 'public' && !waiting;
-    const settable = owner && !waiting;
-
     const here = levelOf(w);
+    const isPublic = here === 'public';
 
-    const buttons = LEVELS.map((l) => `<button type="button"
-        class="tab" data-vis="${l.value}" data-world="${w.id}"
-        ${settable ? '' : 'disabled'}
-        title="${escapeHtml(l.hint)}"
-        aria-selected="${here === l.value}">${escapeHtml(l.label)}</button>`).join('');
-
-    // The third control is an action rather than a state - unless it has already
-    // been granted, in which case it is a state and there is nothing to press.
-    // The third rung is granted rather than set, so before it is granted the
-    // control is an action and afterwards it is a state.
-    const publicControl = `<button type="button" class="tab"
-        ${listed ? 'data-noop' : `data-ask="${w.id}"`}
-        ${settable || listed ? '' : 'disabled'}
-        title="${escapeHtml(listed ? S.visPublicHint : S.publicAskHint)}"
-        aria-selected="${here === 'public'}"
-        >${escapeHtml(listed || waiting ? S.visPublic : S.publicAsk)}</button>`;
-
-    const pendingRow = waiting
-      ? `<div class="mt-3 rounded-lg border border-[var(--lamp)] px-3 py-2.5">
-           <p class="text-xs font-medium" style="color:var(--lamp)">${escapeHtml(S.waiting)}</p>
-           <p class="mt-1 text-xs text-[var(--ink-dim)]">${escapeHtml(S.waitingBody)}</p>
-           ${owner ? `<button type="button" data-withdraw="${w.id}" class="mt-2 text-xs text-[var(--ink-dim)] underline">${escapeHtml(S.withdraw)}</button>` : ''}
-         </div>`
-      : '';
+    const buttons = `<button type="button" class="tab" data-vis="code" data-world="${w.id}"
+        ${owner ? '' : 'disabled'} title="${escapeHtml(S.visUnlistedHint)}"
+        aria-selected="${!isPublic}">${escapeHtml(S.visUnlisted)}</button>
+      <button type="button" class="tab" data-vis="public" data-world="${w.id}"
+        ${owner ? '' : 'disabled'} title="${escapeHtml(isPublic ? S.visPublicHint : S.makePublicHint)}"
+        aria-selected="${isPublic}">${escapeHtml(isPublic ? S.visPublic : S.makePublic)}</button>`;
 
     const noteRow = w.review_note
       ? `<p class="mt-3 text-xs text-[var(--ink-dim)]"><span class="eyebrow">${escapeHtml(S.reviewNote)}</span> ${escapeHtml(w.review_note)}</p>`
       : '';
 
-    const hint = waiting ? S.waitingBody
-      : listed ? S.visPublicHint
-      : (LEVELS.find((l) => l.value === w.visibility)?.hint ?? '');
+    const hint = isPublic ? S.visPublicHint : S.visUnlistedHint;
 
     return `<li class="card flex flex-col p-5" data-card="${w.id}">
       <div class="flex items-start justify-between gap-3">
         <h2 class="text-lg">${escapeHtml(w.name)}</h2>
-        <span class="eyebrow shrink-0">${w.status === 'draft' ? S.draft : S.published}</span>
+        <span class="eyebrow shrink-0">${escapeHtml(isPublic ? S.visPublic : S.visUnlisted)}</span>
       </div>
 
-      ${w.join_code ? `<div class="mt-3 flex items-center gap-2">
-        <span class="eyebrow">${escapeHtml(S.code)}</span>
-        <code class="code text-lg font-medium uppercase tracking-widest text-[var(--signal)]"
-              >${escapeHtml(w.join_code)}</code>
-        <button type="button" class="btn btn-ghost btn-sm" data-copy="${escapeHtml(String(w.join_code).toUpperCase())}"
-                >${escapeHtml(S.copy)}</button>
+      ${w.join_code ? `<div class="code-row mt-3">
+        <div class="code-text">
+          <span class="eyebrow">${escapeHtml(S.code)}</span>
+          <code class="code code-big">${escapeHtml(String(w.join_code).toUpperCase())}</code>
+        </div>
+        <button type="button" class="copy-code" data-copy="${escapeHtml(String(w.join_code).toUpperCase())}">
+          <svg class="ic-copy" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="12" height="12" rx="2.5" /><path d="M5 15V6.5A2.5 2.5 0 0 1 7.5 4H15" /></svg>
+          <svg class="ic-done" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m5 12.5 4.5 4.5L19 7.5" /></svg>
+          <span data-copy-label>${escapeHtml(S.copyCode)}</span>
+        </button>
       </div>` : ''}
 
       <p class="data mt-3 text-xs text-[var(--ink-dim)]">
@@ -307,16 +272,15 @@ const questions = [
 
       <div class="mt-5">
         <p class="eyebrow">${escapeHtml(S.visLabel)}</p>
-        <div class="tabs mt-2">${buttons}${publicControl}</div>
+        <div class="tabs mt-2">${buttons}</div>
         <p class="mt-2 min-h-8 text-xs text-[var(--ink-faint)]" data-vis-hint>${escapeHtml(owner ? hint : S.editorOnly)}</p>
-        ${pendingRow}
         ${noteRow}
       </div>
 
       <div class="mt-5 flex gap-2 pt-1">
         <a class="btn btn-primary btn-sm flex-1" href="${S.editHref}?id=${encodeURIComponent(w.id)}">${escapeHtml(S.edit)}</a>
         ${isScored(w.mode) && featuresFor(work).results ? `<a class="btn btn-quiet btn-sm flex-1" href="${S.boardHref}?id=${encodeURIComponent(w.id)}">${escapeHtml(S.board)}</a>` : ''}
-        ${w.visibility !== 'private' && w.status !== 'draft' ? `<a class="btn btn-quiet btn-sm flex-1" href="${S.viewHref}?id=${encodeURIComponent(w.id)}">${escapeHtml(S.viewLabel)}</a>` : ''}
+        <a class="btn btn-quiet btn-sm flex-1" href="${S.viewHref}?id=${encodeURIComponent(w.id)}">${escapeHtml(S.viewLabel)}</a>
       </div>
     </li>`;
   }
@@ -457,25 +421,24 @@ const questions = [
     const target = event.target as HTMLElement;
     if (!target) return;
 
-    // ------------------------------------------------- private and unlisted
+    // ------------------------------------------------- with the code, or public
     const level = target.closest('[data-vis]') as HTMLButtonElement | null;
     if (level && !level.disabled) {
       const id = level.dataset.world!;
-      const wanted = level.dataset.vis!;
+      const wanted = level.dataset.vis as 'code' | 'public';
       const world = worlds.find((w) => w.id === id);
-      if (!world || (world.visibility === wanted && world.status !== 'submitted')) return;
+      if (!world || levelOf(world) === wanted) return;
 
       say(id, S.saving);
 
-      // Status moves with visibility, because together is how they are read:
-      // markers_near and the trails listing both want status published AND
-      // visibility unlisted-or-public. One without the other is a trail that
-      // claims to be shared and opens for nobody.
-      const failed = await setLevel(client, world, wanted as 'draft' | 'code', S.pubDrafts);
+      // Public is instant (make_public) and so is going back (make_code), and
+      // each moves status and visibility together. Public is refused here, with a
+      // sentence, while a stop is still a draft.
+      const failed = await setLevel(client, world, wanted, S.pubDrafts);
       if (failed) { say(id, failed); return; }
 
-      // Reloaded rather than guessed: withdraw_listing may have run on the way
-      // past, and what the row says afterwards is the server's business.
+      // Reloaded rather than guessed: what the row says afterwards is the
+      // server's business.
       await load();
       return;
     }
@@ -487,46 +450,18 @@ const questions = [
       // silent failure there would look like a dead button.
       try {
         await navigator.clipboard.writeText(copy.dataset.copy!);
-        const was = copy.textContent;
-        text(copy, S.copied);
-        setTimeout(() => text(copy, was), 1400);
+        const label = copy.querySelector('[data-copy-label]');
+        copy.classList.add('is-done');
+        text(label, S.codeCopied);
+        setTimeout(() => { copy.classList.remove('is-done'); text(label, S.copyCode); }, 1400);
       } catch { /* the code is on screen; reading it out still works */ }
-      return;
-    }
-
-    // ------------------------------------------------------- asking to list
-    const ask = target.closest('[data-ask]') as HTMLButtonElement | null;
-    if (ask && !ask.disabled) {
-      const id = ask.dataset.ask!;
-      say(id, S.saving);
-
-      const drafts = await unfinishedStops(client, id);
-      if (drafts > 0) { say(id, S.pubDrafts.replace('{0}', String(drafts))); return; }
-
-      const { error } = await client.rpc('request_listing', { p_world: id });
-      if (error) { say(id, error.message); return; }
-
-      await load();
-      return;
-    }
-
-    // -------------------------------------------------------- taking it back
-    const back = target.closest('[data-withdraw]') as HTMLElement | null;
-    if (back) {
-      const id = back.dataset.withdraw!;
-      say(id, S.saving);
-
-      const { error } = await client.rpc('withdraw_listing', { p_world: id });
-      if (error) { say(id, error.message); return; }
-
-      await load();
     }
   });
 </script>
 
 <style>
-  /* Two across: a trail card carries a row of three visibility choices that
-     needs the width. */
+  /* Two across: a trail card carries a row of visibility choices and the join
+     code with its copy button, which need the width. */
   .mine-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1.25rem; }
   @media (max-width: 760px) { .mine-grid { grid-template-columns: minmax(0, 1fr); } }
   .new-slot.is-open, .become-slot { grid-column: 1 / -1; }
@@ -562,4 +497,29 @@ const questions = [
   .mode-opt:has(input:focus-visible) { outline: 2px solid var(--signal); outline-offset: 2px; }
   .mode-name { font-weight: 600; font-size: .9375rem; }
   .mode-body { font-size: .8125rem; color: var(--ink-dim); line-height: 1.45; }
+
+  /* The join code and its button. The card is injected by the script, so these
+     are global to reach it. */
+  :global(.code-row) {
+    display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: .625rem 1rem;
+    padding: .75rem .875rem; border: 1px solid var(--line); border-radius: 16px;
+  }
+  :global(.code-text) { display: flex; flex-direction: column; gap: .125rem; min-width: 0; }
+  :global(.code-big) {
+    font-family: var(--font-mono); font-size: 1.625rem; font-weight: 600; line-height: 1.1;
+    letter-spacing: .16em; text-transform: uppercase; color: var(--signal);
+  }
+  /* Tonal, not outlined: the one thing on the card a creator comes here to press. */
+  :global(.copy-code) {
+    display: inline-flex; align-items: center; gap: .5rem; min-height: 44px; padding: 0 1rem;
+    border: 0; border-radius: 999px; cursor: pointer; font: inherit; font-size: .875rem; font-weight: 600;
+    background: var(--signal-wash); color: var(--signal);
+    transition: transform .16s ease, background-color .2s ease;
+  }
+  :global(.copy-code:hover) { background: color-mix(in srgb, var(--signal) 18%, var(--signal-wash)); }
+  :global(.copy-code:active) { transform: scale(.95); }
+  :global(.copy-code:focus-visible) { outline: 2px solid var(--signal); outline-offset: 2px; }
+  :global(.copy-code .ic-done) { display: none; }
+  :global(.copy-code.is-done .ic-done) { display: inline; }
+  :global(.copy-code.is-done .ic-copy) { display: none; }
 </style>

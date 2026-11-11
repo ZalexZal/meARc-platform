@@ -35,7 +35,7 @@ try {
   check('broker: card says Недвижими имоти', card.includes('Недвижими имоти'));
   check('broker: no "По ред" on the card', !/По ред|Свободен ред/.test(card));
   check('broker: no standings button', !(await p.$(`[data-card="${w.id}"] a[href*="/board"]`)));
-  check('broker: visibility controls still there', (await p.$$(`[data-card="${w.id}"] [data-vis]`)).length === 2 && !!(await p.$(`[data-card="${w.id}"] [data-ask]`)));
+  check('broker: visibility controls still there', (await p.$$(`[data-card="${w.id}"] [data-vis]`)).length === 2);
 
   // The whole page, not only the form: no word about teams, points, standings or order.
   await p.goto(`${BASE}/my-trails/`);

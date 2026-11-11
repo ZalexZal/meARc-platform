@@ -107,7 +107,7 @@ try {
   const cats = await p.$$eval('[data-category] option', (o) => o.map((x) => x.value));
   check('category select has the four categories', cats.join() === 'education,tourism,estate,other', cats.join());
   check('broker: city field in Settings', !!(await p.$('[data-city]')));
-  check('broker: visibility still offered', (await p.$$('[data-level]')).length === 3);
+  check('broker: visibility still offered', (await p.$$('[data-level]')).length === 2);
   await p.selectOption('[data-category]', 'tourism');
   check('category change is stored', await waitFor(async () => (await sql(`select category from worlds where id = $1`, [bid]))[0].category === 'tourism', 5000));
   await p.screenshot({ path: `${SHOTS}/builder-work-broker-settings.png`, fullPage: true });

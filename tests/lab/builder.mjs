@@ -57,7 +57,7 @@ try {
   check('card shows the plain line', (await p.textContent(guideCard)).includes('Без отбори · По ред'));
   check('no standings button on a no-points trail', !(await p.$(`${guideCard} a[href*="/board"]`)));
   check('standings button on a points trail', !!(await p.$(`${ffCard} a[href*="/board"]`)));
-  check('no trail page while private', !(await p.$(`${guideCard} a[href*="/view"]`)));
+  check('trail page link at the code level (no private level since round 4)', !!(await p.$(`${guideCard} a[href*="/view"]`)));
   await p.screenshot({ path: `${SHOTS}/my-trails.png`, fullPage: true });
   const ph = await b.newPage({ viewport: { width: 390, height: 844 } });
   await signIn(ph, u);
