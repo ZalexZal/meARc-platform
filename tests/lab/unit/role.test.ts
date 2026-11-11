@@ -188,7 +188,8 @@ test('stageFor BG: the A5 copy, with the label swap on the tag', () => {
   assert.deepEqual(b.card, { title: 'Оглед на парцела', meta: '1 спирка · 3D модел · за клиент', stops: 1 });
   assert.deepEqual(b.moment, { glyph: 'check', text: 'Клиентът е на парцела' });
   const o = stageFor('creator', 'other', 'bg');
-  assert.equal(o.tag, 'Създател');
+  assert.equal(o.tag, 'Друго · създател');
+  assert.equal(stageFor('creator', 'other', 'en').tag, 'Other · creator');
   assert.equal(o.head, 'Каквото поставите, хората го виждат на място.');
   assert.deepEqual(o.signs.map((x) => x.glyph), ['sliders', 'route', 'swap']);
   assert.deepEqual(o.card, { title: 'Моят маршрут', meta: '5 спирки · свободен ред', stops: 3 });
@@ -229,7 +230,7 @@ test('stageFor: every icon is drawn, EN is plain English, same shape as BG', () 
     }
   }
   assert.equal(stageFor('creator', 'teacher', 'en').tag, 'Education · creator');
-  assert.equal(stageFor('creator', 'other', 'en').tag, 'Creator');
+  assert.equal(stageFor('creator', 'other', 'en').tag, 'Other · creator');
   assert.equal(stageFor('viewer', null, 'en').tag, 'Viewer');
 });
 

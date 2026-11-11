@@ -89,8 +89,10 @@
 .stage-sky-p { right: 0; width: 390px; height: 392px; display: none; }
 .stage-cloud { position: absolute; pointer-events: none; }
 .stage-cloud path { fill: var(--st-cloud); }
-.stage-cloud-d { left: 280px; top: 236px; }
-.stage-cloud-p { right: 40px; top: 150px; display: none; }
+/* Art-layer coordinates (480 x 860): below the moment, above every scene's top. */
+.stage-cloud-d { left: 50px; top: 620px; }
+/* In the ground box: the scene's own sky, top left, where no scene draws. */
+.stage-cloud-p { left: 8px; top: 0; z-index: 0; display: none; }
 
 /* The words. */
 .stage-text { position: relative; display: flex; flex-direction: column; gap: 14px; padding: 32px 32px 0; }
@@ -112,7 +114,7 @@
 }
 .stage-head {
   font-size: 38px; font-weight: 600; letter-spacing: -0.9px; line-height: 1.1;
-  max-width: 400px; margin: 0;
+  max-width: 380px; margin: 0;   /* A5 has 400. The sun sits wholly above the first line; 300-360 pushed the signs under the card. */
 }
 .stage-sub { font-size: 16px; line-height: 1.47; color: var(--st-muted); max-width: 380px; margin: 0; }
 .stage-signs { display: flex; flex-wrap: wrap; gap: 8px; margin: 0; padding: 0; list-style: none; }
@@ -261,6 +263,8 @@
   .stage .stage-route-p { display: block; }
   .stage[data-stage-role="none"] .stage-route-p { display: none; }
   .stage-moment { animation-name: stage-p5pop; }
+  /* The moment rides above the scene, in sky no scene draws in. */
+  .stage-art { padding-top: 46px; }
   .stage-main { padding: 2rem 2rem 3.5rem; }
 }
 
@@ -292,7 +296,7 @@
     --line-at: 5.25px;
     --line-paint: repeating-linear-gradient(to right, var(--sc-line) 0 4px, transparent 4px 10px);
   }
-  .stage-moment { left: 32px; top: 12px; }
+  .stage-moment { left: 32px; top: 0; }
   .stage-phone { left: auto; top: auto; right: 40px; bottom: 16px; width: 143px; height: 286px; }
   .stage-phone-scale { transform: scale(.85); }
 }
@@ -306,14 +310,15 @@
   .stage-chip .seal-glyph { width: 14px; height: 14px; }
   .stage-chip .seal[data-seal-shape="square"] { border-radius: 7px; }
   .stage[data-stage-role="none"] .stage-chip .seal { border-radius: 12px; }
-  .stage-head { font-size: 28px; letter-spacing: -0.6px; line-height: 1.12; max-width: 330px; }
+  .stage-head { font-size: 28px; letter-spacing: -0.6px; line-height: 1.12; max-width: 290px; }
   .stage-sub { display: none; }
   .stage-signs { gap: 6px; }
   .stage-sign { gap: 6px; height: 30px; padding: 0 10px 0 8px; border-radius: 15px; font-size: 12px; }
   .stage-sign svg { width: 15px; height: 15px; stroke-width: 1.9; }
-  .stage-art { margin-top: auto; padding: 0 0 10px; }
+  /* 34px under the scene: the sheet's 24px overlap covers only sky, never the ground. */
+  .stage-art { margin-top: auto; padding: 40px 0 34px; }
   .stage-moment {
-    left: auto; right: 16px; top: 16px; height: 30px; padding: 0 12px 0 6px; border-radius: 15px; gap: 6px; font-size: 12px;
+    left: auto; right: 16px; top: 0; height: 30px; padding: 0 12px 0 6px; border-radius: 15px; gap: 6px; font-size: 12px;
   }
   .stage-moment-dot { width: 18px; height: 18px; border-radius: 9px; }
   .stage-moment-dot svg { width: 11px; height: 11px; }

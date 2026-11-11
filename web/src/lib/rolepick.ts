@@ -20,6 +20,9 @@ export function wirePicker(root: ParentNode, { cta }: { cta?: HTMLElement | null
   const lang = stage?.dataset.lang === 'en' ? 'en' : 'bg';
   const workSection = picker.querySelector('[data-work-section]') as HTMLElement;
   const note = picker.querySelector('[data-viewer-note]') as HTMLElement | null;
+  const announce = stage?.querySelector('[data-stage-announce]') as HTMLElement | null;
+  // The first paint is the page as it loads: nothing has changed, nothing to say.
+  let painted = false;
 
   const read = (): Picked => {
     const role = (picker.querySelector('input[name="role"]:checked') as HTMLInputElement | null)?.value;
@@ -38,7 +41,11 @@ export function wirePicker(root: ParentNode, { cta }: { cta?: HTMLElement | null
     cta?.classList.toggle('is-waiting', !complete());
     if (!stage) return;
     const w = role === 'creator' ? work : null;
-    stage.dataset.stageRole = stageFor(role, w, lang).key;
+    const now = stageFor(role, w, lang);
+    stage.dataset.stageRole = now.key;
+    // One live node carries the headline (stageFor's fixed copy, as text).
+    if (announce && painted && announce.textContent !== now.head) announce.textContent = now.head;
+    painted = true;
     stage.dataset.stageCreator = String(role === 'creator');
     const seal = stage.querySelector('[data-seal]') as HTMLElement | null;
     if (seal) paintSeal(seal, sealState(role, w, lang));

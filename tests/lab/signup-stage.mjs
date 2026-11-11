@@ -20,7 +20,7 @@ const STATES = {
   teacher: { tag: 'Образование · създател', head: 'Уроците излизат навън.', moment: 'Отбор Север · +10 т.' },
   guide: { tag: 'Туризъм · създател', head: 'Историята — там, където се е случила.', moment: 'Наблизо · Източната порта' },
   broker: { tag: 'Недвижими имоти · създател', head: 'Сградата — на парцела, преди да е построена.', moment: 'Клиентът е на парцела' },
-  other: { tag: 'Създател', head: 'Каквото поставите, хората го виждат на място.', moment: 'Спирка 2 от 5' },
+  other: { tag: 'Друго · създател', head: 'Каквото поставите, хората го виждат на място.', moment: 'Спирка 2 от 5' },
   viewer: { tag: 'Зрител', head: 'Тръгнете. Телефонът ще ви покаже останалото.', moment: 'Следваща · 180 м' },
 };
 const ORDER = ['none', 'teacher', 'guide', 'broker', 'other', 'viewer'];
@@ -63,9 +63,86 @@ const read = (p) => p.evaluate(() => {
     moments: text('[data-stage-moment]'),
     cards: text('[data-stage-card]'),
     stale: vis('[data-stage-for]').map((e) => e.dataset.stageFor).filter((k) => k !== stage.dataset.stageRole),
-    live: stage.querySelector('[aria-live="polite"] [data-stage-head]') !== null,
+    // One hidden live node carries the headline; the six drawn headlines are not live.
+    lives: stage.querySelectorAll('[aria-live]').length,
+    announce: stage.querySelector('[data-stage-announce][aria-live="polite"]')?.textContent ?? null,
+    headsLive: stage.querySelector('.stage-heads')?.hasAttribute('aria-live') ?? null,
   };
 });
+
+// Geometry with the animations at rest (their own start/end transforms aside):
+// decoration (sun, moon, stars, cloud with its drift) never touches the words
+// (chip, headline, sub, signs, moment); below 1024px the moment sits above the
+// scene's highest drawing; at 390 the sheet leaves the scene's ground in view.
+const faults = (p) => p.evaluate(() => {
+  const st = document.createElement('style');
+  st.textContent = '*, *::before, *::after { animation: none !important; transition: none !important; }';
+  document.head.append(st);
+  const stage = document.querySelector('[data-stage]');
+  const shown = (el) => el.getClientRects().length > 0 && getComputedStyle(el).visibility !== 'hidden';
+  const vis = (sel) => [...stage.querySelectorAll(sel)].filter(shown);
+  const glyphs = (el) => {
+    const out = [];
+    const walk = document.createTreeWalker(el, NodeFilter.SHOW_TEXT);
+    for (let n = walk.nextNode(); n; n = walk.nextNode()) {
+      if (!n.textContent.trim()) continue;
+      const r = document.createRange(); r.selectNodeContents(n);
+      out.push(...r.getClientRects());
+    }
+    return out;
+  };
+  const words = [];
+  for (const el of vis('.stage-chip, .stage-sign, .stage-moment')) words.push([el.className.baseVal ?? el.className, el.getBoundingClientRect()]);
+  for (const el of vis('.stage-head, .stage-sub')) for (const r of glyphs(el)) words.push([el.className, r]);
+  const drift = innerWidth >= 1024 ? 30 : 20;
+  const decor = vis('[data-decor]').map((el) => {
+    const r = el.getBoundingClientRect();
+    const d = el.dataset.decor === 'cloud' ? drift : 0;
+    return [el.dataset.decor, { left: r.left - d, right: r.right + d, top: r.top, bottom: r.bottom }];
+  });
+  const hit = (a, b) => Math.min(a.right, b.right) - Math.max(a.left, b.left) > 0.5 && Math.min(a.bottom, b.bottom) - Math.max(a.top, b.top) > 0.5;
+  const out = [];
+  if (!decor.some(([n]) => n === 'cloud') || !decor.some(([n]) => n === 'sky')) out.push('sun/moon or cloud not found');
+  for (const [dn, dr] of decor) for (const [wn, wr] of words) if (hit(dr, wr)) out.push(`${dn} on ${wn}`);
+  // The words never run under the sample card or the phone either.
+  for (const el of vis('.stage-card, .stage-phone')) {
+    const r = el.getBoundingClientRect();
+    for (const [wn, wr] of words) if (!/moment/.test(wn) && hit(r, wr)) out.push(`${wn} under ${el.className}`);
+  }
+  if (innerWidth < 1024) {
+    const m = vis('.stage-moment')[0];
+    if (m) {
+      const tops = [...vis('[data-scene]').flatMap((s) => [...s.querySelectorAll('path')]), ...stage.querySelectorAll('.stage-route-p g g')]
+        .map((e) => e.getBoundingClientRect()).filter((r) => r.width || r.height).map((r) => r.top);
+      const top = Math.min(...tops);
+      if (m.getBoundingClientRect().bottom > top + 0.5) out.push(`moment covers the drawing (${Math.round(m.getBoundingClientRect().bottom)} > ${Math.round(top)})`);
+    }
+  }
+  if (innerWidth <= 640) {
+    const g = stage.querySelector('.stage-ground').getBoundingClientRect();
+    const sheet = document.querySelector('[data-stage-sheet]').getBoundingClientRect();
+    if (sheet.top < g.bottom - 0.5) out.push(`sheet hides the ground (${Math.round(sheet.top)} < ${Math.round(g.bottom)})`);
+  }
+  st.remove();
+  return out;
+});
+// A frame where everything has arrived (pins down, trail drawn, moment up), from
+// the top of the page. A style, not the Web Animations API: the full-page capture
+// resizes the viewport, which restarts CSS animations and would undo a pause.
+// The sticky header is drawn mid-page by a phone full-page capture; pin it.
+async function shoot(p, name) {
+  await p.waitForTimeout(600);
+  await p.evaluate(() => {
+    scrollTo(0, 0);
+    const st = document.createElement('style');
+    st.id = 'freeze';
+    st.textContent = '*, *::before, *::after { animation-delay: -5s !important; animation-play-state: paused !important; }'
+      + ' [data-site-header] { position: relative !important; }';
+    document.head.append(st);
+  });
+  await p.screenshot({ path: path.join(SHOTS, name), fullPage: true });
+  await p.evaluate(() => document.getElementById('freeze')?.remove());
+}
 const noSideways = (p) => p.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1);
 
 try {
@@ -75,7 +152,7 @@ try {
     await p.goto(`${BASE}/signup/`);
     await p.waitForSelector('[data-stage]');
     let s = await read(p);
-    check(`${scheme}: headline is an aria-live region`, s.live);
+    check(`${scheme}: one live region, and it is not the drawn headlines`, s.lives === 1 && s.headsLive === false, `${s.lives} ${s.headsLive}`);
     // Walk the states in an order that switches between every kind of choice.
     for (const key of [...ORDER, 'teacher', 'viewer', 'broker', 'none']) {
       await choose(p, key);
@@ -90,6 +167,7 @@ try {
       check(`${scheme} ${key}: moment`, want.moment ? s.moments.join('|') === want.moment : s.moments.length === 0, s.moments.join('|'));
       check(`${scheme} ${key}: sample trail card`, key === 'none' ? s.cards.length === 0 : s.cards.length === 1 && /Примерен маршрут/i.test(s.cards[0]), s.cards.join('|'));
       check(`${scheme} ${key}: nothing from another state visible`, s.stale.length === 0, s.stale.join());
+      check(`${scheme} ${key}: the live node says the new headline`, s.announce === want.head, s.announce);
     }
     // A creator with no work yet: still the welcome stage, chip says Създател.
     await p.check('input[name="role"][value="creator"]');
@@ -125,6 +203,21 @@ try {
   check('EN broker chip', e.tags.join() === 'Real estate · creator', e.tags.join());
   check('EN broker card is a sample', /Sample trail/i.test(e.cards.join()), e.cards.join());
   await en.close();
+
+  // 3b. Decoration clear of the words, the moment clear of the drawing, the ground in view.
+  for (const scheme of ['light', 'dark']) {
+    for (const [w, h] of [[1280, 900], [390, 844], [768, 1024]]) {
+      const p = await page(w, h, scheme);
+      await p.goto(`${BASE}/signup/`);
+      await p.waitForSelector('[data-stage]');
+      for (const key of ORDER) {
+        await choose(p, key);
+        const f = await faults(p);
+        check(`${scheme} ${w}px ${key}: decoration clear of text, ground and drawing clear`, f.length === 0, f.join('; '));
+      }
+      await p.close();
+    }
+  }
 
   // 4. No sideways scroll at 390 and 768, in every state; the phone mockup is gone at 390.
   for (const w of [390, 768]) {
@@ -167,7 +260,18 @@ try {
   const c = await read(cp);
   check('choose-role: stage pre-filled to teacher', c.role === 'teacher' && c.tags.join() === 'Образование · създател', `${c.role} ${c.tags.join()}`);
   check('choose-role: no account fields', (await cp.$$('#email, #password')).length === 0);
+  await shoot(cp, 'a5-choose-light-1280.png');
   await cp.close();
+  const u2 = await makeUser('stage-cr2', { role: null, work: null });
+  const cd = await page(390, 844, 'dark');
+  await signIn(cd, u2);
+  await cd.waitForURL((x) => x.pathname === '/choose-role/', { timeout: 15000 }).catch(() => {});
+  await cd.goto(`${BASE}/choose-role/`);
+  await cd.waitForSelector('[data-role-form]:not([hidden])', { timeout: 15000 });
+  await cd.check('input[name="role"][value="viewer"]');
+  check('choose-role 390 dark: viewer stage', (await read(cd)).role === 'viewer');
+  await shoot(cd, 'a5-choose-dark-390.png');
+  await cd.close();
 
   // 6. Screenshots: every role x light/dark x 1280/390.
   for (const scheme of ['light', 'dark']) {
@@ -177,22 +281,7 @@ try {
       await p.waitForSelector('[data-stage]');
       for (const key of ORDER) {
         await choose(p, key);
-        await p.waitForTimeout(600);
-        // A frame where everything has arrived (pins down, trail drawn, moment up),
-        // seen from the top of the page, so the review compares whole drawings.
-        // (A style, not the Web Animations API: the full-page capture resizes the
-        // viewport, which restarts CSS animations and would undo a pause.)
-        await p.evaluate(() => {
-          scrollTo(0, 0);
-          const st = document.createElement('style');
-          st.id = 'freeze';
-          // The sticky header is drawn mid-page by the full-page capture on a phone; pin it to the top.
-          st.textContent = '*, *::before, *::after { animation-delay: -5s !important; animation-play-state: paused !important; }'
-            + ' [data-site-header] { position: relative !important; }';
-          document.head.append(st);
-        });
-        await p.screenshot({ path: path.join(SHOTS, `a5-${key}-${scheme}-${w}.png`), fullPage: true });
-        await p.evaluate(() => document.getElementById('freeze')?.remove());
+        await shoot(p, `a5-${key}-${scheme}-${w}.png`);
       }
       await p.close();
     }

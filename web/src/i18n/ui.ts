@@ -215,7 +215,7 @@ export const ui = {
     'auth.email': 'Имейл',
     'auth.password': 'Парола',
     'auth.name': 'Име за показване',
-    'auth.nameHelp': 'Това се вижда в класациите.',
+    'auth.nameHelp': 'Вижда се в класациите.',
     'auth.submitIn': 'Влез',
     'auth.submitUp': 'Създай профил',
     'auth.haveAccount': 'Вече имаш профил?',
@@ -734,7 +734,6 @@ export const ui = {
     'role.viewerNotice': 'Вие сте зрител. Станете създател, за да виждате инструментите за вашето занимание.',
     'role.settingsTitle': 'Как ползвате AR Trail',
     'role.continue': 'Продължи',
-    'role.gets': 'Какво получавате',
     // The A5 stage beside sign-up and choose-role: the sample card's label and
     // the words on the five phone screens (decoration; the honest label stays).
     'stage.sample': 'Примерен маршрут',
@@ -966,7 +965,7 @@ export const ui = {
     'auth.email': 'Email',
     'auth.password': 'Password',
     'auth.name': 'Display name',
-    'auth.nameHelp': 'This is what leaderboards show.',
+    'auth.nameHelp': 'Shown on leaderboards.',
     'auth.submitIn': 'Sign in',
     'auth.submitUp': 'Create account',
     'auth.haveAccount': 'Already have an account?',
@@ -1484,7 +1483,6 @@ export const ui = {
     'role.viewerNotice': 'You are a viewer. Become a creator to see the tools for your line of work.',
     'role.settingsTitle': 'How you use AR Trail',
     'role.continue': 'Continue',
-    'role.gets': 'What you get',
     'stage.sample': 'Sample trail',
     'stage.chooseRole': 'Choose a role',
     'stage.guide.pop': 'The tower, 14th c.', 'stage.guide.over': 'Stop 3 of 6', 'stage.guide.name': 'The Eastern Gate',
