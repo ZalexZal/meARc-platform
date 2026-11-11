@@ -24,6 +24,23 @@ export function wirePicker(root: ParentNode, { cta }: { cta?: HTMLElement | null
   // The first paint is the page as it loads: nothing has changed, nothing to say.
   let painted = false;
 
+  // Before a choice the drawings walk through the roles, so the first thing a
+  // visitor sees is what AR Trail does, not an empty frame. The words stay on
+  // the welcome; the walk stops the moment a role (and work) is chosen.
+  const PREVIEW = ['guide', 'teacher', 'broker', 'viewer', 'other'] as const;
+  let previewAt = 0;
+  let previewTimer: ReturnType<typeof setInterval> | null = null;
+  const previewStart = () => {
+    if (!stage || previewTimer) return;
+    stage.dataset.stageArt = PREVIEW[previewAt];
+    previewTimer = setInterval(() => {
+      if (document.hidden) return;
+      previewAt = (previewAt + 1) % PREVIEW.length;
+      stage.dataset.stageArt = PREVIEW[previewAt];
+    }, 4200);
+  };
+  const previewStop = () => { if (previewTimer) { clearInterval(previewTimer); previewTimer = null; } };
+
   const read = (): Picked => {
     const role = (picker.querySelector('input[name="role"]:checked') as HTMLInputElement | null)?.value;
     const work = (picker.querySelector('input[name="work"]:checked') as HTMLInputElement | null)?.value;
@@ -43,6 +60,8 @@ export function wirePicker(root: ParentNode, { cta }: { cta?: HTMLElement | null
     const w = role === 'creator' ? work : null;
     const now = stageFor(role, w, lang);
     stage.dataset.stageRole = now.key;
+    if (now.key === 'none') previewStart();
+    else { previewStop(); stage.dataset.stageArt = now.key; }
     // One live node carries the headline (stageFor's fixed copy, as text).
     if (announce && painted && announce.textContent !== now.head) announce.textContent = now.head;
     painted = true;

@@ -15,19 +15,34 @@
    lib/stage.ts, day and night. Animations are A5's, prefixed stage-.
    ========================================================================== */
 
-/* Only the chosen state's pieces are shown. */
-.stage:not([data-stage-role="none"]) [data-stage-for="none"],
-.stage:not([data-stage-role="teacher"]) [data-stage-for="teacher"],
-.stage:not([data-stage-role="guide"]) [data-stage-for="guide"],
-.stage:not([data-stage-role="broker"]) [data-stage-for="broker"],
-.stage:not([data-stage-role="other"]) [data-stage-for="other"],
-.stage:not([data-stage-role="viewer"]) [data-stage-for="viewer"] { display: none !important; }
+/* Only the current state's pieces are shown. Two states, kept apart:
+   - the words (chip, headline, sub, signs) follow the choice: data-stage-role;
+   - the drawings (sky colour, scene, phone, sample card, moment) follow
+     data-stage-art, which equals the role once one is chosen, and before that
+     walks through the five roles (rolepick.ts) so the stage is never empty. */
+.stage:not([data-stage-role="none"]) .stage-text [data-stage-for="none"],
+.stage:not([data-stage-role="teacher"]) .stage-text [data-stage-for="teacher"],
+.stage:not([data-stage-role="guide"]) .stage-text [data-stage-for="guide"],
+.stage:not([data-stage-role="broker"]) .stage-text [data-stage-for="broker"],
+.stage:not([data-stage-role="other"]) .stage-text [data-stage-for="other"],
+.stage:not([data-stage-role="viewer"]) .stage-text [data-stage-for="viewer"],
+.stage:not([data-stage-art="none"]) .stage-art [data-stage-for="none"],
+.stage:not([data-stage-art="teacher"]) .stage-art [data-stage-for="teacher"],
+.stage:not([data-stage-art="guide"]) .stage-art [data-stage-for="guide"],
+.stage:not([data-stage-art="broker"]) .stage-art [data-stage-for="broker"],
+.stage:not([data-stage-art="other"]) .stage-art [data-stage-for="other"],
+.stage:not([data-stage-art="viewer"]) .stage-art [data-stage-for="viewer"] { display: none !important; }
+
+/* The drawings change softly: the sky eases, the new scene, phone screen and card fade in. */
+.stage { transition: background-color .6s ease; }
+@keyframes stage-fadein { from { opacity: 0; } to { opacity: 1; } }
+.stage-art .scene, .stage-art .phone-screen, .stage-art .stage-card { animation: stage-fadein .6s ease both; }
 /* Before a work is picked, the chip says "Нов профил", or "Създател" once creator is chosen. */
 .stage:not([data-stage-creator="true"]) [data-none="creator"],
 .stage[data-stage-creator="true"] [data-none="ask"] { display: none !important; }
-.stage[data-stage-role="none"] .stage-route-p,
-.stage[data-stage-role="none"] .stage-route-d,
-.stage[data-stage-role="none"] .stage-pin-d { display: none; }
+.stage[data-stage-art="none"] .stage-route-p,
+.stage[data-stage-art="none"] .stage-route-d,
+.stage[data-stage-art="none"] .stage-pin-d { display: none; }
 
 /* Day and night drawings in the sky follow the theme. */
 .stage .stage-night { display: none; }
@@ -248,10 +263,22 @@
 .stage-foot { font-size: .8125rem; color: var(--ink-faint); }
 
 /* ------------------------------------------------------- 1024px and wider */
+/* The whole composition sits in the site's own container (the header's .bar:
+   76rem, 1rem gutters), so its left edge lines up with the logo and its right
+   edge with the header's last button, at any width. The stage is a rounded
+   panel; the form stands beside it, centred on the panel's height. */
 @media (min-width: 1024px) {
-  .stage-layout { grid-template-columns: 480px minmax(0, 1fr); min-height: calc(100svh - 64px); }
-  .stage-in { position: sticky; top: 64px; height: max(860px, calc(100svh - 64px)); }
-  .stage-main { padding: 40px 64px 56px; }
+  .stage-layout {
+    grid-template-columns: 480px minmax(0, 1fr); column-gap: clamp(40px, 5vw, 72px);
+    align-items: center;
+    /* 1.5rem each side: the header's 1rem gutter plus its 8px inset, so the stage
+       starts where the logo starts and the form ends where "Регистрация" ends. */
+    max-width: 76rem; margin: 0 auto; padding: 32px 1.5rem 64px; box-sizing: border-box;
+  }
+  .stage { border-radius: 28px; }
+  .stage-in { height: 860px; }
+  .stage-main { padding: 0; }
+  .stage-main-in { max-width: 44rem; }
 }
 
 /* ------------------------------------------------ the band and the hero */
@@ -261,7 +288,7 @@
   .stage-art { position: relative; left: auto; bottom: auto; width: 100%; height: auto; }
   .stage-ground { position: relative; left: auto; bottom: auto; width: 100%; height: auto; aspect-ratio: 480 / 200; }
   .stage .stage-route-p { display: block; }
-  .stage[data-stage-role="none"] .stage-route-p { display: none; }
+  .stage[data-stage-art="none"] .stage-route-p { display: none; }
   .stage-moment { animation-name: stage-p5pop; }
   /* The moment rides above the scene, in sky no scene draws in. */
   .stage-art { padding-top: 46px; }
@@ -287,12 +314,12 @@
     content: ""; position: absolute; left: 480px; right: 0; bottom: var(--line-at, 0px); height: 1.5px;
     background: var(--line-paint, transparent);
   }
-  .stage[data-stage-role="guide"] { --strip: 60px; }
-  .stage[data-stage-role="teacher"] { --strip: 34px; --line-at: 3.25px; --line-paint: var(--sc-line); }
-  .stage[data-stage-role="broker"] { --line-at: 5.25px; --line-paint: var(--sc-line); }
-  .stage[data-stage-role="other"] { --strip: 40px; --line-at: 5.25px; --line-paint: var(--sc-line); }
-  .stage[data-stage-role="viewer"] { --strip: 80px; --strip-near: 38px; }
-  .stage[data-stage-role="none"] {
+  .stage[data-stage-art="guide"] { --strip: 60px; }
+  .stage[data-stage-art="teacher"] { --strip: 34px; --line-at: 3.25px; --line-paint: var(--sc-line); }
+  .stage[data-stage-art="broker"] { --line-at: 5.25px; --line-paint: var(--sc-line); }
+  .stage[data-stage-art="other"] { --strip: 40px; --line-at: 5.25px; --line-paint: var(--sc-line); }
+  .stage[data-stage-art="viewer"] { --strip: 80px; --strip-near: 38px; }
+  .stage[data-stage-art="none"] {
     --line-at: 5.25px;
     --line-paint: repeating-linear-gradient(to right, var(--sc-line) 0 4px, transparent 4px 10px);
   }

@@ -24,10 +24,15 @@ const STATES = {
   viewer: { tag: 'Зрител', head: 'Тръгнете. Телефонът ще ви покаже останалото.', moment: 'Следваща · 180 м' },
 };
 const ORDER = ['none', 'teacher', 'guide', 'broker', 'other', 'viewer'];
+const PREVIEW = ['guide', 'teacher', 'broker', 'viewer', 'other'];
 
 async function page(width, height, scheme) {
   const ctx = await b.newContext({ viewport: { width, height }, colorScheme: scheme });
   await ctx.addInitScript(() => { try { localStorage.setItem('artrail-cookies-ok', '1'); } catch {} });
+  // The sky's colour eases over .6s; the checks read the colour it settles on.
+  await ctx.addInitScript(() => document.addEventListener('DOMContentLoaded', () => {
+    const s = document.createElement('style'); s.textContent = '.stage{transition:none!important}'; document.head.append(s);
+  }));
   const p = await ctx.newPage();
   p.on('pageerror', (e) => errs.push(`${p.url()}: ${e.message}`));
   return p;
@@ -53,8 +58,10 @@ const read = (p) => p.evaluate(() => {
   const shown = (el) => el.getClientRects().length > 0 && getComputedStyle(el).visibility !== 'hidden';
   const vis = (sel) => [...stage.querySelectorAll(sel)].filter(shown);
   const text = (sel) => vis(sel).map((e) => e.textContent.replace(/\s+/g, ' ').trim());
+  const inText = (e) => !!e.closest('.stage-text');
   return {
     role: stage.dataset.stageRole,
+    art: stage.dataset.stageArt,
     sky: getComputedStyle(stage).backgroundColor,
     scenes: vis('[data-scene]').map((e) => e.dataset.scene),
     phones: vis('[data-phone]').map((e) => e.dataset.phone),
@@ -62,7 +69,9 @@ const read = (p) => p.evaluate(() => {
     heads: text('[data-stage-head]'),
     moments: text('[data-stage-moment]'),
     cards: text('[data-stage-card]'),
-    stale: vis('[data-stage-for]').map((e) => e.dataset.stageFor).filter((k) => k !== stage.dataset.stageRole),
+    // The words follow the role, the drawings follow the art (the preview before a choice).
+    stale: vis('[data-stage-for]').filter((e) => e.dataset.stageFor !== (inText(e) ? stage.dataset.stageRole : stage.dataset.stageArt))
+      .map((e) => `${inText(e) ? 'text' : 'art'}:${e.dataset.stageFor}`),
     // One hidden live node carries the headline; the six drawn headlines are not live.
     lives: stage.querySelectorAll('[aria-live]').length,
     announce: stage.querySelector('[data-stage-announce][aria-live="polite"]')?.textContent ?? null,
@@ -158,14 +167,18 @@ try {
       await choose(p, key);
       s = await read(p);
       const want = STATES[key];
+      // Before a choice the drawings preview one of the five roles; after, they are the role's.
+      const art = key === 'none' ? s.art : key;
       check(`${scheme} ${key}: data-stage-role`, s.role === key, s.role);
-      check(`${scheme} ${key}: sky ${SKY[scheme][key]}`, s.sky === rgb(SKY[scheme][key]), s.sky);
-      check(`${scheme} ${key}: one scene, data-scene=${key}`, s.scenes.join() === key, s.scenes.join());
-      check(`${scheme} ${key}: one phone, data-phone=${key}`, s.phones.join() === key, s.phones.join());
+      check(`${scheme} ${key}: drawings ${key === 'none' ? 'preview a role' : 'are the role\'s'} (${s.art})`, key === 'none' ? PREVIEW.includes(s.art) : s.art === key, s.art);
+      check(`${scheme} ${key}: sky ${SKY[scheme][art]}`, s.sky === rgb(SKY[scheme][art]), s.sky);
+      check(`${scheme} ${key}: one scene, data-scene=${art}`, s.scenes.join() === art, s.scenes.join());
+      check(`${scheme} ${key}: one phone, data-phone=${art}`, s.phones.join() === art, s.phones.join());
       check(`${scheme} ${key}: chip "${want.tag}"`, s.tags.join('|') === want.tag, s.tags.join('|'));
       check(`${scheme} ${key}: headline`, s.heads.join('|') === want.head, s.heads.join('|'));
-      check(`${scheme} ${key}: moment`, want.moment ? s.moments.join('|') === want.moment : s.moments.length === 0, s.moments.join('|'));
-      check(`${scheme} ${key}: sample trail card`, key === 'none' ? s.cards.length === 0 : s.cards.length === 1 && /Примерен маршрут/i.test(s.cards[0]), s.cards.join('|'));
+      const wantMoment = key === 'none' ? STATES[art]?.moment : want.moment;
+      check(`${scheme} ${key}: moment`, wantMoment ? s.moments.join('|') === wantMoment : s.moments.length === 0, s.moments.join('|'));
+      check(`${scheme} ${key}: sample trail card`, s.cards.length === 1 && /Примерен маршрут/i.test(s.cards[0]), s.cards.join('|'));
       check(`${scheme} ${key}: nothing from another state visible`, s.stale.length === 0, s.stale.join());
       check(`${scheme} ${key}: the live node says the new headline`, s.announce === want.head, s.announce);
     }
@@ -173,6 +186,50 @@ try {
     await p.check('input[name="role"][value="creator"]');
     s = await read(p);
     check(`${scheme}: creator without work is stage none, chip Създател`, s.role === 'none' && s.tags.join() === 'Създател', `${s.role} ${s.tags.join()}`);
+    await p.close();
+  }
+
+  // 1b. Before a choice the drawings walk through the roles; a choice stops the walk.
+  {
+    const p = await page(1280, 900, 'light');
+    await p.goto(`${BASE}/signup/`);
+    await p.waitForSelector('[data-stage]');
+    const first = (await read(p)).art;
+    await p.waitForTimeout(4700);
+    const next = (await read(p)).art;
+    check('preview: the drawings move on to another role after ~4s', PREVIEW.includes(first) && PREVIEW.includes(next) && first !== next, `${first} -> ${next}`);
+    await choose(p, 'broker');
+    await p.waitForTimeout(4700);
+    const held = await read(p);
+    check('preview: a chosen role stops the walk (still broker after ~4s)', held.art === 'broker' && held.role === 'broker', `${held.role}/${held.art}`);
+    await choose(p, 'none');
+    await p.waitForTimeout(4700);
+    const again = (await read(p)).art;
+    check('preview: un-choosing starts the walk again', PREVIEW.includes(again), again);
+    await p.close();
+  }
+
+  // 1c. The composition lines up with the header and stands centred, at any desktop width.
+  for (const w of [1280, 1440, 1920]) {
+    const p = await page(w, 1000, 'dark');
+    await p.goto(`${BASE}/signup/`);
+    await p.waitForSelector('[data-stage]');
+    const g = await p.evaluate(() => {
+      const r = (el) => el.getBoundingClientRect();
+      const bar = r(document.querySelector('.site-header .bar'));
+      const logo = r(document.querySelector('.site-header .logo'));
+      const stage = r(document.querySelector('[data-stage]'));
+      const form = r(document.querySelector('.stage-main-in'));
+      const layout = r(document.querySelector('.stage-layout'));
+      const tools = [...document.querySelectorAll('.site-header .bar a, .site-header .bar button')].filter((e) => e.getClientRects().length);
+      const last = r(tools[tools.length - 1]);
+      return { bar, logo, last, stage, form, layout, vw: document.documentElement.clientWidth };
+    });
+    check(`${w}: stage's left edge lines up with the logo`, Math.abs(g.stage.left - g.logo.left) <= 2, `${g.stage.left} vs ${g.logo.left}`);
+    check(`${w}: the form's right edge lines up with the header's last button`, Math.abs(g.form.right - g.last.right) <= 2, `${g.form.right} vs ${g.last.right}`);
+    check(`${w}: the composition sits in the header's container`, g.layout.left >= g.bar.left - 1 && g.layout.right <= g.bar.right + 1, `${g.layout.left}-${g.layout.right} vs ${g.bar.left}-${g.bar.right}`);
+    check(`${w}: the form is centred on the stage's height`, Math.abs((g.form.top + g.form.bottom) / 2 - (g.stage.top + g.stage.bottom) / 2) <= 24, `${(g.form.top + g.form.bottom) / 2} vs ${(g.stage.top + g.stage.bottom) / 2}`);
+    await p.screenshot({ path: `${SHOTS}/balance-${w}.png` });
     await p.close();
   }
 

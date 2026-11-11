@@ -73,7 +73,9 @@ function rules(mode: 'day' | 'night', pre: string): string {
   for (const k of STAGE_KEYS) {
     // The role's scene colours on the stage too, for the ground strip that
     // carries the scene to the right edge of the tablet band (stage.css).
-    out.push(`${pre}.stage[data-stage-role="${k}"]{--st-sky:${sky(k)[mode]};${decl('sc', sceneVars(mode, k))}}`);
+    // Keyed on the drawings' state (data-stage-art), not the words': before a
+    // choice the art previews each role in turn while the words stay on welcome.
+    out.push(`${pre}.stage[data-stage-art="${k}"]{--st-sky:${sky(k)[mode]};${decl('sc', sceneVars(mode, k))}}`);
     out.push(`${pre}.stage .scene[data-scene="${k}"]{${decl('sc', sceneVars(mode, k))}}`);
   }
   return out.join('\n');
