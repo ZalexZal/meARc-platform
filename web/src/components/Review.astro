@@ -134,11 +134,11 @@ const strings = {
   const client = db()!;
 
   function row(w: any) {
-    return `<li class="card p-6" data-world="${w.id}">
+    return `<li class="card p-6 text-left" data-world="${w.id}">
       <div class="flex flex-wrap items-start justify-between gap-4">
         <div class="min-w-0">
           <h2 class="text-lg">${escapeHtml(w.name)}</h2>
-          <p class="data mt-2 text-xs text-[var(--ink-dim)]">
+          <p class="data mt-2 text-left text-xs text-[var(--ink-dim)]">
             ${escapeHtml(count(w.marker_count, S.stop, S.stops))} · ${escapeHtml(w.category ? trailLine(w.mode ?? '', w.category, w.city ?? null, S.lang) : modeLine(w.mode ?? '', S.lang))}
             · ${escapeHtml(S.by)} ${escapeHtml(w.owner_email ?? '—')}
           </p>
@@ -182,7 +182,7 @@ const strings = {
         : `${escapeHtml(m.credit_author)} · ${escapeHtml(m.credit_licence)} · <a class="text-[var(--signal)] hover:underline" href="${escapeHtml(m.credit_link)}" target="_blank" rel="noopener">${escapeHtml(m.credit_link)}</a>`;
       return `<li class="rounded-xl border border-[var(--line)] p-3 text-sm">
         <p>${m.credit_source === 'own' ? escapeHtml(credit) : credit}</p>
-        <p class="data mt-1 text-xs text-[var(--ink-dim)]">${(m.bytes / 1048576).toFixed(1)} MB · ${m.height_m} m${m.animated ? ' · ▶' : ''}
+        <p class="data mt-1 text-left text-xs text-[var(--ink-dim)]">${(m.bytes / 1048576).toFixed(1)} MB · ${m.height_m} m${m.animated ? ' · ▶' : ''}
           · <a class="text-[var(--signal)] hover:underline" href="${escapeHtml(url)}" download>${escapeHtml(S.file)}</a></p>
         <button type="button" class="btn btn-quiet btn-sm mt-2" data-model-preview="${escapeHtml(url)}">${escapeHtml(S.preview)}</button>
       </li>`;
@@ -220,7 +220,7 @@ const strings = {
             >${escapeHtml(S.repMap)}</a>`
       : '';
 
-    return `<li class="card p-6" data-report-id="${r.id}">
+    return `<li class="card p-6 text-left" data-report-id="${r.id}">
       <div class="flex flex-wrap items-start justify-between gap-4">
         <div class="min-w-0">
           <p class="eyebrow">${escapeHtml(kind)} · ${escapeHtml(reason)}</p>
@@ -229,7 +229,7 @@ const strings = {
             ? `<p class="mt-1 text-sm text-[var(--ink-dim)]">${escapeHtml(r.trail_name)}</p>` : ''}
           ${r.detail
             ? `<p class="mt-3 break-words text-sm">${escapeHtml(r.detail)}</p>` : ''}
-          <p class="data mt-3 text-xs text-[var(--ink-dim)]">
+          <p class="data mt-3 text-left text-xs text-[var(--ink-dim)]">
             ${escapeHtml(S.repBy)} ${escapeHtml(r.reporter ?? S.repAnon)}
             ${r.placed_by ? ` · ${escapeHtml(S.repPlaced)} ${escapeHtml(r.placed_by)}` : ''}
           </p>
@@ -301,8 +301,8 @@ const strings = {
       ? `<a class="text-[var(--signal)] underline" href="mailto:${encodeURIComponent(f.reply_to)}">${escapeHtml(S.fbReply)} ${escapeHtml(f.reply_to)}</a>`
       : escapeHtml(f.guest ? S.fbGuest : S.fbAccount);
 
-    return `<li class="card p-6" data-fb-id="${f.id}">
-      <p class="text-xs text-[var(--ink-faint)]">${escapeHtml(when)} · ${from}</p>
+    return `<li class="card p-6 text-left" data-fb-id="${f.id}">
+      <p class="text-left text-xs text-[var(--ink-faint)]">${escapeHtml(when)} · ${from}</p>
       <p class="mt-3 whitespace-pre-wrap">${escapeHtml(f.message)}</p>
       <div class="mt-4 flex flex-wrap items-center justify-between gap-3">
         <span class="text-sm text-[var(--ink-dim)]">${who}</span>

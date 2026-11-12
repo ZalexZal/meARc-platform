@@ -543,14 +543,11 @@ const strings = {
                        aria-label={t('ed.colour')} aria-valuemin="0" aria-valuemax="359">
                     <span class="hue-handle" data-hue-handle hidden></span>
                   </div>
-                  <p class="data mt-1.5 text-xs text-[var(--ink-faint)]" data-hue-value></p>
+                  <p class="data mt-1.5 text-left text-xs text-[var(--ink-faint)]" data-hue-value></p>
                 </div>
-                <!-- The same dot on a pale street and a dark one, since that
-                     is the only question a creator is really asking. -->
-                <span class="hue-proof" style="background:#e9edee"><span data-hue-proof-light></span></span>
-                <span class="hue-proof" style="background:#1b2226"><span data-hue-proof-dark></span></span>
+                <!-- One dot, on the page's own surface, so it suits either theme. -->
+                <span class="hue-proof hue-proof-one"><span data-hue-proof-light></span></span>
               </div>
-              <p class="mt-2 text-xs text-[var(--ink-faint)]">{t('ed.colourHint')}</p>
             </div>
           </div>
 
@@ -739,7 +736,7 @@ const strings = {
                  file: "that did not fit" after a long upload is too late. -->
             <div class="mt-1" data-media-usage hidden>
               <div class="meter"><span style="width:0%" data-media-fill></span></div>
-              <p class="data mt-1.5 text-xs text-[var(--ink-faint)]" data-media-used></p>
+              <p class="data mt-1.5 text-left text-xs text-[var(--ink-faint)]" data-media-used></p>
             </div>
 
             <p class="hidden text-sm text-[var(--signal)]" data-upload-status></p>
@@ -1789,7 +1786,7 @@ const strings = {
       const title = m.content?.[S.lang]?.title || m.content?.bg?.title || m.content?.en?.title || '—';
       // draggable on the li, not on the button: a draggable button swallows its
       // own click on some browsers, and picking a stop is the commoner action.
-      return `<li draggable="true" data-row="${m.id}" class="stop-row rounded-lg transition-opacity">
+      return `<li draggable="true" data-row="${m.id}" class="stop-row rounded-lg text-left transition-opacity">
         <button type="button" data-pick="${m.id}"
         class="flex min-w-0 flex-1 cursor-grab items-center gap-2.5 rounded-lg border border-[var(--line)] px-3 py-2 text-left text-sm transition-colors hover:bg-[var(--surface-2)]">
         <span class="data w-5 shrink-0 text-xs text-[var(--ink-faint)]">${m.step ?? i + 1}</span>
@@ -2092,10 +2089,10 @@ const strings = {
     paintSteps();
     q('[data-hints-empty]')!.classList.toggle('hidden', rows.length > 0);
     q('[data-hints]')!.innerHTML = rows.map((h: any) => `
-      <li class="card flex items-start justify-between gap-3 p-3">
+      <li class="card flex items-start justify-between gap-3 p-3 text-left">
         <div class="min-w-0">
           <p class="text-sm">${escapeHtml(h.body?.bg || h.body?.en || '—')}</p>
-          <p class="data mt-0.5 text-2xs text-[var(--ink-faint)]">${h.cost} · ${escapeHtml(S.hintCost)}</p>
+          <p class="data mt-0.5 text-left text-2xs text-[var(--ink-faint)]">${h.cost} · ${escapeHtml(S.hintCost)}</p>
         </div>
         <button type="button" data-del-hint="${h.id}"
                 class="shrink-0 text-xs text-[var(--alert)] hover:underline">${escapeHtml(S.remove)}</button>
@@ -2187,7 +2184,7 @@ const strings = {
         ? m.path
         : decodeURIComponent((m.path.split('/').pop() ?? m.path).replace(/^\d+-/, ''));
 
-      return `<li class="card flex items-center gap-3 p-3">
+      return `<li class="card flex items-center gap-3 p-3 text-left">
         ${preview}
         <a href="${escapeHtml(url)}" target="_blank" rel="noopener"
            class="min-w-0 flex-1 truncate text-xs text-[var(--signal)] hover:underline"
@@ -2516,9 +2513,9 @@ const strings = {
 
     list.innerHTML = rows.map((r: any) => {
       const title = r.marker_title?.[S.lang]?.title || r.marker_title?.bg?.title || '—';
-      return `<li class="card flex flex-wrap items-start justify-between gap-4 p-4">
+      return `<li class="card flex flex-wrap items-start justify-between gap-4 p-4 text-left">
         <div class="min-w-0 flex-1">
-          <p class="eyebrow">${escapeHtml(title)} · ${escapeHtml(r.team_name)}</p>
+          <p class="eyebrow text-left">${escapeHtml(title)} · ${escapeHtml(r.team_name)}</p>
           <p class="mt-1.5 break-words text-sm">${escapeHtml(r.submitted)}</p>
         </div>
         <div class="flex shrink-0 flex-wrap gap-2">
@@ -2786,7 +2783,6 @@ const strings = {
     const handle = q('[data-hue-handle]') as HTMLElement;
     const strip = q('[data-hue]') as HTMLElement;
     const light = q('[data-hue-proof-light]') as HTMLElement;
-    const dark = q('[data-hue-proof-dark]') as HTMLElement;
 
     if (!handle || !strip) return;
 
@@ -2798,7 +2794,6 @@ const strings = {
 
     handle.style.left = `${((hue ?? DEFAULT_HUE) / 359) * 100}%`;
     if (light) light.style.background = hex;
-    if (dark) dark.style.background = hex;
 
     // The shape cards take the stop's colour, so the choice reads as "this, in
     // the camera".
@@ -3634,6 +3629,8 @@ const strings = {
   .model-box.hidden { display: none; }
   .model-grid { display: grid; grid-template-columns: minmax(0, 1fr); gap: 1rem; align-items: start; }
   .model-src, .model-size, .model-facing { min-width: 0; }
+  /* Technical helper lines in the model box (file names, sizes, narrow columns): justified they gap. */
+  .model-box p:not(.model-empty) { text-align: left; }
   .model-stage-wrap { min-width: 0; }
   .model-stage {
     position: relative; aspect-ratio: 1; border-radius: 16px; overflow: hidden;
@@ -3709,7 +3706,7 @@ const strings = {
   :global(.rep-list) { display: grid; gap: .375rem; font-size: .875rem; }
   :global(.rep-row) { display: grid; grid-template-columns: 6.5rem minmax(0, 1fr); gap: .5rem; align-items: baseline; }
   :global(.rep-row dt) { color: var(--ink-faint); font-size: .8125rem; }
-  :global(.rep-row dd) { min-width: 0; overflow-wrap: anywhere; display: flex; flex-wrap: wrap; align-items: center; gap: .375rem; }
+  :global(.rep-row dd) { min-width: 0; text-align: left; hyphens: manual; overflow-wrap: anywhere; display: flex; flex-wrap: wrap; align-items: center; gap: .375rem; }
   :global(.rep-lang) { padding: .1rem .5rem; border-radius: 9999px; font-size: .75rem; font-weight: 600; border: 1px solid var(--line); color: var(--ink-faint); text-decoration: line-through; }
   :global(.rep-lang.is-on) { border-color: var(--signal); color: var(--signal); background: var(--signal-wash); text-decoration: none; }
   :global(.rep-swatch) { width: 14px; height: 14px; border-radius: 50%; display: inline-block; }
@@ -3776,6 +3773,7 @@ const strings = {
     border: 1px solid var(--line); border-radius: 22px; background: var(--surface);
   }
   .share-card [hidden] { display: none; }
+  .share-card p { text-align: center; }
   .share-scan { font-size: .875rem; color: var(--ink-dim); max-width: 18rem; margin: 0 auto; }
   /* White behind the code in light and dark alike: a phone cannot read a QR code
      that is light on dark. */

@@ -247,7 +247,7 @@ const questions = [
 
     const hint = isPublic ? S.visPublicHint : S.visUnlistedHint;
 
-    return `<li class="card flex flex-col p-5" data-card="${w.id}">
+    return `<li class="card flex flex-col p-5 text-left" data-card="${w.id}">
       <div class="flex items-start justify-between gap-3">
         <h2 class="text-lg">${escapeHtml(w.name)}</h2>
         <span class="eyebrow shrink-0">${escapeHtml(isPublic ? S.visPublic : S.visUnlisted)}</span>
@@ -265,7 +265,7 @@ const questions = [
         </button>
       </div>` : ''}
 
-      <p class="data mt-3 text-xs text-[var(--ink-dim)]">
+      <p class="data mt-3 text-left text-xs text-[var(--ink-dim)]">
         ${escapeHtml(trailLine(w.mode, w.category ?? 'other', w.city ?? null, S.lang, featuresFor(work).teams || featuresFor(work).order))} \u00b7 ${escapeHtml(count(w.marker_count, S.stop, S.stops))}
         ${Number(w.pending) > 0 ? ` \u00b7 <span style="color:var(--lamp)">${w.pending} ${escapeHtml(S.pending)}</span>` : ''}
         ${owner ? '' : ` \u00b7 ${escapeHtml(S.roleEditor)}`}
