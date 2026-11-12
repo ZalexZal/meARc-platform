@@ -124,8 +124,8 @@ const strings = {
     checking: t('mdl.checking'), ok: t('mdl.ok'), animated: t('mdl.animated'),
     notGlb: t('mdl.notGlb'), tooBig: t('mdl.tooBig'), tooManyTriangles: t('mdl.tooManyTriangles'),
     textureTooBig: t('mdl.textureTooBig'), compressed: t('mdl.compressed'), external: t('mdl.external'),
-    noMesh: t('mdl.noMesh'), current: t('mdl.current'), need: t('mdl.need'), needRights: t('mdl.needRights'),
-    needCredit: t('mdl.needCredit'), uploading: t('mdl.uploading'), imp: t('imp.model'),
+    noMesh: t('mdl.noMesh'), current: t('mdl.current'), need: t('mdl.need'),
+    uploading: t('mdl.uploading'), imp: t('imp.model'),
     stl: t('mdl.stl'), stlBad: t('mdl.stlBad'), choose: t('mdl.choose'), sizeRange: t('mdl.sizeRange'), heading: t('mdl.heading'),
     n: t('mdl.n'), e: t('mdl.e'), s: t('mdl.s'), w: t('mdl.w'),
   },
@@ -140,6 +140,7 @@ const strings = {
     signin: t('ai3d.signin'), notReady: t('ai3d.notReady'), pick: t('ai3d.pick'),
     shapes: t('ai3d.shapes'), lowpoly: t('ai3d.lowpoly'), emptyStage: t('ai3d.emptyStage'), needInput: t('ai3d.needInput'), frames: t('ai3d.frames'), videoBad: t('ai3d.videoBad'),
   },
+  read: { all: t('q.all'), less: t('q.less') },
   wiz: {
     next: t('wiz.next'), done: t('wiz.done'), saved: t('wiz.saved'), skipped: t('wiz.skipped'),
     of: t('wiz.of'), newStop: t('wiz.newStop'), stop: t('wiz.stop'), untitled: t('wiz.untitled'),
@@ -460,43 +461,15 @@ const strings = {
               </div>
 
               <!-- The creator's own model. Checked in the browser before it is
-                   sent (lib/glb.ts), shown turning, sized and faced, and
-                   credited. Uploaded when the step is left, like the rest. -->
+                   sent (lib/glb.ts), shown turning, sized and faced.
+                   Uploaded when the step is left, like the rest. -->
               <div class="model-box mt-3 hidden" data-model-fields>
                 <p class="text-xs text-[var(--ink-dim)]" data-model-hint>{t('mdl.hint')}</p>
+                <!-- Round 5: the file first, then the preview, size and facing.
+                     Two columns on a wide screen (preview on the left spanning
+                     the three blocks on the right); one column on a phone. -->
                 <div class="model-grid">
-                  <!-- The preview, and under it what it is sized and turned by
-                       (round 4): the column was a void below the preview. -->
-                  <div class="model-left">
-                  <div class="model-stage" data-model-stage>
-                    <p class="model-empty" data-model-empty>
-                      <svg width="28" height="28" viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round" aria-hidden="true"><path d="M16 3.5 26.5 9.5v13L16 28.5 5.5 22.5v-13L16 3.5Z"/><path d="M5.5 9.5 16 15.5l10.5-6M16 15.5v13"/></svg>
-                      <span data-model-empty-label>{t('mdl.choose')}</span>
-                    </p>
-                  </div>
-                    <div class="model-size">
-                      <label class="block text-sm">
-                        <span class="mb-1.5 block font-medium">{t('mdl.height')}</span>
-                        <input class="field data" type="number" min="0.2" max="200" step="0.1" data-model-height />
-                      </label>
-                      <p class="mt-1.5 text-xs text-[var(--ink-faint)]">{t('mdl.heightHint')}</p>
-                    </div>
-                    <div class="model-facing">
-                      <span class="mb-1.5 block text-sm font-medium" id="facing-label">{t('mdl.heading')}</span>
-                      <div class="facing-row">
-                        <div data-model-dial></div>
-                        <div class="facing-num">
-                          <span class="flex items-center gap-2">
-                            <input class="field data" type="number" min="0" max="359" step="1" data-model-heading-num aria-labelledby="facing-label" />
-                            <span class="data text-xs text-[var(--ink-faint)]" data-model-compass>N</span>
-                          </span>
-                          <p class="text-xs text-[var(--ink-faint)]">{t('mdl.headingHint')}</p>
-                        </div>
-                      </div>
-                      <input type="hidden" data-model-heading value="0" />
-                    </div>
-                  </div>
-                  <div class="space-y-3">
+                  <div class="model-src space-y-3">
                     <!-- Where the model comes from follows the tile (8 Nov 2026):
                          "Insert a 3D model" takes a file (.glb or .stl), "Generate
                          with AI" takes photos and/or a video, and a description. -->
@@ -529,42 +502,36 @@ const strings = {
                     <p class="text-xs text-[var(--ink-dim)]" data-model-current hidden></p>
                     <p class="text-xs" data-model-check role="status" aria-live="polite" hidden></p>
                   </div>
+                  <div class="model-stage-wrap">
+                    <div class="model-stage" data-model-stage>
+                      <p class="model-empty" data-model-empty>
+                        <svg width="28" height="28" viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round" aria-hidden="true"><path d="M16 3.5 26.5 9.5v13L16 28.5 5.5 22.5v-13L16 3.5Z"/><path d="M5.5 9.5 16 15.5l10.5-6M16 15.5v13"/></svg>
+                        <span data-model-empty-label>{t('mdl.choose')}</span>
+                      </p>
+                    </div>
+                  </div>
+                  <div class="model-size">
+                    <label class="block text-sm">
+                      <span class="mb-1.5 block font-medium">{t('mdl.height')}</span>
+                      <input class="field data" type="number" min="0.2" max="200" step="0.1" data-model-height />
+                    </label>
+                    <p class="mt-1.5 text-xs text-[var(--ink-faint)]">{t('mdl.heightHint')}</p>
+                  </div>
+                  <div class="model-facing">
+                    <span class="mb-1.5 block text-sm font-medium" id="facing-label">{t('mdl.heading')}</span>
+                    <div class="facing-row">
+                      <div data-model-dial></div>
+                      <div class="facing-num">
+                        <span class="flex items-center gap-2">
+                          <input class="field data" type="number" min="0" max="359" step="1" data-model-heading-num aria-labelledby="facing-label" />
+                          <span class="data text-xs text-[var(--ink-faint)]" data-model-compass>N</span>
+                        </span>
+                        <p class="text-xs text-[var(--ink-faint)]">{t('mdl.headingHint')}</p>
+                      </div>
+                    </div>
+                    <input type="hidden" data-model-heading value="0" />
+                  </div>
                 </div>
-
-                <fieldset class="mt-2 space-y-3" data-model-credit>
-                  <legend class="mb-1.5 text-sm font-medium">{t('mdl.credit')}</legend>
-                  <div class="flex flex-wrap gap-2">
-                    <label class="kind-opt credit-opt"><input class="sr-only" type="radio" name="modelCredit" value="own" checked /><span class="kind-name">{t('mdl.own')}</span></label>
-                    <label class="kind-opt credit-opt"><input class="sr-only" type="radio" name="modelCredit" value="other" /><span class="kind-name">{t('mdl.other')}</span></label>
-                  </div>
-                  <div class="hidden gap-3 sm:grid-cols-3" data-model-other>
-                    <label class="block text-sm">
-                      <span class="mb-1.5 block font-medium">{t('mdl.author')}</span>
-                      <input class="field" maxlength="120" data-model-author />
-                    </label>
-                    <label class="block text-sm">
-                      <span class="mb-1.5 block font-medium">{t('mdl.licence')}</span>
-                      <select class="field" data-model-licence>
-                        <option value="CC0">CC0</option>
-                        <option value="CC BY 4.0">CC BY 4.0</option>
-                        <option value="CC BY-SA 4.0">CC BY-SA 4.0</option>
-                        <option value="other">{t('mdl.licenceOther')}</option>
-                      </select>
-                    </label>
-                    <label class="block text-sm">
-                      <span class="mb-1.5 block font-medium">{t('mdl.link')}</span>
-                      <input class="field" type="url" maxlength="300" placeholder="https://" data-model-link />
-                    </label>
-                    <label class="hidden text-sm sm:col-span-3" data-model-licence-other-row>
-                      <span class="mb-1.5 block font-medium">{t('mdl.licenceOther')}</span>
-                      <input class="field" maxlength="60" data-model-licence-other />
-                    </label>
-                  </div>
-                  <label class="flex items-start gap-3 text-sm">
-                    <input type="checkbox" class="mt-0.5 h-4 w-4 shrink-0" data-model-rights />
-                    <span>{t('mdl.rights')}</span>
-                  </label>
-                </fieldset>
               </div>
             </div>
 
@@ -621,6 +588,15 @@ const strings = {
               <h3>{t('wiz.question.title')} <span class="badge badge-quiet ml-1 align-middle">{t('wiz.optional')}</span></h3>
               <p>{t('wiz.question.lede')}</p>
             </header>
+
+            <!-- What a walker has just read at this stop: the text from step 1,
+                 read-only, so the question can be about it. -->
+            <div class="read-box" data-read-box>
+              <p class="read-label">{t('q.read')}</p>
+              <p class="read-text" data-read-text></p>
+              <p class="read-empty" data-read-empty hidden>{t('q.empty')}</p>
+              <button type="button" class="read-more" data-read-more hidden aria-expanded="false">{t('q.all')}</button>
+            </div>
 
             <div class="kinds" role="radiogroup" aria-label={t('ed.answerKind')}>
               {kinds.map((k) => (
@@ -1472,7 +1448,38 @@ const strings = {
 
   function show(panel: string) {
     qa('[data-panel]').forEach((p) => p.classList.toggle('hidden', (p as HTMLElement).dataset.panel !== panel));
+    if (panel === 'question') paintRead();
   }
+
+  /**
+   * The stop's text in the current language, read-only above the question, so
+   * the creator can see what a walker has just read. Long text folds to eight
+   * lines with a button to open it.
+   */
+  function paintRead() {
+    const body = ((field(S.lang === 'en' ? 'bodyEn' : 'bodyBg') as HTMLTextAreaElement | null)?.value ?? '').trim();
+    const out = q('[data-read-text]') as HTMLElement;
+    const more = q('[data-read-more]') as HTMLButtonElement;
+    out.textContent = body;
+    out.hidden = !body;
+    (q('[data-read-empty]') as HTMLElement).hidden = Boolean(body);
+    out.classList.remove('is-open');
+    more.setAttribute('aria-expanded', 'false');
+    text(more, S.read.all);
+    // Measured while it is clamped; the pane must be showing for that to mean anything.
+    more.hidden = !body || out.scrollHeight <= out.clientHeight + 1;
+  }
+  (q('[data-read-more]') as HTMLElement).addEventListener('click', () => {
+    const out = q('[data-read-text]') as HTMLElement;
+    const more = q('[data-read-more]') as HTMLElement;
+    const open = out.classList.toggle('is-open');
+    more.setAttribute('aria-expanded', String(open));
+    text(more, open ? S.read.less : S.read.all);
+  });
+  form.addEventListener('input', (e) => {
+    const n = (e.target as HTMLInputElement)?.name;
+    if (n === 'bodyBg' || n === 'bodyEn') paintRead();
+  });
 
   /** Keeps the top of the form in view; on a phone it sits below the map. */
   function bringFormIntoView(always: boolean) {
@@ -2848,7 +2855,6 @@ const strings = {
     dirty = true;
     turnPreview();
   });
-  const LICENCES = ['CC0', 'CC BY 4.0', 'CC BY-SA 4.0'];
 
   function modelSay(message: string, bad: boolean) {
     const el = mq<HTMLElement>('check');
@@ -2906,24 +2912,9 @@ const strings = {
     text(mq<HTMLElement>('compass'), [n, n + e, e, s + e, s, s + w, w, n + w][Math.round(deg / 45) % 8]);
   }
 
-  function creditOther() {
-    return (form.querySelector('input[name="modelCredit"]:checked') as HTMLInputElement | null)?.value === 'other';
-  }
-  function showCredit() {
-    const box = mq<HTMLElement>('other');
-    box.classList.toggle('hidden', !creditOther());
-    box.classList.toggle('grid', creditOther());
-    mq<HTMLElement>('licence-other-row').classList.toggle('hidden', (mq<HTMLSelectElement>('licence')).value !== 'other');
-  }
-  function licence() {
-    const v = mq<HTMLSelectElement>('licence').value;
-    return v === 'other' ? mq('licence-other').value.trim() : v;
-  }
-
   async function loadModel(m: any) {
     modelFile = null; modelInfo = null;
     mq('file').value = '';
-    mq('rights').checked = false;
     modelSay('', false);
     const { data } = await client.from('marker_models').select('*').eq('marker_id', m.id).maybeSingle();
     if (selected !== m.id) return;
@@ -2933,18 +2924,9 @@ const strings = {
       (form.querySelector('input[name="shape"][value="ai"]') as HTMLInputElement).checked = true;
       showModelFields();
     }
-    paintCredit();
     mq('height').value = modelRow ? String(Math.round(modelRow.height_m * 100) / 100) : '';
     mq('heading').value = mq('heading-num').value = String(modelRow?.heading_deg ?? 0);
     dial.set(modelRow?.heading_deg ?? 0);
-    const other = modelRow?.credit_source === 'other';
-    (form.querySelector(`input[name="modelCredit"][value="${other ? 'other' : 'own'}"]`) as HTMLInputElement).checked = true;
-    mq('author').value = modelRow?.credit_author ?? '';
-    mq('link').value = modelRow?.credit_link ?? '';
-    const lic = modelRow?.credit_licence ?? 'CC0';
-    mq<HTMLSelectElement>('licence').value = LICENCES.includes(lic) ? lic : 'other';
-    mq('licence-other').value = LICENCES.includes(lic) ? '' : lic;
-    showCredit();
     const current = mq<HTMLElement>('current');
     current.hidden = !modelRow;
     if (modelRow) text(current, S.mdl.current.replace('{0}', summary(modelRow.bytes, modelRow.triangles, modelRow.animated)));
@@ -2959,11 +2941,10 @@ const strings = {
     form.querySelectorAll<HTMLElement>('[data-src-panel]').forEach((p) => {
       p.hidden = p.dataset.srcPanel !== (chosenTile() === 'ai' ? 'ai' : 'file');
     });
-    // The file instructions and "whose model" belong to a file, not to AI.
+    // The file instructions belong to a file, not to AI.
     const ai = chosenTile() === 'ai';
     mq<HTMLElement>('hint').hidden = ai;
     text(mq<HTMLElement>('empty-label'), ai ? S.ai3d.emptyStage : S.mdl.choose);
-    paintCredit();
     if (on) showPreview(modelUrl);
   }
 
@@ -2978,7 +2959,6 @@ const strings = {
       return false;
     }
     modelFile = file; modelInfo = found.info; modelAi = ai;
-    paintCredit();
     modelSay((ai ? S.ai3d.done + ' ' : '') + summary(file.size, found.info.triangles, found.info.animated), false);
     // Its own size, if it was made at a size that makes sense in a street.
     // An AI model has no real size of its own: it starts at 2 m.
@@ -2992,10 +2972,6 @@ const strings = {
     showPreview(modelUrl);
     dirty = true;
     return true;
-  }
-
-  function paintCredit() {
-    mq<HTMLElement>('credit').hidden = Boolean(modelAi) || chosenTile() === 'ai';
   }
 
   mq('file').addEventListener('change', async () => {
@@ -3125,16 +3101,12 @@ const strings = {
     dial.set(deg);
     turnPreview();
   });
-  form.querySelectorAll('input[name="modelCredit"]').forEach((r) => r.addEventListener('change', showCredit));
-  mq<HTMLSelectElement>('licence').addEventListener('change', showCredit);
 
   /** What is still missing before the model can be saved, or nothing. */
   function modelProblem(): string {
     if (!modelRow && !modelFile) return S.mdl.need;
     const h = Number(mq('height').value);
     if (!(h >= 0.2 && h <= 200)) return S.mdl.sizeRange;
-    if (creditOther() && (!mq('author').value.trim() || !licence() || !/^https:\/\/\S+$/.test(mq('link').value.trim()))) return S.mdl.needCredit;
-    if (modelFile && !modelAi && !mq('rights').checked) return S.mdl.needRights;
     return '';
   }
 
@@ -3151,7 +3123,10 @@ const strings = {
       const up = await client.storage.from('marker-media').upload(path, body, { contentType: 'model/gltf-binary', upsert: false });
       if (up.error) { modelSay('', false); return up.error.message; }
     }
-    const other = !modelAi && creditOther();
+    // No question about whose model it is any more (12 Nov 2026): what a creator
+    // uploads is theirs to use, as the terms say. A new file is saved as 'own'
+    // (or 'ai'); a model saved earlier with somebody else's credit keeps it.
+    const keep = !modelAi && !modelFile && modelRow?.credit_source === 'other';
     const row = {
       marker_id: markerId,
       path,
@@ -3159,11 +3134,11 @@ const strings = {
       animated: modelInfo?.animated ?? modelRow.animated,
       height_m: Number(mq('height').value),
       heading_deg: ((Math.round(Number(mq('heading').value)) || 0) % 360 + 360) % 360,
-      credit_source: modelAi ? 'ai' : other ? 'other' : 'own',
+      credit_source: modelAi ? 'ai' : keep ? 'other' : 'own',
       ai_source: modelAi,
-      credit_author: other ? mq('author').value.trim() : null,
-      credit_licence: other ? licence() : null,
-      credit_link: other ? mq('link').value.trim() : null,
+      credit_author: keep ? modelRow.credit_author : null,
+      credit_licence: keep ? modelRow.credit_licence : null,
+      credit_link: keep ? modelRow.credit_link : null,
     };
     const { data, error } = await client.from('marker_models').upsert(row, { onConflict: 'marker_id' }).select().single();
     if (error) {
@@ -3176,7 +3151,6 @@ const strings = {
     modelRow = data;
     modelFile = null; modelInfo = null;
     mq('file').value = '';
-    mq('rights').checked = false;
     modelSay('', false);
     const current = mq<HTMLElement>('current');
     current.hidden = false;
@@ -3640,30 +3614,45 @@ const strings = {
   .kind-name { font-weight: 600; font-size: .90625rem; }
   .kind-body { font-size: .8125rem; color: var(--ink-dim); }
 
+  /* The stop's text, read-only, at the top of the question step. */
+  .read-box { padding: .75rem 1rem; border-radius: 14px; background: var(--surface); border: 1px solid var(--line-soft); }
+  .read-label { font-size: .75rem; font-weight: 600; color: var(--ink-faint); margin-bottom: .375rem; }
+  .read-text {
+    font-size: .875rem; line-height: 1.5; color: var(--ink-dim); white-space: pre-line; overflow-wrap: anywhere;
+    display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 8; overflow: hidden;
+  }
+  .read-text.is-open { display: block; -webkit-line-clamp: unset; }
+  .read-text[hidden], .read-empty[hidden], .read-more[hidden] { display: none; }
+  .read-empty { font-size: .8125rem; color: var(--ink-faint); }
+  .read-more { margin-top: .375rem; font-size: .8125rem; font-weight: 600; color: var(--signal); }
+  .read-more:hover { text-decoration: underline; }
+
   .add-box { padding: 1rem; border-radius: 18px; border: 1px dashed var(--line); }
 
   /* The creator's own model: its preview beside its size and facing. */
   .model-box { display: flex; flex-direction: column; gap: 1rem; padding: 1rem; border-radius: 18px; border: 1px solid var(--line); background: var(--ground); }
   .model-box.hidden { display: none; }
-  .model-grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 1rem; align-items: start; }
-  @media (max-width: 640px) { .model-grid { grid-template-columns: minmax(0, 1fr); } }
+  .model-grid { display: grid; grid-template-columns: minmax(0, 1fr); gap: 1rem; align-items: start; }
+  .model-src, .model-size, .model-facing { min-width: 0; }
+  .model-stage-wrap { min-width: 0; }
   .model-stage {
     position: relative; aspect-ratio: 1; border-radius: 16px; overflow: hidden;
     background: radial-gradient(circle at 50% 40%, var(--surface), var(--surface-2));
     border: 1px solid var(--line-soft);
   }
   .model-stage :global(model-viewer) { position: absolute; inset: 0; width: 100%; height: 100%; --poster-color: transparent; }
-  .model-empty { position: absolute; inset: 0; display: grid; place-content: center; justify-items: center; gap: .5rem; color: var(--ink-faint); font-size: .8125rem; }
+  .model-empty { position: absolute; inset: 0; display: grid; place-content: center; justify-items: center; gap: .5rem; padding: 0 1rem; text-align: center; color: var(--ink-faint); font-size: .8125rem; }
 
-  /* Round 4: size and facing under the preview, the facing as a compass. */
-  .model-left { display: flex; flex-direction: column; gap: 1rem; min-width: 0; }
-  /* One column on a phone: preview, then where the model comes from, then its size and facing. */
-  @media (max-width: 640px) {
-    .model-left { display: contents; }
-    .model-stage { order: 0; }
-    .model-grid > .space-y-3 { order: 1; }
-    .model-size { order: 2; }
-    .model-facing { order: 3; }
+  /* Round 5: file, size and facing in the right column, the preview on the left
+     spanning all three and filling their height, so neither side is a void. On a
+     phone one column, in the order: file, preview, size, facing. */
+  @media (min-width: 641px) {
+    .model-grid { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); grid-template-areas: "stage src" "stage size" "stage facing"; }
+    .model-stage-wrap { grid-area: stage; position: relative; align-self: stretch; min-height: 15rem; }
+    .model-stage { position: absolute; inset: 0; aspect-ratio: auto; }
+    .model-src { grid-area: src; }
+    .model-size { grid-area: size; }
+    .model-facing { grid-area: facing; }
   }
   .facing-row { display: flex; align-items: center; gap: 1rem; }
   .facing-num { display: flex; flex-direction: column; gap: .5rem; min-width: 0; flex: 1; }
@@ -3734,7 +3723,6 @@ const strings = {
   :global(.rep-answers) { list-style: none; padding: 0; display: grid; gap: .125rem; }
   :global(.rep-answers .is-right) { color: var(--signal); font-weight: 600; }
   :global(.rep-hints) { list-style: decimal inside; font-size: .875rem; display: grid; gap: .25rem; }
-  .credit-opt { flex-direction: row; align-items: center; padding: .625rem .875rem; }
 
   .ready { align-items: flex-start; padding: 2rem 0 1rem; }
   .ready h3 { font-size: 1.5rem; letter-spacing: -.02em; }

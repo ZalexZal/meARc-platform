@@ -66,7 +66,6 @@ try {
   await p.waitForSelector('[data-model-stage] model-viewer', { timeout: 15000 });
   check('stl previewed', true);
   await p.fill('[data-model-height]', '12');
-  await p.check('[data-model-rights]');
   await p.click('[data-marker-save]');
   // The upload and the row take a few seconds; wait for the row, up to 30 s.
   for (let i = 0; i < 30; i++) {
@@ -91,7 +90,6 @@ try {
     }, null, { timeout: 120000 });
     const said = await p.textContent('[data-model-check]');
     check('webp glb accepted after re-saving', /MB/.test(said), said);
-    await p.check('[data-model-rights]');
     await p.click('[data-marker-save]');
     await p.waitForTimeout(15000);
     const [row] = await sql(`select path, bytes, triangles from marker_models where marker_id = $1`, [m.id]);

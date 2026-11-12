@@ -76,8 +76,12 @@ try {
   check('label says .glb or .stl', (await p.textContent('[data-src-panel=file]')).includes('.glb или .stl'));
   check('STL hint shown', (await p.textContent('[data-src-panel=file]')).includes('цвета на спирката'));
   check('size label is Размер', (await p.textContent('.model-size')).includes('Размер, m'));
-  const leftHasFacing = await p.$('.model-left [data-model-dial]');
-  check('size and facing in the left column', Boolean(leftHasFacing) && Boolean(await p.$('.model-left [data-model-height]')));
+  // Round 5: file, size and facing in the right column, the preview on the left.
+  const rect = (sel) => p.locator(sel).first().boundingBox();
+  const [fileBox, sizeBox, facingBox, stageBox] = await Promise.all([rect('[data-src-panel=file]'), rect('.model-size'), rect('.model-facing'), rect('[data-model-stage]')]);
+  check('file, size and facing stack in one column, preview beside them',
+    Math.abs(fileBox.x - sizeBox.x) < 2 && Math.abs(sizeBox.x - facingBox.x) < 2 && fileBox.y < sizeBox.y && sizeBox.y < facingBox.y && stageBox.x < fileBox.x);
+  check('no whose-model question or rights box', !(await p.$('[data-model-credit], [data-model-rights], input[name=modelCredit]')));
   const dial = p.locator('[data-model-dial]');
   check('dial is a slider', (await dial.getAttribute('role')) === 'slider' && (await dial.getAttribute('aria-valuenow')) === '0');
   await dial.focus();
@@ -101,7 +105,6 @@ try {
   await p.waitForTimeout(2500);
   check('STL shows in the preview', Boolean(await p.$('[data-model-stage] model-viewer')));
   await p.fill('[data-model-height]', '0.1');
-  await p.check('[data-model-rights]');
   await p.click('[data-marker-save]');
   await p.waitForTimeout(1500);
   const err = (await p.textContent('[data-marker-error]')) ?? '';
