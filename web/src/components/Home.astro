@@ -72,8 +72,10 @@ const safe: { title: UIKey; body: UIKey; icon: string }[] = [
         </ul>
       </div>
       <div class="what-shots" data-reveal aria-hidden="true">
-        <AppShot name="sheet" alt="" class="w1" />
-        <AppShot name="question" alt="" class="w2" />
+        <!-- The wrappers turn toward the cursor (lib/tilt.ts); the phones keep
+             their own lean inside them. -->
+        <div class="tilt w1" data-tilt><AppShot name="sheet" alt="" class="w1-shot" /></div>
+        <div class="tilt w2" data-tilt><AppShot name="question" alt="" class="w2-shot" /></div>
       </div>
     </div>
   </section>
@@ -197,6 +199,9 @@ const safe: { title: UIKey; body: UIKey; icon: string }[] = [
 <script>
   import { gsap } from 'gsap';
   import { ScrollTrigger } from 'gsap/ScrollTrigger';
+  import { initTilt } from '../lib/tilt';
+
+  initTilt();
 
   gsap.registerPlugin(ScrollTrigger);
 
@@ -241,9 +246,11 @@ const safe: { title: UIKey; body: UIKey; icon: string }[] = [
   .what p { margin-top: .25rem; font-size: var(--text-sm); color: var(--ink-dim); line-height: 1.5; }
   .what-shots { position: relative; height: 36rem; display: none; }
   @media (min-width: 960px) { .what-shots { display: block; } }
-  .what-shots :global(.shot) { position: absolute; width: 16rem; }
-  .what-shots :global(.w1) { left: 6%; top: 1rem; transform: rotate(-3deg); z-index: 1; }
-  .what-shots :global(.w2) { right: 4%; top: 4rem; transform: rotate(4deg); }
+  .what-shots .tilt { position: absolute; width: 16rem; }
+  .what-shots .w1 { left: 6%; top: 1rem; z-index: 1; }
+  .what-shots .w2 { right: 4%; top: 4rem; }
+  .what-shots :global(.w1-shot) { transform: rotate(-3deg); }
+  .what-shots :global(.w2-shot) { transform: rotate(4deg); }
 
   /* The route, and a marker at every section it passes. Only where there is a
      margin wide enough to carry it; on narrower screens the sections stand on

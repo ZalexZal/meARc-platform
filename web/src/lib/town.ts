@@ -602,6 +602,9 @@ export function startTown(o: TownOptions): () => void {
     const f = story ? smooth(3.1, 3.8, s) : 0;
     const out = story ? smooth(4.45, 5, s) : 0;
     const free = story ? 1 - smooth(0.3, 0.75, s) : 1;
+    // The phone held up at stop 2. While it is, the phone shows the stop
+    // itself (HomeWalk's clock tower), so the big pin there steps aside.
+    const fv = story ? smooth(3.35, 3.75, s) * (1 - smooth(4.4, 4.7, s)) : 0;
     const dim = 1 - 0.6 * b * (1 - out);
 
     stepWalkers(dt);
@@ -805,10 +808,12 @@ export function startTown(o: TownOptions): () => void {
         const kk = clamp(d, 0.6, 3.2) * (k === 1 ? 1 + 1.3 * f : 1);
         const yo = -40 * kk * (1 - back(u));
         const found = (k === 0 && w > 0.04) || (k === 1 && f > 0.55);
-        c.globalAlpha = u * 0.85 * horizon(sy);
+        const away = k === 1 ? 1 - fv : 1;
+        if (away <= 0.01) return;
+        c.globalAlpha = u * 0.85 * horizon(sy) * away;
         c.drawImage(found ? glowAmber : glow, sx - 30 * kk, sy - 44 * kk + yo, 60 * kk, 60 * kk);
         c.globalAlpha = 1;
-        pin(c, sx, sy + yo, 1.6 * kk, found ? pal.amber : pal.blueHex, String(k + 1), u * horizon(sy));
+        pin(c, sx, sy + yo, 1.6 * kk, found ? pal.amber : pal.blueHex, String(k + 1), u * horizon(sy) * away);
       });
     }
 
@@ -854,7 +859,7 @@ export function startTown(o: TownOptions): () => void {
         }
       }
       if (finder) {
-        const fv = smooth(3.35, 3.75, s) * (1 - smooth(4.4, 4.7, s));
+        finder.classList.toggle('is-open', fv > 0.02);
         finder.style.opacity = fv.toFixed(3);
         finder.style.transform = `translate(-50%, -50%) scale(${(0.9 + 0.1 * fv).toFixed(3)})`;
         finder.classList.toggle('is-asked', s > 3.75 && s < 4.6);

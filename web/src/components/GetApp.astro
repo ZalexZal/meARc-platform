@@ -37,8 +37,8 @@ const meta = t('app.meta').replace('{0}', app.version).replace('{1}', String(mb)
       </div>
     </div>
     <div class="get-shots" aria-hidden="true">
-      <AppShot name="welcome" alt="" class="s1" />
-      <AppShot name="sheet" alt="" class="s2" />
+      <div class="tilt s1" data-tilt><AppShot name="welcome" alt="" class="s1-shot" /></div>
+      <div class="tilt s2" data-tilt><AppShot name="sheet" alt="" class="s2-shot" /></div>
     </div>
   </div>
 </section>
@@ -64,7 +64,16 @@ const meta = t('app.meta').replace('{0}', app.version).replace('{1}', String(mb)
   @media (pointer: fine) { .get-qr { display: flex; } }
   .get-shots { position: relative; height: 34rem; display: none; }
   @media (min-width: 900px) { .get-shots { display: block; } }
-  .get-shots :global(.shot) { position: absolute; width: 15.5rem; }
-  .get-shots :global(.s1) { left: 8%; top: 0; transform: rotate(-4deg); }
-  .get-shots :global(.s2) { right: 8%; top: 3rem; transform: rotate(3deg); }
+  /* The wrappers turn toward the cursor (lib/tilt.ts); the phones keep their
+     own lean inside them. */
+  .get-shots .tilt { position: absolute; width: 15.5rem; }
+  .get-shots .s1 { left: 8%; top: 0; }
+  .get-shots .s2 { right: 8%; top: 3rem; }
+  .get-shots :global(.s1-shot) { transform: rotate(-4deg); }
+  .get-shots :global(.s2-shot) { transform: rotate(3deg); }
 </style>
+
+<script>
+  import { initTilt } from '../lib/tilt';
+  initTilt();
+</script>

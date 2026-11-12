@@ -40,6 +40,37 @@ const beats = [
     <div class="finder" data-finder aria-hidden="true">
       <div class="finder-frame">
         <span class="finder-cam"></span>
+        <!-- What the camera sees at the stop: the stump of the old clock tower,
+             and the rest of it rebuilt where it stood, traced in blue and then
+             filled in. A loop while the phone is up (is-open, town.ts); with
+             reduced motion, the finished tower. -->
+        <svg class="tower" data-tower viewBox="0 0 120 240" aria-hidden="true">
+          <defs>
+            <radialGradient id="tw-glow" cx="50%" cy="50%" r="50%">
+              <stop offset="0" stop-color="var(--tw-blue)" stop-opacity=".55" />
+              <stop offset="1" stop-color="var(--tw-blue)" stop-opacity="0" />
+            </radialGradient>
+          </defs>
+          <ellipse class="tw-glow" cx="62" cy="214" rx="58" ry="30" fill="url(#tw-glow)" />
+          <ellipse cx="64" cy="233" rx="40" ry="5" fill="var(--tw-shade)" />
+          <!-- The rebuilt part, behind the stone so the broken edge stays in front. -->
+          <g class="tw-solid">
+            <path class="tw-front" d="M36 182V100H84V182Z M34 100V94H86V100Z M36 94V58H84V94Z M32 58V52H88V58Z M33 52L60 14L87 52Z" />
+            <path class="tw-side" d="M84 182L94 177V95L84 100Z M86 100L96 95V89L86 94Z M84 94L94 89V53L84 58Z M88 58L98 53V47L88 52Z M87 52L97 47L60 14Z" />
+            <circle class="tw-face" cx="60" cy="76" r="12" />
+          </g>
+          <g class="tw-lines" fill="none" stroke-linejoin="round" stroke-linecap="round">
+            <path class="tw-l1" pathLength="1" d="M36 182V100H84V182M84 182L94 177V95L84 100M57 140V128a3 3 0 0 1 6 0V140ZM57 118V110a3 3 0 0 1 6 0V118Z" />
+            <path class="tw-l2" pathLength="1" d="M34 100V94H86V100M86 94L96 89V95M36 94V58H84V94M84 58L94 53V89M60 64a12 12 0 1 1 0 24a12 12 0 1 1 0-24ZM60 76V68.5M60 76L65.5 79" />
+            <path class="tw-l3" pathLength="1" d="M32 58V52H88V58M88 52L98 47V53M33 52L60 14L87 52M87 52L97 47L60 14M60 14V5" />
+          </g>
+          <!-- The stone that is still there: a plinth, a door and a broken top. -->
+          <path class="tw-stone-side" d="M84 232L94 227V171L84 176Z" />
+          <path class="tw-stone" d="M36 232V176L41 172L46 178L52 167L57 174L63 164L69 173L75 168L80 175L84 171V232Z" />
+          <path class="tw-joints" fill="none" d="M36 190H84M36 204H84M36 218H84M48 176V190M70 176V190M58 190V204M44 204V218M76 204V218M52 218V232M68 218V232" />
+          <path class="tw-door" d="M54 232V218a6 6 0 0 1 12 0V232Z" />
+          <path class="tw-stone" d="M31 232V226H89V232Z" />
+        </svg>
         <div class="ar-chip"><span class="num">2</span><span>{t('home.stop')}</span><span class="here">{t('home.here')}</span></div>
         <div class="ar-q">
           <p class="q-eyebrow">{t('home.q.eyebrow')}</p>
@@ -207,6 +238,45 @@ const beats = [
   }
   .finder-frame::after { content: ""; position: absolute; inset: 0; border-radius: 37px; box-shadow: inset 0 0 50px rgba(var(--map-shadow-rgb), .55); pointer-events: none; }
   .finder-cam { position: absolute; top: 8px; left: 50%; width: 76px; height: 22px; margin-left: -38px; border-radius: 12px; background: #05080a; }
+  /* The clock tower in the phone. Stone by day is warm and pale, by night
+     cool and dark; the rebuilt part is the site's blue either way. */
+  .tower {
+    position: absolute; left: 50%; bottom: 30%; width: 52%; height: auto; aspect-ratio: 1 / 2;
+    transform: translateX(-50%); overflow: visible;
+    --tw-blue: #0066cc; --tw-stone: #cfc7b9; --tw-stone-side: #b4ab9b; --tw-joint: #a1978a; --tw-door: #6d665c; --tw-shade: rgba(20, 30, 40, .18);
+  }
+  :global(:root[data-theme="dark"]) .tower {
+    --tw-blue: #2997ff; --tw-stone: #474d55; --tw-stone-side: #363b42; --tw-joint: #5d656f; --tw-door: #16191d; --tw-shade: rgba(0, 0, 0, .45);
+  }
+  @media (prefers-color-scheme: dark) {
+    :global(:root:not([data-theme="light"])) .tower {
+      --tw-blue: #2997ff; --tw-stone: #474d55; --tw-stone-side: #363b42; --tw-joint: #5d656f; --tw-door: #16191d; --tw-shade: rgba(0, 0, 0, .45);
+    }
+  }
+  .tw-stone { fill: var(--tw-stone); }
+  .tw-stone-side { fill: var(--tw-stone-side); }
+  .tw-joints { stroke: var(--tw-joint); stroke-width: .8; }
+  .tw-door { fill: var(--tw-door); }
+  .tw-front { fill: var(--tw-blue); fill-opacity: .3; }
+  .tw-side { fill: var(--tw-blue); fill-opacity: .45; }
+  .tw-face { fill: var(--tw-blue); fill-opacity: .16; }
+  .tw-lines { stroke: var(--tw-blue); stroke-width: 1.5; }
+  .tw-lines path { stroke-dasharray: 1; stroke-dashoffset: 0; }
+  /* One cycle of 8 s: the outline traces itself in, shaft, clock, roof; the
+     tower fills; it stands for a while; it fades, and starts again. */
+  @media (prefers-reduced-motion: no-preference) {
+    .finder:global(.is-open) .tw-l1 { animation: tw-l1 8s linear infinite; }
+    .finder:global(.is-open) .tw-l2 { animation: tw-l2 8s linear infinite; }
+    .finder:global(.is-open) .tw-l3 { animation: tw-l3 8s linear infinite; }
+    .finder:global(.is-open) .tw-solid { animation: tw-fill 8s ease infinite; }
+    .finder:global(.is-open) .tw-glow { animation: tw-glow 8s ease infinite; }
+  }
+  @keyframes tw-l1 { 0% { stroke-dashoffset: 1; opacity: 1; } 12% { stroke-dashoffset: 0; } 84% { opacity: 1; } 94%, 100% { stroke-dashoffset: 0; opacity: 0; } }
+  @keyframes tw-l2 { 0%, 9% { stroke-dashoffset: 1; opacity: 1; } 21% { stroke-dashoffset: 0; } 84% { opacity: 1; } 94%, 100% { stroke-dashoffset: 0; opacity: 0; } }
+  @keyframes tw-l3 { 0%, 18% { stroke-dashoffset: 1; opacity: 1; } 29% { stroke-dashoffset: 0; } 84% { opacity: 1; } 94%, 100% { stroke-dashoffset: 0; opacity: 0; } }
+  @keyframes tw-fill { 0%, 29% { opacity: 0; } 41%, 84% { opacity: 1; } 94%, 100% { opacity: 0; } }
+  @keyframes tw-glow { 0%, 29% { opacity: .45; } 41%, 84% { opacity: 1; } 96%, 100% { opacity: .45; } }
+
   .ar-chip {
     position: absolute; top: 44px; left: 50%; transform: translateX(-50%); white-space: nowrap;
     display: flex; align-items: center; gap: .5em; padding: .45em .9em .45em .45em; border-radius: 999px;
@@ -248,6 +318,7 @@ const beats = [
     .finder-frame::after { border-radius: 28px; }
     .finder-cam { width: 56px; height: 16px; margin-left: -28px; top: 6px; }
     .ar-chip { top: 30px; }
+    .tower { bottom: 31%; width: 50%; }
     .ar-q { left: 7px; right: 7px; bottom: 7px; border-radius: 20px; }
   }
 </style>

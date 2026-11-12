@@ -42,7 +42,7 @@ const shots: Record<number, string> = { 1: 'welcome', 2: 'trails', 3: 'map', 4: 
             <h2 class="text-xl sm:text-2xl">{t(`play.${n}.title` as any)}</h2>
             <p class="mt-2 text-[var(--ink-dim)]">{t(`play.${n}.body` as any)}</p>
           </div>
-          <AppShot name={shots[n]} alt="" class="play-shot" />
+          <div class="play-shot" data-tilt><AppShot name={shots[n]} alt="" /></div>
         </li>
       ))}
     </ol>
@@ -65,9 +65,15 @@ const shots: Record<number, string> = { 1: 'welcome', 2: 'trails', 3: 'map', 4: 
   .play-wrap { max-width: 64rem; margin: 0 auto; padding: 1rem 1rem 5rem; }
   @media (min-width: 640px) { .play-wrap { padding: 1rem 1.5rem 6rem; } }
   .play-main { max-width: 64rem; }
-  .play-step :global(.play-shot) { display: none; }
+  .play-step .play-shot { display: none; }
   @media (min-width: 960px) {
     .play-step { grid-template-columns: 52px minmax(0, 1fr) 13rem !important; align-items: start; column-gap: 2.5rem !important; }
-    .play-step :global(.play-shot) { display: block; width: 13rem; }
+    .play-step .play-shot { display: block; width: 13rem; }
   }
 </style>
+
+<script>
+  // Each screen turns a little toward the cursor (lib/tilt.ts).
+  import { initTilt } from '../lib/tilt';
+  initTilt();
+</script>
