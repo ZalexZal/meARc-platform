@@ -31,7 +31,7 @@ const shots: Record<number, string> = { 1: 'welcome', 2: 'trails', 3: 'map', 4: 
 
     <ol class="mt-12 space-y-14">
       {steps.map((n) => (
-        <li class="play-step grid grid-cols-[40px_1fr] gap-5 sm:grid-cols-[52px_1fr] sm:gap-7">
+        <li class="play-step text-left grid grid-cols-[40px_1fr] gap-5 sm:grid-cols-[52px_1fr] sm:gap-7">
           <span
             class="grid h-10 w-10 place-items-center rounded-full border border-[var(--line)] bg-[var(--surface)] sm:h-12 sm:w-12"
             aria-hidden="true"
@@ -40,7 +40,7 @@ const shots: Record<number, string> = { 1: 'welcome', 2: 'trails', 3: 'map', 4: 
           </span>
           <div class="min-w-0 pt-1.5 sm:pt-2.5">
             <h2 class="text-xl sm:text-2xl">{t(`play.${n}.title` as any)}</h2>
-            <p class="mt-2 text-[var(--ink-dim)]">{t(`play.${n}.body` as any)}</p>
+            <p class="mt-2 text-[var(--ink-dim)] [text-wrap:wrap] max-[480px]:text-left">{t(`play.${n}.body` as any)}</p>
           </div>
           <div class="play-shot" data-tilt><AppShot name={shots[n]} alt="" /></div>
         </li>

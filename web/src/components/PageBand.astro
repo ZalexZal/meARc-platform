@@ -55,6 +55,8 @@ const seed = [...title].reduce((sum, ch) => (sum * 31 + ch.charCodeAt(0)) | 0, 7
   .band-eyebrow { display: flex; align-items: center; gap: .625rem; color: var(--ink-dim); }
   .band-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--map-blue); box-shadow: 0 0 0 4px rgba(var(--map-blue-rgb), .18); }
   .band-copy h1 { margin-top: .875rem; }
-  .band-lede { margin-top: 1rem; max-width: 36em; }
+  /* Left, not justified: the column shrinks to its content beside the town, and
+     a one-to-three line lede there opens wide gaps (seen on /parent). */
+  .band-lede { margin-top: 1rem; max-width: 36em; text-align: left; hyphens: manual; }
   @keyframes band-rise { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: none; } }
 </style>

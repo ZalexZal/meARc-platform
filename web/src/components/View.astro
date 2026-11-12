@@ -251,8 +251,9 @@ const strings = { ...copy, lang, boardHref: href('/board'), listHref: href('/tra
   @media (min-width: 720px) { .view-play { grid-template-columns: 1fr auto; align-items: center; } }
   .view-actions { display: flex; flex-wrap: wrap; gap: .75rem; }
   .view-actions { align-items: center; }
-  .view-qr { display: flex; align-items: center; gap: 1rem; max-width: 26rem; }
-  .view-qr p { max-width: 18rem; }
+  .view-qr { display: flex; flex-wrap: wrap; align-items: center; gap: 1rem; max-width: 26rem; }
+  .view-qr > div { flex: 1 1 11rem; }
+  .view-qr p { max-width: 18rem; text-align: left; hyphens: manual; }
   /* A phone opens the app; a computer shows the code to scan. */
   .desk-qr { display: none; }
   @media (pointer: fine) {
@@ -263,6 +264,8 @@ const strings = { ...copy, lang, boardHref: href('/board'), listHref: href('/tra
   .view-grid { display: grid; gap: 2rem; }
   @media (min-width: 900px) { .view-grid { grid-template-columns: 3fr 2fr; } }
   .view-map { height: 420px; border-radius: 18px; overflow: hidden; border: 1px solid var(--line); background: var(--surface-2); }
+  /* Stop names and board rows are UI lines (names, scores), never justified. */
+  .view-stops, .view-board, .view-stops :global(li), .view-board :global(li) { text-align: left; hyphens: manual; }
   .view-stops { display: grid; gap: .5rem; counter-reset: s; }
   .view-stops :global(li) { counter-increment: s; display: flex; gap: .75rem; align-items: baseline; padding: .625rem .875rem; border-radius: 14px; background: var(--surface-2); }
   .view-stops :global(li)::before { content: counter(s); min-width: 1.5rem; color: var(--ink-faint); font-variant-numeric: tabular-nums; }

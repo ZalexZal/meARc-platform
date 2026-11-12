@@ -240,10 +240,19 @@ const safe: { title: UIKey; body: UIKey; icon: string }[] = [
   @media (min-width: 960px) { .what-grid { grid-template-columns: minmax(0, 1.05fr) minmax(0, .95fr); } }
   .what { list-style: none; margin: 2.5rem 0 0; padding: 0; display: grid; gap: 1.5rem; }
   @media (min-width: 640px) { .what { grid-template-columns: 1fr 1fr; gap: 2rem 1.75rem; } }
+  /* List items carry the text down to everything inside them (headings, the
+     step number, the optional pill), so they stay left and only the paragraphs
+     justify. Where a column is under ~32 characters (the 2-up what grid, the
+     5-up steps, the 2-up safety cards, a mode tile on a phone) the paragraph
+     goes back to left as well. */
+  .what li, .step, .safe li { text-align: left; }
+  /* `pretty` wraps early to avoid a short last line, which makes justified lines gappier. */
+  .what p, .step p, .safe p, .tile p { text-wrap: wrap; }
   .what li { display: grid; grid-template-columns: 40px 1fr; gap: .875rem; }
   .what svg { width: 40px; height: 40px; padding: 9px; border-radius: 12px; background: var(--signal-wash); color: var(--signal); }
   .what h3 { font-size: 1.0625rem; letter-spacing: -.01em; }
   .what p { margin-top: .25rem; font-size: var(--text-sm); color: var(--ink-dim); line-height: 1.5; }
+  @media (min-width: 960px) { .what p { text-align: left; hyphens: manual; } }
   .what-shots { position: relative; height: 36rem; display: none; }
   @media (min-width: 960px) { .what-shots { display: block; } }
   .what-shots .tilt { position: absolute; width: 16rem; }
@@ -281,7 +290,8 @@ const safe: { title: UIKey; body: UIKey; icon: string }[] = [
 
   .head { position: relative; max-width: 44rem; }
   .head h2 { margin-top: .875rem; }
-  .head .lede { margin-top: 1.25rem; }
+  .head .lede { margin-top: 1.25rem; text-wrap: wrap; }
+  @media (max-width: 480px) { .safe-grid .head .lede { text-align: left; } }
 
   .modes { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 1.125rem; margin-top: 3.5rem; }
   @media (max-width: 1099px) { .modes { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
@@ -305,6 +315,10 @@ const safe: { title: UIKey; body: UIKey; icon: string }[] = [
   .glyph { width: 100%; height: 84px; color: var(--map-blue); }
   .tile h3, .step h3, .safe h3 { font-size: 1.1875rem; line-height: 1.25; letter-spacing: -.015em; margin-top: 1.375rem; }
   .tile p { margin-top: .625rem; font-size: .96875rem; color: var(--ink-dim); }
+  /* Three tiles across (about 320 px of text) and the phone's card strip are
+     both too narrow to justify; the two-up layout in between is wide enough. */
+  .tile p { text-align: left; hyphens: manual; }
+  @media (min-width: 641px) and (max-width: 1099px) { .tile p { text-align: justify; hyphens: auto; } }
 
   .draw { stroke-dasharray: 1; stroke-dashoffset: 1; transition: stroke-dashoffset 1.4s cubic-bezier(.6,.1,.2,1) .25s; }
   :global(.is-in) .draw { stroke-dashoffset: 0; }
@@ -327,6 +341,7 @@ const safe: { title: UIKey; body: UIKey; icon: string }[] = [
   }
   .steps:global(.is-in) .step-n { border-color: var(--map-blue); color: var(--map-blue-soft); box-shadow: 0 0 22px -4px rgba(var(--map-blue-rgb), .7); }
   .step p { margin-top: .5rem; font-size: .9375rem; color: var(--ink-dim); }
+  @media (min-width: 900px) { .step p { text-align: left; hyphens: manual; } }
   .opt {
     display: inline-block; margin-top: .75rem; padding: 3px 10px; border-radius: 999px;
     background: var(--surface-2); color: var(--ink-dim);
@@ -354,6 +369,7 @@ const safe: { title: UIKey; body: UIKey; icon: string }[] = [
   .safe svg { width: 28px; height: 28px; color: var(--map-blue); }
   .safe h3 { font-size: 1rem; margin-top: 1rem; }
   .safe p { margin-top: .5rem; font-size: .9375rem; color: var(--ink-dim); }
+  @media (min-width: 900px) { .safe p { text-align: left; hyphens: manual; } }
 
 
   @media (max-width: 759px) {

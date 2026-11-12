@@ -250,7 +250,7 @@ const t = useTranslations(lang);
     list.innerHTML = rows.map(({ trail, hasStart, away }) => {
       const id = escapeHtml(trail.id);
       return `
-      <li class="card flex flex-col p-6 ${trail.id === wanted ? 'ring-2 ring-[var(--signal)]' : ''}" id="trail-${id}">
+      <li class="card flex flex-col p-6 text-left hyphens-none ${trail.id === wanted ? 'ring-2 ring-[var(--signal)]' : ''}" id="trail-${id}">
         <span class="eyebrow flex items-center gap-2">${icon(catOf(trail))}<span class="min-w-0">${escapeHtml(trailLine(trail.mode, catOf(trail), trail.city ?? null, strings.lang))}</span></span>
         <h2 class="mt-2 text-xl">${escapeHtml(trail.name)}</h2>
         <p class="data mt-4 text-xs text-[var(--ink-dim)]">

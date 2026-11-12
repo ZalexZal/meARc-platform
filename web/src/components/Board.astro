@@ -70,15 +70,15 @@ const strings = {
   <p class="note note-lamp mt-5 hidden" data-board-provisional></p>
 
   <Loading label={t('games.loading')} class="mt-8 py-10" data-board-loading />
-  <p class="mt-8 hidden text-[var(--ink-dim)]" data-board-empty>{t('ed.boardEmpty')}</p>
-  <p class="mt-8 hidden text-sm text-[var(--alert)]" data-board-failed>{t('games.failed')}</p>
+  <p class="text-left mt-8 hidden text-[var(--ink-dim)]" data-board-empty>{t('ed.boardEmpty')}</p>
+  <p class="text-left mt-8 hidden text-sm text-[var(--alert)]" data-board-failed>{t('games.failed')}</p>
   <!-- No trail in the address. It used to say the connection had failed. -->
-  <p class="mt-8 hidden text-[var(--ink-dim)]" data-board-none>
+  <p class="text-left mt-8 hidden text-[var(--ink-dim)]" data-board-none>
     {t('board.none')} <a class="text-[var(--signal)] underline-offset-2 hover:underline" href={href('/my-trails')}>{t('nav.mine')}</a>
   </p>
 
   <div class="scroll-x mt-8"><table class="table" data-board></table></div>
-  <p class="mt-3 hidden text-sm" data-board-said role="status"></p>
+  <p class="text-left mt-3 hidden text-sm" data-board-said role="status"></p>
 
   <!-- Only the owner is served this, so the section is drawn after the call
        comes back rather than hidden behind a second permission check. -->
@@ -504,6 +504,9 @@ const strings = {
 </script>
 
 <style>
+  /* The organiser panels are cards of short status lines (about 300 px wide,
+     rows of names and counts): ragged-right reads better than justified. */
+  [data-teams-section] :global(p), [data-teams-section] :global(li) { text-align: left; hyphens: manual; }
   :global(.row-act) {
     color: var(--ink-faint); padding: 4px 6px; border-radius: 6px;
   }
