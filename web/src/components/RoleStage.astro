@@ -89,13 +89,13 @@ const PIN = 'M13 1a12 12 0 0 1 12 12c0 9-12 20-12 20S1 22 1 13A12 12 0 0 1 13 1z
         <!-- The one live region: rolepick.ts writes the new headline here on each change. -->
         <p class="sr-only" data-stage-announce aria-live="polite"></p>
         <div class="stage-heads">
-          {states.map((s) => <p class="stage-head" data-stage-head data-stage-for={s.key}>{s.head}</p>)}
+          {states.map((s) => <p class="stage-head text-left" data-stage-head data-stage-for={s.key}>{s.head}</p>)}
         </div>
-        {states.map((s) => <p class="stage-sub" data-stage-for={s.key}>{s.sub}</p>)}
+        {states.map((s) => <p class="stage-sub text-left" data-stage-for={s.key}>{s.sub}</p>)}
         {states.filter((s) => s.signs.length).map((s) => (
           <ul class="stage-signs" data-stage-for={s.key}>
             {s.signs.map((g) => (
-              <li class="stage-sign">
+              <li class="stage-sign text-left">
                 <svg aria-hidden="true" viewBox="0 0 24 24"><path d={ICONS[g.glyph]} /></svg>
                 {g.label}
               </li>

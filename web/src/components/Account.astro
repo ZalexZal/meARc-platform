@@ -116,7 +116,7 @@ const rail = [
               <h1 class="text-2xl sm:text-3xl" data-name>—</h1>
               <NameSeal />
             </div>
-            <p class="data mt-1 text-sm text-[var(--ink-dim)]"><span data-email></span><span data-since></span></p>
+            <p class="data mt-1 text-left text-sm text-[var(--ink-dim)]"><span data-email></span><span data-since></span></p>
           </div>
         </div>
 
@@ -211,7 +211,7 @@ const rail = [
             <p class="text-sm text-[var(--ink-dim)]"><span data-email-2></span></p>
             <button class="btn btn-quiet" type="button" data-signout>{copy.signOut}</button>
             <button class="btn btn-quiet" type="button" data-signout-all>{copy.signOutAll}</button>
-            <p class="text-xs text-[var(--ink-faint)]">{copy.signOutAllHint}</p>
+            <p class="text-left text-xs text-[var(--ink-faint)]">{copy.signOutAllHint}</p>
           </div>
         </div>
 
@@ -231,7 +231,7 @@ const rail = [
             <button class="btn btn-quiet w-full" type="button" data-export>{t('acct.export')}</button>
             <p class="text-xs text-[var(--ink-faint)]">{t('acct.exportHint')}</p>
             <h2 class="mt-2 text-base">{copy.legal}</h2>
-            <p class="text-sm"><a class="acct-link" href={href('/terms')}>{copy.terms}</a> · <a class="acct-link" href={href('/privacy')}>{copy.policy}</a></p>
+            <p class="text-left text-sm"><a class="acct-link" href={href('/terms')}>{copy.terms}</a> · <a class="acct-link" href={href('/privacy')}>{copy.policy}</a></p>
           </div>
 
           <div class="card panel-card" style="border-color: var(--alert)" id="delete">
@@ -242,8 +242,8 @@ const rail = [
             <p class="text-xs text-[var(--ink-faint)]">{t('acct.deleteHint')}</p>
 
             <div class="hidden" data-delete-panel>
-              <p class="text-xs text-[var(--alert)]" data-delete-cost></p>
-              <ul class="data mt-2 space-y-1 text-xs text-[var(--ink-dim)]" data-delete-list></ul>
+              <p class="text-left text-xs text-[var(--alert)]" data-delete-cost></p>
+              <ul class="data text-left mt-2 space-y-1 text-xs text-[var(--ink-dim)]" data-delete-list></ul>
 
               <label class="mt-4 hidden items-start gap-2 text-sm" data-keep-row>
                 <input type="checkbox" class="mt-0.5" id="acct-keep" data-keep-trails />
@@ -353,6 +353,8 @@ const rail = [
   .msg { min-height: 1.1em; font-size: 0.8rem; color: var(--ink-dim); }
   .msg.bad { color: var(--alert); }
   .msg.good { color: var(--signal); }
+  /* Status lines, the data-style lists and flex rows are UI text, not running text. */
+  .msg, .blocked-list :global(li), [data-delete-list] :global(li), .data { text-align: left; hyphens: manual; }
 
   .blocked-list { display: grid; }
   .blocked-list :global(li) {
@@ -365,7 +367,7 @@ const rail = [
     border: 1px solid var(--alert); background: var(--alert-wash); border-radius: 14px; padding: 14px 16px;
     display: flex; flex-wrap: wrap; gap: 14px; align-items: center; justify-content: space-between;
   }
-  .danger p { font-size: 0.86rem; color: var(--ink-dim); max-width: 52ch; }
+  .danger p { font-size: 0.86rem; color: var(--ink-dim); max-width: 52ch; text-align: left; hyphens: manual; }
   .danger b { color: var(--alert); }
 
   @media (max-width: 860px) {

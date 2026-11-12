@@ -109,7 +109,7 @@ const Shell = up ? RoleStage : AuthShell;
     {up ? (
       <div class="role-cta-row">
         <button class="btn btn-primary role-cta" type="submit" data-auth-submit>{t('auth.submitUp')}</button>
-        <p class="text-sm text-[var(--ink-dim)]">
+        <p class="text-left text-sm text-[var(--ink-dim)]">
           {t('auth.haveAccount')}
           <a class="ml-1 font-medium text-[var(--signal)] underline-offset-2 hover:underline" href={href('/signin')}>{t('auth.submitIn')}</a>
         </p>

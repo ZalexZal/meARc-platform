@@ -21,10 +21,10 @@ const strings = {
 <AuthShell>
 <section class="mx-auto flex max-w-md flex-col px-4 py-20 sm:px-6" hidden data-guarded>
   <h1 class="text-3xl">{t('terms.gate.title')}</h1>
-  <p class="mt-4 text-[var(--ink-dim)]">{t('terms.gate.lede')}</p>
+  <p class="mt-4 text-left text-[var(--ink-dim)]">{t('terms.gate.lede')}</p>
 
   <form class="card mt-8 space-y-5 p-6" data-gate novalidate>
-    <p class="text-sm">
+    <p class="text-left text-sm">
       <a class="font-medium text-[var(--signal)] underline-offset-2 hover:underline" href={href('/terms')} target="_blank" rel="noopener">{t('auth.agreeTerms')}</a>{' · '}<a class="font-medium text-[var(--signal)] underline-offset-2 hover:underline" href={href('/privacy')} target="_blank" rel="noopener">{t('auth.agreePrivacy')}</a>
     </p>
 
