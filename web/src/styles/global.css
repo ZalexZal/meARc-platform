@@ -356,13 +356,38 @@ h1, h2, h3, h4 {
   margin: 0;
 }
 
-p { text-wrap: pretty; }
+/* Justified paragraphs wrap plainly: "pretty" re-balances lines and leaves the
+   justified ones gappier. Centred text, which is not justified, keeps it. */
+p { text-wrap: wrap; }
+.text-center p, p.text-center { text-wrap: pretty; }
 
 /* In the base layer, not unlayered. Unlayered it outranked every @layer rule,
    so a .btn-primary that happened to be an <a> - Sign up, Build a trail - drew
    its label in body ink on the blue instead of white. */
 @layer base {
   a { color: inherit; }
+
+  /* Justified running text, site-wide (Alex, 13 Nov 2026). It only changes
+     lines that wrap: a one-line label looks the same. Hyphenation (the html
+     lang says bg or en) keeps the word gaps even in narrow columns.
+     Centred or right-aligned blocks keep their alignment: a utility on the
+     element itself wins anyway, and these rules carry it down to the
+     paragraphs inside. */
+  p, li, dd, blockquote, figcaption {
+    text-align: justify;
+    text-justify: inter-word;
+    hyphens: auto;
+    -webkit-hyphens: auto;
+  }
+  .text-center :is(p, li, dd, blockquote, figcaption) { text-align: center; }
+  .text-right :is(p, li, dd, blockquote, figcaption) { text-align: right; }
+  /* A list item's justify must not reach the headings, eyebrows and badges
+     inside it. */
+  li :is(h1, h2, h3, h4, h5, h6, .eyebrow, .badge, .chip) { text-align: start; }
+  .text-center li :is(h1, h2, h3, h4, h5, h6, .eyebrow, .badge, .chip) { text-align: center; }
+  /* Controls and compact UI never justify: a stretched button label or chip
+     reads as broken. */
+  :is(button, label, nav, .btn, .badge, .chip, .tab, .tabs, [role="tab"], [role="menu"]) :is(p, li) { text-align: inherit; hyphens: manual; }
 }
 
 img, svg, video { max-width: 100%; height: auto; display: block; }
@@ -825,8 +850,7 @@ input[type="file"].field::file-selector-button:hover { border-color: var(--ink-f
   pointer-events: none;
 }
 
-/* What it will look like on each map. Two swatches rather than one, because a
-   colour that works on a pale street can vanish on a dark one. */
+/* The chosen colour as a dot, on the page's own surface. */
 .hue-proof {
   display: inline-grid;
   place-items: center;
@@ -834,6 +858,7 @@ input[type="file"].field::file-selector-button:hover { border-color: var(--ink-f
   height: 54px;
   border-radius: 12px;
   border: 1px solid var(--line);
+  background: var(--surface-2);
 }
 
 .hue-proof > span {

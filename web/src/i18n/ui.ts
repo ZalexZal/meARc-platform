@@ -601,7 +601,6 @@ export const ui = {
 
     'ed.required': 'Задължително, за да се запази спирката.',
     'ed.colour': 'Цвят',
-    'ed.colourHint': 'Приложението рисува пръстен около всяка спирка в черно или бяло — според това кое се вижда по-добре — така че цветът не се губи върху картата. Ти избираш нюанса; наситеността е еднаква за всички, за да не се надвикват цветовете.',
     'ed.shape': 'Форма в камерата',
     'ed.shape.pin': 'Карфица',
     'ed.shape.sphere': 'Сфера',
@@ -1398,7 +1397,6 @@ export const ui = {
 
     'ed.required': 'Required to save the stop.',
     'ed.colour': 'Colour',
-    'ed.colourHint': 'The app rings every stop in black or white, whichever shows against it, so the colour never gets lost on the map. You pick the hue; the weight is the same for all of them so no one colour shouts over its neighbours.',
     'ed.shape': 'Shape in the camera',
     'ed.shape.pin': 'Pin',
     'ed.shape.sphere': 'Sphere',
