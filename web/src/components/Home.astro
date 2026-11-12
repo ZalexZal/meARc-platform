@@ -33,14 +33,6 @@ const what: { title: UIKey; body: UIKey; icon: string }[] = [
   { title: 'home.what.3.title', body: 'home.what.3.body', icon: 'M5 21V9l7-5 7 5v12 M9 21v-6h6v6 M9 11h.01 M15 11h.01' },
   { title: 'home.what.4.title', body: 'home.what.4.body', icon: 'M9.5 9a2.5 2.5 0 1 1 3.5 2.3c-.6.3-1 .9-1 1.7v.5 M12 17h.01 M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18Z' },
 ];
-
-const safe: { title: UIKey; body: UIKey; icon: string }[] = [
-  { title: 'home.safe.1.title', body: 'home.safe.1.body', icon: 'M12 3 4.5 6v5.5c0 4.6 3.2 8.4 7.5 9.5 4.3-1.1 7.5-4.9 7.5-9.5V6L12 3Z M9 12l2.2 2.2L15.5 10' },
-  { title: 'home.safe.2.title', body: 'home.safe.2.body', icon: 'M7 11V8a5 5 0 0 1 10 0v3 M5 11h14v9H5z' },
-  { title: 'home.safe.3.title', body: 'home.safe.3.body', icon: 'M12 4v11 M7 10l5 5 5-5 M5 20h14' },
-  { title: 'home.safe.4.title', body: 'home.safe.4.body', icon: 'M5 21V4 M5 4h11l-2 4 2 4H5' },
-];
-
 ---
 
 <HomeWalk lang={lang} />
@@ -85,7 +77,7 @@ const safe: { title: UIKey; body: UIKey; icon: string }[] = [
       <header class="head" data-reveal>
         <span class="knob" aria-hidden="true"></span>
         <p class="eyebrow">{t('home.modes.eyebrow')}</p>
-        <h2 class="display-lg">{t('home.modes.title')}</h2>
+        <h2 class="display-lg">{t('home.modes.title').split(/(?<=\.)\s+/).map((line, i) => <>{i > 0 && <br />}{line}</>)}</h2>
       </header>
       <div class="modes">
         {modes.map((m, i) => (
@@ -174,26 +166,6 @@ const safe: { title: UIKey; body: UIKey; icon: string }[] = [
   </section>
 
   <GetApp lang={lang} />
-
-  <section class="sec" id="safe">
-    <div class="inner safe-grid">
-      <header class="head" data-reveal>
-        <span class="knob" aria-hidden="true"></span>
-        <p class="eyebrow">{t('home.safe.eyebrow')}</p>
-        <h2 class="display-lg">{t('home.safe.title')}</h2>
-        <p class="lede">{t('home.safe.lede')}</p>
-      </header>
-      <ul class="safe" data-reveal-group>
-        {safe.map((s, i) => (
-          <li style={`transition-delay:${i * 60}ms`}>
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d={s.icon} /></svg>
-            <h3>{t(s.title)}</h3>
-            <p>{t(s.body)}</p>
-          </li>
-        ))}
-      </ul>
-    </div>
-  </section>
 </div>
 
 <script>
@@ -243,11 +215,11 @@ const safe: { title: UIKey; body: UIKey; icon: string }[] = [
   /* List items carry the text down to everything inside them (headings, the
      step number, the optional pill), so they stay left and only the paragraphs
      justify. Where a column is under ~32 characters (the 2-up what grid, the
-     5-up steps, the 2-up safety cards, a mode tile on a phone) the paragraph
+     5-up steps, a mode tile on a phone) the paragraph
      goes back to left as well. */
-  .what li, .step, .safe li { text-align: left; }
+  .what li, .step { text-align: left; }
   /* `pretty` wraps early to avoid a short last line, which makes justified lines gappier. */
-  .what p, .step p, .safe p, .tile p { text-wrap: wrap; }
+  .what p, .step p, .tile p { text-wrap: wrap; }
   .what li { display: grid; grid-template-columns: 40px 1fr; gap: .875rem; }
   .what svg { width: 40px; height: 40px; padding: 9px; border-radius: 12px; background: var(--signal-wash); color: var(--signal); }
   .what h3 { font-size: 1.0625rem; letter-spacing: -.01em; }
@@ -291,7 +263,6 @@ const safe: { title: UIKey; body: UIKey; icon: string }[] = [
   .head { position: relative; max-width: 44rem; }
   .head h2 { margin-top: .875rem; }
   .head .lede { margin-top: 1.25rem; text-wrap: wrap; }
-  @media (max-width: 480px) { .safe-grid .head .lede { text-align: left; } }
 
   .modes { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 1.125rem; margin-top: 3.5rem; }
   @media (max-width: 1099px) { .modes { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
@@ -313,7 +284,7 @@ const safe: { title: UIKey; body: UIKey; icon: string }[] = [
   }
   .tile:hover { border-color: rgba(var(--map-blue-rgb), .5); box-shadow: 0 0 0 1px rgba(var(--map-blue-rgb), .2), 0 20px 60px -30px rgba(var(--map-blue-rgb), .5); }
   .glyph { width: 100%; height: 84px; color: var(--map-blue); }
-  .tile h3, .step h3, .safe h3 { font-size: 1.1875rem; line-height: 1.25; letter-spacing: -.015em; margin-top: 1.375rem; }
+  .tile h3, .step h3 { font-size: 1.1875rem; line-height: 1.25; letter-spacing: -.015em; margin-top: 1.375rem; }
   .tile p { margin-top: .625rem; font-size: .96875rem; color: var(--ink-dim); }
   /* Three tiles across (about 320 px of text) and the phone's card strip are
      both too narrow to justify; the two-up layout in between is wide enough. */
@@ -361,15 +332,6 @@ const safe: { title: UIKey; body: UIKey; icon: string }[] = [
     .opt { justify-self: start; }
   }
 
-  .safe-grid { display: grid; grid-template-columns: minmax(0, .9fr) minmax(0, 1.1fr); gap: 4rem; align-items: start; }
-  @media (max-width: 899px) { .safe-grid { grid-template-columns: 1fr; gap: 2.5rem; } }
-  .safe { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1rem; }
-  @media (max-width: 640px) { .safe { grid-template-columns: 1fr; } }
-  .safe li { padding: 1.5rem; border-radius: 22px; background: rgba(var(--map-panel-rgb), .66); border: 1px solid var(--line); }
-  .safe svg { width: 28px; height: 28px; color: var(--map-blue); }
-  .safe h3 { font-size: 1rem; margin-top: 1rem; }
-  .safe p { margin-top: .5rem; font-size: .9375rem; color: var(--ink-dim); }
-  @media (min-width: 900px) { .safe p { text-align: left; hyphens: manual; } }
 
 
   @media (max-width: 759px) {

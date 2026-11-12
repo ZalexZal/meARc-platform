@@ -1,5 +1,5 @@
 ---
-import { type Lang } from '../i18n/ui';
+import { type Lang, type UIKey, useTranslations } from '../i18n/ui';
 import PageBand from './PageBand.astro';
 import { TERMS_VERSION } from '../lib/terms';
 
@@ -59,7 +59,7 @@ const content: Record<'terms' | 'privacy', Record<Lang, { title: string; draft: 
   },
   privacy: {
     bg: {
-      title: 'Поверителност',
+      title: 'GDPR и бисквитки',
       draft: 'Чернова за тестово ползване. Текстът не е прегледан от юрист.',
       body: [
         ['Кой отговаря за данните', `Администратор на личните данни е ${OPERATOR.bg}. За всеки въпрос или искане относно данните ти пиши на ${CONTACT}. Отговаряме до един месец.`],
@@ -80,7 +80,7 @@ const content: Record<'terms' | 'privacy', Record<Lang, { title: string; draft: 
       ],
     },
     en: {
-      title: 'Privacy',
+      title: 'GDPR & cookies',
       draft: 'Draft for a test run. This text has not been reviewed by a lawyer.',
       body: [
         ['Who is responsible', `The controller of your personal data is ${OPERATOR.en}. For any question or request about your data, write to ${CONTACT}. We reply within one month.`],
@@ -104,6 +104,9 @@ const content: Record<'terms' | 'privacy', Record<Lang, { title: string; draft: 
 };
 
 const page = content[kind][lang];
+const t = useTranslations(lang);
+// The safety summary that used to sit on the home page: plain text here.
+const safe: [UIKey, UIKey][] = [1, 2, 3, 4].map((n) => [`home.safe.${n}.title` as UIKey, `home.safe.${n}.body` as UIKey]);
 ---
 
 <PageBand eyebrow={lang === 'bg' ? 'Правни' : 'Legal'} title={page.title} />
@@ -113,6 +116,21 @@ const page = content[kind][lang];
   <p class="mt-5 rounded-lg border border-[var(--lamp)] bg-[var(--lamp-wash)] px-4 py-3 text-sm text-[var(--lamp)]">
     {page.draft}
   </p>
+
+  {kind === "privacy" && (
+    <section class="mt-10 rounded-[18px] border border-[var(--line)] p-6">
+      <h2 class="text-lg">{t("home.safe.title")}</h2>
+      <p class="mt-2 leading-relaxed text-[var(--ink-dim)]">{t("home.safe.lede")}</p>
+      <dl class="mt-5 grid gap-5 sm:grid-cols-2">
+        {safe.map(([title, body]) => (
+          <div>
+            <dt class="font-semibold">{t(title)}</dt>
+            <dd class="mt-1 text-left text-sm leading-relaxed text-[var(--ink-dim)]">{t(body)}</dd>
+          </div>
+        ))}
+      </dl>
+    </section>
+  )}
 
   <div class="mt-10 space-y-8">
     {page.body.map(([heading, text, id]) => (
