@@ -91,7 +91,7 @@ const t = useTranslations(lang);
       locating: t('games.locating'), sorted: t('games.sorted'),
       nothing: t('find.nothing'), nothingFiltered: t('find.nothingFiltered'),
       allCities: t('find.allCities'), noCity: t('city.none'),
-      denied: t('games.denied'), report: t('games.report'), reportSubject: t('games.reportSubject') })}
+      denied: t('games.denied') })}
   ></script>
 </section>
 
@@ -259,8 +259,6 @@ const t = useTranslations(lang);
         <div class="mt-6 flex flex-wrap gap-2">
           <a class="btn btn-primary touch-only" href="${appLink(trail.id)}">${strings.openApp}</a>
           <a class="btn btn-quiet" href="${strings.walkHref}?id=${encodeURIComponent(trail.id)}">${strings.walkWeb}</a>
-          <a class="ml-auto self-center text-xs text-[var(--ink-faint)] underline-offset-2 hover:text-[var(--alert)] hover:underline"
-             href="mailto:zalex8623@gmail.com?subject=${encodeURIComponent(`${strings.reportSubject}: ${trail.name} (${trail.id})`)}">${strings.report}</a>
         </div>
       </li>`;
     }).join('');

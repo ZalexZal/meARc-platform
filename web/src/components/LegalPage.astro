@@ -106,7 +106,7 @@ const content: Record<'terms' | 'privacy', Record<Lang, { title: string; draft: 
 const page = content[kind][lang];
 const t = useTranslations(lang);
 // The safety summary that used to sit on the home page: plain text here.
-const safe: [UIKey, UIKey][] = [1, 2, 3, 4].map((n) => [`home.safe.${n}.title` as UIKey, `home.safe.${n}.body` as UIKey]);
+const safe: [UIKey, UIKey][] = [1, 2, 3].map((n) => [`home.safe.${n}.title` as UIKey, `home.safe.${n}.body` as UIKey]);
 ---
 
 <PageBand eyebrow={lang === 'bg' ? 'Правни' : 'Legal'} title={page.title} />
