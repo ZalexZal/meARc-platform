@@ -23,6 +23,8 @@ export type ReportStop = {
   media: ReportMedia[];
   model: { about: string; heightM: number | null; headingDeg: number; url: string } | null;
   questions: boolean;
+  /** Round 7: the step each part is edited in. A part with none gets no Edit. */
+  links?: Partial<Record<'place' | 'text' | 'media' | 'look' | 'question', string>>;
 };
 
 export type ReportStrings = Record<string, string>;
@@ -58,6 +60,17 @@ export function renderStopReport(host: HTMLElement, s: ReportStop, S: ReportStri
   const lang = (bg: boolean, en: boolean) =>
     `<span class="rep-lang ${bg ? 'is-on' : ''}">BG</span><span class="rep-lang ${en ? 'is-on' : ''}">EN</span>`;
   const warnings = reportWarnings(s, S);
+  // A card's heading, with "Edit" to the step that holds it.
+  const head = (part: keyof NonNullable<ReportStop['links']>, label: string) => {
+    const step = s.links?.[part];
+    return `<div class="rep-card-head"><h4>${esc(label)}</h4>${step
+      ? `<button type="button" class="rep-go" data-rep-go="${esc(step)}">${esc(S.edit)}</button>` : ''}</div>`;
+  };
+  // The text itself, as a walker reads it (round 7), each language under its tag.
+  const bodies = [['BG', s.bodyBg], ['EN', s.bodyEn]].filter(([, b]) => b.trim());
+  const body = bodies.length
+    ? `<div class="rep-body">${bodies.map(([tag, b]) => `<p><span class="rep-tag">${tag}</span>${esc(b.trim())}</p>`).join('')}</div>`
+    : `<p class="rep-dim rep-body">${esc(S.noText)}</p>`;
 
   const media = s.media.length
     ? `<ul class="rep-media">${s.media.map((m) => m.kind === 'image'
@@ -74,7 +87,10 @@ export function renderStopReport(host: HTMLElement, s: ReportStop, S: ReportStri
           ${row(S.facing, `<span class="data">${s.model.headingDeg}° ${esc(compass[Math.round(s.model.headingDeg / 45) % 8])}</span>`)}
         </dl>
       </div>`
-    : `<p class="rep-dim">${esc(s.shape)}</p>`;
+    : `<dl class="rep-list">
+        ${row(S.look, esc(s.shape) || '—')}
+        ${row(S.colour, `<span class="rep-swatch" style="background:${esc(s.colour)}"></span>`)}
+      </dl>`;
 
   const question = !s.questions ? '' : s.answerKind === 'none'
     ? `<p class="rep-dim">${esc(S.noQuestionSet)}</p>`
@@ -105,23 +121,28 @@ export function renderStopReport(host: HTMLElement, s: ReportStop, S: ReportStri
 
     <div class="rep-grid">
       <section class="rep-card">
-        <h4>${esc(S.place)}</h4>
+        ${head('place', S.place)}
         <div class="rep-map" data-rep-map></div>
         <p class="data rep-dim">${s.lat.toFixed(5)}, ${s.lng.toFixed(5)}</p>
       </section>
 
       <section class="rep-card">
-        <h4>${esc(S.text)}</h4>
+        ${head('look', S.look)}
+        ${model}
+      </section>
+
+      <section class="rep-card rep-wide">
+        ${head('text', S.text)}
         <dl class="rep-list">
           ${row(S.languages, lang(Boolean(s.titleBg.trim() && s.bodyBg.trim()), Boolean(s.titleEn.trim() && s.bodyEn.trim())))}
           ${row('BG', `<span class="data">${words(s.bodyBg)}</span> ${esc(S.words)} · <span class="data">${s.bodyBg.trim().length}</span> ${esc(S.chars)}`)}
           ${row('EN', `<span class="data">${words(s.bodyEn)}</span> ${esc(S.words)} · <span class="data">${s.bodyEn.trim().length}</span> ${esc(S.chars)}`)}
-          ${row(S.colour, `<span class="rep-swatch" style="background:${esc(s.colour)}"></span><span class="data">${esc(s.colour.toUpperCase())}</span>`)}
         </dl>
+        ${body}
       </section>
 
-      <section class="rep-card">
-        <h4>${esc(S.media)}</h4>
+      <section class="rep-card rep-wide">
+        ${head('media', S.media)}
         <p class="rep-counts">
           <span><span class="data">${count('image')}</span> ${esc(S.photos)}</span>
           <span><span class="data">${count('audio')}</span> ${esc(S.audio)}</span>
@@ -130,13 +151,8 @@ export function renderStopReport(host: HTMLElement, s: ReportStop, S: ReportStri
         ${media}
       </section>
 
-      <section class="rep-card">
-        <h4>${esc(S.look)}</h4>
-        ${model}
-      </section>
-
       ${s.questions ? `<section class="rep-card rep-wide">
-        <h4>${esc(S.question)}</h4>
+        ${head('question', S.question)}
         ${question}
         <h4 class="rep-gap">${esc(S.hints)}</h4>
         ${hints}

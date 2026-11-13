@@ -17,7 +17,8 @@ try {
 
   const p = await b.newPage({ viewport: { width: 1280, height: 900 } });
   // A step saves first, then shows its pane: wait for the pane.
-  const PANES = ['basics', 'visual', 'place', 'question', 'media'];
+  // Round 7: Basics is gone; the stop's text (and Translate) sit in Question.
+  const PANES = ['place', 'visual', 'question', 'media', 'review'];
   const goStep = async (i) => {
     await p.click(`[data-step="${PANES[i]}"]`);
     await p.waitForSelector(`[data-panel="${PANES[i]}"]:not(.hidden)`, { timeout: 15000 });
@@ -29,6 +30,7 @@ try {
   await p.goto(`${BASE}/trail/?id=${id}`);
   await p.waitForSelector(`[data-pick="${m.id}"]`, { timeout: 20000 });
   await p.click(`[data-pick="${m.id}"]`);
+  await goStep(2);
   await p.waitForSelector('[data-ai-translate]', { state: 'visible', timeout: 10000 });
   check('tips card hidden while a stop is open', !(await p.isVisible('.start-card')));
   check('translate button says "to English" for a Bulgarian stop', (await p.textContent('[data-ai-label]')).includes('английски'));
@@ -44,7 +46,7 @@ try {
   // The steps (8 Nov 2026): Basics, 3D visual, Place, Question (with hints), Media.
   const steps = await p.$$eval('[data-step]', (b) => b.map((x) => x.textContent.replace(/\s+/g, ' ').trim()));
   check('five steps, 3D visual second, no separate hints', steps.length === 5 && /3D/.test(steps[1]) && !steps.some((t) => /Подсказки/.test(t)), steps.join(' | '));
-  await goStep(3);
+  await goStep(2);
   check('hints sit inside the question step', await p.isVisible('[data-panel="question"] [data-hints-box]'));
   await (await p.$('[data-marker-form]')).screenshot({ path: `${SHOTS}/ai-question.png` });
 

@@ -68,13 +68,15 @@ try {
   const box = await p.locator('[data-map]').boundingBox();
   await p.mouse.click(box.x + box.width / 2, box.y + box.height / 2);
   await p.waitForSelector('[data-marker-form]:not(.hidden)', { timeout: 15000 });
+  // Round 7: the BG title is the header; the text sits above the question.
   await p.fill('[name=titleBg]', 'Безистен');
+  await p.click('[data-step=question]');
   await p.fill('[name=bodyBg]', 'Ямболският безистен е един от малкото запазени покрити пазари на Балканите.');
   await p.click('[data-step=visual]');
   await p.click('label.shape-option:has(input[value=model])');
   await p.waitForSelector('[data-model-fields]:not(.hidden)');
   check('label says .glb or .stl', (await p.textContent('[data-src-panel=file]')).includes('.glb или .stl'));
-  check('STL hint shown', (await p.textContent('[data-src-panel=file]')).includes('цвета на спирката'));
+  check('one file line (round 7)', (await p.textContent('[data-src-panel=file]')).includes('.glb и .stl файлове до 50 MB и 1 000 000 триъгълника'));
   check('size label is Размер', (await p.textContent('.model-size')).includes('Размер, m'));
   // Round 5: file, size and facing in the right column, the preview on the left.
   const rect = (sel) => p.locator(sel).first().boundingBox();
@@ -113,12 +115,12 @@ try {
   await p.locator('[data-model-fields]').scrollIntoViewIfNeeded();
   await shot(p, 'model-1280-light', { clip: await p.locator('[data-model-fields]').boundingBox() });
 
-  // 4. Finish the stop: the summary replaces the form.
-  for (let i = 0; i < 8 && !(await p.isVisible('[data-report] .rep-head')); i++) {
+  // 4. Finish the stop: Review shows the summary, Done adds what comes next.
+  for (let i = 0; i < 8 && !(await p.isVisible('[data-ready-box]')); i++) {
     await p.click('[data-marker-save]');
     await p.waitForTimeout(2500);
   }
-  check('stop summary after Done', await p.isVisible('[data-report] .rep-head'));
+  check('stop summary after Done', await p.isVisible('[data-report] .rep-head') && await p.isVisible('[data-ready-box]'));
   check('summary title', (await p.textContent('[data-report] .rep-title')).includes('Безистен'));
   const rep = await p.textContent('[data-report]');
   check('summary warns: no EN, no photo', rep.includes('Няма текст на английски') && rep.includes('Няма снимка'));
@@ -131,7 +133,7 @@ try {
   await shot(p, 'report-1280-light', { fullPage: true });
 
   await p.click('[data-ready-again]');
-  check('Edit goes back to the form', await p.isVisible('[data-panel=basics]'));
+  check('Edit goes back to the form', await p.isVisible('[data-panel=place]'));
   check('stops list has a summary link', await p.isVisible('[data-rep]'));
   await p.click('[data-rep]');
   await p.waitForTimeout(1500);

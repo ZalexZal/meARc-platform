@@ -16,21 +16,24 @@ const href = localise(lang);
  *
  * It was one column of eighteen fields, then five tabs with one Save button,
  * and in both a creator had to find the parts for themselves. Now the same five
- * parts come in order - Basics, Place, Question, Hints, Media - with Previous
- * and Next, each step saved as it is left. Question and Hints can be skipped,
- * because a plain tour has neither.
+ * parts come in order - Place, 3D visual, Question, Media, Review - with
+ * Previous and Next, each step saved as it is left. The question can be
+ * skipped, because a plain tour has none.
  *
  * The map and the stop list stay outside the steps. They are how you choose
  * what you are editing, so they cannot live inside one of the things chosen.
  */
 // 8 Nov 2026: the 3D visual got its own step, second, so the AI that makes
 // models is in plain view; hints moved under the question they help with.
+// 13 Nov 2026 (round 7): Basics is gone. The BG title is the header itself,
+// the stop's text sits with the question (or under the place for a line of
+// work without questions), and Review shows the whole stop with the EN title.
 const steps = [
-  { id: 'basics',   label: t('tab.basics'),   sub: t('wiz.basics.sub') },
-  { id: 'visual',   label: t('tab.visual'),   sub: t('wiz.visual.sub') },
   { id: 'place',    label: t('tab.place'),    sub: t('wiz.place.sub') },
-  { id: 'question', label: t('tab.question'), sub: t('wiz.optional') },
+  { id: 'visual',   label: t('tab.visual'),   sub: t('wiz.visual.sub') },
+  { id: 'question', label: t('tab.question'), sub: t('wiz.question.sub') },
   { id: 'media',    label: t('tab.media'),    sub: t('wiz.media.sub') },
+  { id: 'review',   label: t('tab.review'),   sub: t('wiz.review.sub') },
 ];
 
 // What a stop asks, as four choices rather than a dropdown: the choice decides
@@ -96,6 +99,7 @@ const strings = {
   impRow: t('imp.row'), impReady: t('imp.ready'), impProblems: t('imp.problems'),
   impImport: t('imp.import'), impImporting: t('imp.importing'),
   impDone: t('imp.done'), impFailed: t('imp.failed'),
+  delStop: { body: t('ed.delStop.body') },
   lvCode: t('vis.unlisted'), lvCodeHint: t('vis.unlistedHint'),
   lvPublic: t('vis.public'), lvPublicHint: t('vis.publicHint'),
   lvMake: t('vis.makePublic'), lvMakeHint: t('vis.makePublicHint'),
@@ -105,7 +109,7 @@ const strings = {
     copyLink: t('share.copyLink'), hint: t('share.hint'),
   },
   viewHref: href('/view'),
-  colourNone: t('ed.colourNone'), pubDrafts: t('pub.drafts'),
+  pubDrafts: t('pub.drafts'),
   miss: {
     title: t('miss.title'), optional: t('miss.optional'), titleBg: t('miss.titleBg'),
     titleEn: t('miss.titleEn'), place: t('miss.place'), question: t('miss.question'),
@@ -133,14 +137,13 @@ const strings = {
   rep: Object.fromEntries(['title', 'untitled', 'place', 'text', 'languages', 'words', 'chars', 'colour', 'media',
     'photos', 'audio', 'video', 'look', 'modelName', 'size', 'facing', 'question', 'kind', 'answers', 'points',
     'hints', 'noHints', 'noQuestionSet', 'noBg', 'noEn', 'noPhoto', 'noQuestion', 'noQuestionEn', 'decimal',
-    'kind_audio', 'kind_video', 'kind_link', 'next', 'newStop', 'open'].map((k) => [k, t((k === 'title' ? 'rep.summaryTitle' : `rep.${k}`) as any)])),
+    'kind_audio', 'kind_video', 'kind_link', 'next', 'newStop', 'open', 'edit', 'noText'].map((k) => [k, t((k === 'title' ? 'rep.summaryTitle' : `rep.${k}`) as any)])),
   ai3d: {
     picture: t('ai3d.picture'), model: t('ai3d.model'), server: t('ai3d.server'), done: t('ai3d.done'),
     quota: t('ai3d.quota'), allowance: t('ai3d.allowance'), busy: t('ai3d.busy'), down: t('ai3d.down'), failed: t('ai3d.failed'),
     signin: t('ai3d.signin'), notReady: t('ai3d.notReady'), pick: t('ai3d.pick'),
     shapes: t('ai3d.shapes'), lowpoly: t('ai3d.lowpoly'), emptyStage: t('ai3d.emptyStage'), needInput: t('ai3d.needInput'), frames: t('ai3d.frames'), videoBad: t('ai3d.videoBad'),
   },
-  read: { all: t('q.all'), less: t('q.less') },
   wiz: {
     next: t('wiz.next'), done: t('wiz.done'), saved: t('wiz.saved'), skipped: t('wiz.skipped'),
     of: t('wiz.of'), newStop: t('wiz.newStop'), stop: t('wiz.stop'), untitled: t('wiz.untitled'),
@@ -175,27 +178,29 @@ const strings = {
       <p class="mt-2 hidden flex-wrap items-center gap-1.5 text-xs text-[var(--ink-dim)]" data-presence></p>
     </div>
 
-    <div class="flex flex-wrap items-center gap-2">
-      <div class="card flex flex-wrap items-center gap-x-2 gap-y-1 px-3 py-2">
+    <!-- Round 7: the code box and the two levels on one row, the same height
+         and centre; stacked full width on a phone. What each level means is a
+         tooltip on its button, not a line of text under it. -->
+    <div class="share-row">
+      <div class="code-box">
         <span class="eyebrow">{t('ed.code')}</span>
         <code class="code text-xl font-medium uppercase tracking-widest text-[var(--signal)]"
               data-trail-code></code>
         <button class="btn btn-ghost btn-sm" type="button" data-copy-code>{t('pub.copy')}</button>
-        <button class="text-xs text-[var(--ink-faint)] underline-offset-2 hover:text-[var(--ink)] hover:underline"
+        <button class="code-rotate"
                 type="button" data-rotate data-owner-only title={t('ed.rotateHint')}>{t('ed.rotate')}</button>
       </div>
       <!-- The same two choices My trails offers: with the code, or public.
            Public is instant. There used to be a Publish button here that wrote
            the same two columns with different words, so a trail could be
            "published" on one screen and "only me" on the other. -->
-      <div data-owner-only>
-        <div class="tabs" data-levels>
-          <button class="tab" type="button" data-level="code">{t('vis.unlisted')}</button>
+      <div class="level-box" data-owner-only>
+        <div class="tabs level-tabs" data-levels>
+          <button class="tab" type="button" data-level="code" title={t('vis.unlistedHint')}>{t('vis.unlisted')}</button>
           <button class="tab" type="button" data-level="public"></button>
         </div>
-        <p class="mt-1.5 max-w-xs text-xs text-[var(--ink-faint)]" data-level-hint></p>
-        <p class="mt-1.5 hidden max-w-xs text-xs text-[var(--lamp)]" data-level-note></p>
       </div>
+      <p class="level-note hidden" data-level-note></p>
     </div>
   </header>
 
@@ -346,7 +351,15 @@ const strings = {
             <span class="wiz-pin data" data-wiz-pin>1</span>
             <div class="min-w-0 flex-1">
               <p class="eyebrow" data-wiz-kind>{t('wiz.newStop')}</p>
-              <h2 class="wiz-title" data-wiz-title></h2>
+              <!-- The BG title, edited where it is read (round 7): a plain input
+                   dressed as the heading. Enter or leaving it keeps the text,
+                   Escape puts back what was there. -->
+              <label class="wiz-name">
+                <input class="wiz-title" data-wiz-title name="titleBg" maxlength="80" autocomplete="off"
+                       spellcheck="true" enterkeyhint="done"
+                       placeholder={t('wiz.namePh')} aria-label={t('wiz.nameLabel')} />
+                <svg class="wiz-pencil" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>
+              </label>
             </div>
             <span class="data wiz-count" data-wiz-count></span>
           </div>
@@ -383,46 +396,6 @@ const strings = {
           <div class="missing" data-missing hidden role="status">
             <p class="missing-title">{t('miss.title')}</p>
             <ul data-missing-list></ul>
-          </div>
-
-          <!-- 1 · The basics: words only. -->
-          <div class="pane" data-panel="basics">
-            <header class="pane-head">
-              <h3>{t('wiz.basics.title')}</h3>
-              <p>{t('wiz.basics.lede')}</p>
-            </header>
-            <!-- AI translation of the whole stop in one go (7 Nov 2026): only
-                 the empty fields of the other language are filled, and the
-                 creator reads them before saving. -->
-            <div class="ai-row">
-              <button class="btn btn-quiet btn-sm" type="button" data-ai-translate>
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 5h8M8 3v2M6 5c0 4 2.5 7 6 8M10 5c0 3-2 6-6 8M13 21l4-9 4 9M14.5 18h5"/></svg>
-                <span data-ai-label>{t('ai.toEn')}</span>
-              </button>
-              <p class="ai-say" data-ai-say aria-live="polite"></p>
-              <p class="ai-note">{t('ai.note')}</p>
-            </div>
-            <div class="grid gap-3 sm:grid-cols-2">
-              <label class="block text-sm">
-                <span class="mb-1.5 block font-medium">{t('ed.titleBg')} *</span>
-                <input class="field" name="titleBg" maxlength="80" />
-              </label>
-              <label class="block text-sm">
-                <span class="mb-1.5 block font-medium">{t('ed.titleEn')}</span>
-                <input class="field" name="titleEn" maxlength="80" />
-              </label>
-            </div>
-            <div class="grid gap-3 sm:grid-cols-2">
-              <label class="block text-sm">
-                <span class="mb-1.5 block font-medium">{t('ed.bodyBg')}</span>
-                <textarea class="field" name="bodyBg" rows="6" maxlength="900"></textarea>
-              </label>
-              <label class="block text-sm">
-                <span class="mb-1.5 block font-medium">{t('ed.bodyEn')}</span>
-                <textarea class="field" name="bodyEn" rows="6" maxlength="900"></textarea>
-              </label>
-            </div>
-            <p class="text-xs text-[var(--ink-faint)]">* {t('ed.required')}</p>
           </div>
 
           <!-- 2 · The 3D visual: what stands on the spot (8 Nov 2026). A pin, a
@@ -464,7 +437,6 @@ const strings = {
                    sent (lib/glb.ts), shown turning, sized and faced.
                    Uploaded when the step is left, like the rest. -->
               <div class="model-box mt-3 hidden" data-model-fields>
-                <p class="text-xs text-[var(--ink-dim)]" data-model-hint>{t('mdl.hint')}</p>
                 <!-- Round 5: the file first, then the preview, size and facing.
                      Two columns on a wide screen (preview on the left spanning
                      the three blocks on the right); one column on a phone. -->
@@ -478,14 +450,13 @@ const strings = {
                         <span class="mb-1.5 block font-medium" id="model-file-name">{t('mdl.file')}</span>
                         <FilePick lang={lang} accept=".glb,.stl,model/gltf-binary,model/stl" attr="data-model-file" labelledby="model-file-name" />
                       </div>
-                      <p class="mt-1.5 text-xs text-[var(--ink-faint)]">{t('mdl.stlHint')}</p>
+                      <p class="mt-1.5 text-xs text-[var(--ink-faint)]" data-model-hint>{t('mdl.hint')}</p>
                     </div>
                     <div class="space-y-3" data-src-panel="ai" hidden>
                       <div class="block text-sm">
                         <span class="mb-1.5 block font-medium" id="ai-media-name">{t('ai3d.media')}</span>
                         <FilePick lang={lang} kind="photos" accept="image/jpeg,image/png,image/webp,image/heic,video/mp4,video/quicktime,video/webm" multiple attr="data-ai-media" labelledby="ai-media-name" />
                       </div>
-                      <p class="text-xs text-[var(--ink-dim)]">{t('ai3d.mediaHint')}</p>
                       <div class="ai-thumbs" data-ai-thumbs></div>
                       <label class="block text-sm">
                         <span class="mb-1.5 block font-medium">{t('ai3d.describe')}</span>
@@ -496,7 +467,6 @@ const strings = {
                           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l1.8 4.7L18.5 9.5l-4.7 1.8L12 16l-1.8-4.7L5.5 9.5l4.7-1.8L12 3ZM19 15l.8 2.2L22 18l-2.2.8L19 21l-.8-2.2L16 18l2.2-.8L19 15Z"/></svg>
                           {t('ai3d.make')}
                         </button>
-                        <p class="basis-full text-xs text-[var(--ink-faint)]">{t('ai3d.note')}</p>
                       </div>
                     </div>
                     <p class="text-xs text-[var(--ink-dim)]" data-model-current hidden></p>
@@ -526,7 +496,6 @@ const strings = {
                           <input class="field data" type="number" min="0" max="359" step="1" data-model-heading-num aria-labelledby="facing-label" />
                           <span class="data text-xs text-[var(--ink-faint)]" data-model-compass>N</span>
                         </span>
-                        <p class="text-xs text-[var(--ink-faint)]">{t('mdl.headingHint')}</p>
                       </div>
                     </div>
                     <input type="hidden" data-model-heading value="0" />
@@ -535,7 +504,8 @@ const strings = {
               </div>
             </div>
 
-            <div>
+            <!-- Only for the shapes (round 7): a model brings its own colours. -->
+            <div data-colour-box>
               <span class="mb-1.5 block text-sm font-medium">{t('ed.colour')}</span>
               <div class="flex items-center gap-4">
                 <div class="min-w-0 flex-1">
@@ -543,7 +513,6 @@ const strings = {
                        aria-label={t('ed.colour')} aria-valuemin="0" aria-valuemax="359">
                     <span class="hue-handle" data-hue-handle hidden></span>
                   </div>
-                  <p class="data mt-1.5 text-left text-xs text-[var(--ink-faint)]" data-hue-value></p>
                 </div>
                 <!-- One dot, on the page's own surface, so it suits either theme. -->
                 <span class="hue-proof hue-proof-one"><span data-hue-proof-light></span></span>
@@ -551,7 +520,7 @@ const strings = {
             </div>
           </div>
 
-          <!-- 3 · The place: where it stands and how close a walker comes. -->
+          <!-- 1 · The place: where it stands and how close a walker comes. -->
           <div class="pane hidden" data-panel="place">
             <header class="pane-head">
               <h3>{t('wiz.place.title')}</h3>
@@ -579,21 +548,50 @@ const strings = {
 
           </div>
 
-          <!-- 4 · The question and its hints. Optional: a tour needs none. -->
+          <!-- 3 · The stop's text, then the question and its hints. The
+               question is optional: a tour needs none. -->
           <div class="pane hidden" data-panel="question">
             <header class="pane-head">
-              <h3>{t('wiz.question.title')} <span class="badge badge-quiet ml-1 align-middle">{t('wiz.optional')}</span></h3>
+              <h3>{t('wiz.question.title')}</h3>
               <p>{t('wiz.question.lede')}</p>
             </header>
 
-            <!-- What a walker has just read at this stop: the text from step 1,
-                 read-only, so the question can be about it. -->
-            <div class="read-box" data-read-box>
-              <p class="read-label">{t('q.read')}</p>
-              <p class="read-text" data-read-text></p>
-              <p class="read-empty" data-read-empty hidden>{t('q.empty')}</p>
-              <button type="button" class="read-more" data-read-more hidden aria-expanded="false">{t('q.all')}</button>
-            </div>
+            <!-- The stop's text (round 7): what a walker reads here, written
+                 right above the question that can ask about it. One set of
+                 fields: for a line of work without questions the script moves
+                 this block to the bottom of the Place step. -->
+            <section class="text-block" data-text-block>
+              <header class="sub-head">
+                <h4>{t('wiz.text.title')}</h4>
+                <p>{t('wiz.text.lede')}</p>
+              </header>
+              <!-- AI translation of the whole stop in one go (7 Nov 2026): only
+                   the empty fields of the other language are filled, and the
+                   creator reads them before saving. -->
+              <div class="ai-row">
+                <button class="btn btn-quiet btn-sm" type="button" data-ai-translate>
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 5h8M8 3v2M6 5c0 4 2.5 7 6 8M10 5c0 3-2 6-6 8M13 21l4-9 4 9M14.5 18h5"/></svg>
+                  <span data-ai-label>{t('ai.toEn')}</span>
+                </button>
+                <p class="ai-say" data-ai-say aria-live="polite"></p>
+                <p class="ai-note">{t('ai.note')}</p>
+              </div>
+              <div class="grid gap-3 sm:grid-cols-2">
+                <label class="block text-sm">
+                  <span class="mb-1.5 block font-medium">{t('ed.bodyBg')}</span>
+                  <textarea class="field" name="bodyBg" rows="6" maxlength="900"></textarea>
+                </label>
+                <label class="block text-sm">
+                  <span class="mb-1.5 block font-medium">{t('ed.bodyEn')}</span>
+                  <textarea class="field" name="bodyEn" rows="6" maxlength="900"></textarea>
+                </label>
+              </div>
+            </section>
+
+            <header class="sub-head" data-question-head>
+              <h4>{t('wiz.question.ask')} <span class="badge badge-quiet ml-1 align-middle">{t('wiz.optional')}</span></h4>
+              <p>{t('wiz.question.askLede')}</p>
+            </header>
 
             <div class="kinds" role="radiogroup" aria-label={t('ed.answerKind')}>
               {kinds.map((k) => (
@@ -703,7 +701,7 @@ const strings = {
             </section>
           </div>
 
-          <!-- 5 · Media. Uploaded the moment a file is chosen. -->
+          <!-- 4 · Media. Uploaded the moment a file is chosen. -->
           <div class="pane hidden" data-panel="media">
             <header class="pane-head">
               <h3>{t('wiz.media.title')}</h3>
@@ -742,20 +740,35 @@ const strings = {
             <p class="hidden text-sm text-[var(--signal)]" data-upload-status></p>
           </div>
 
-          <!-- After Done: what to do next, and a way back in. -->
-          <div class="pane ready hidden" data-panel="ready">
-            <span class="ready-check" aria-hidden="true">
-              <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="m5 12 5 5 9-10" /></svg>
-            </span>
-            <h3 data-ready-title></h3>
-            <p class="text-xs text-[var(--ink-faint)]" data-ready-skipped></p>
+          <!-- 5 · Review (round 7): the whole stop on one screen, each part
+               linked back to the step where it is edited, and the English
+               title, which has no other home now that Basics is gone. -->
+          <div class="pane hidden" data-panel="review">
+            <header class="pane-head">
+              <h3>{t('wiz.review.title')}</h3>
+              <p>{t('wiz.review.lede')}</p>
+            </header>
+            <label class="block text-sm">
+              <span class="mb-1.5 block font-medium">{t('ed.titleEn')}</span>
+              <input class="field" name="titleEn" maxlength="80" />
+            </label>
             <!-- The stop summary (round 4): lib/stopreport.ts fills it. -->
             <div class="report" data-report></div>
-            <div class="flex flex-wrap gap-2">
-              <button class="btn btn-quiet" type="button" data-ready-again>{t('rep.edit')}</button>
-              <button class="btn btn-primary" type="button" data-ready-next>{t('rep.next')}</button>
+            <!-- After Done: what to do next, and a way back in. -->
+            <div class="ready-box" data-ready-box hidden>
+              <p class="ready-line">
+                <span class="ready-check" aria-hidden="true">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="m5 12 5 5 9-10" /></svg>
+                </span>
+                <span data-ready-title></span>
+              </p>
+              <p class="text-xs text-[var(--ink-faint)]" data-ready-skipped></p>
+              <div class="flex flex-wrap gap-2">
+                <button class="btn btn-quiet" type="button" data-ready-again>{t('rep.edit')}</button>
+                <button class="btn btn-primary" type="button" data-ready-next>{t('rep.next')}</button>
+              </div>
+              <p class="text-xs text-[var(--ink-faint)]" data-ready-body>{t('wiz.readyBody')}</p>
             </div>
-            <p class="text-xs text-[var(--ink-faint)]" data-ready-body>{t('wiz.readyBody')}</p>
           </div>
         </div>
 
@@ -777,6 +790,16 @@ const strings = {
           <button class="btn btn-danger-quiet btn-sm" type="button" data-marker-delete>{t('ed.delete')}</button>
         </div>
       </form>
+      <!-- Deleting a stop asks first (round 7). Outside the form, so its
+           buttons never submit it. -->
+      <dialog class="del-dialog" data-del-dialog aria-labelledby="del-stop-title">
+        <h3 id="del-stop-title">{t('ed.delStop.title')}</h3>
+        <p data-del-body></p>
+        <div class="del-actions">
+          <button type="button" class="btn btn-quiet" data-del-cancel>{t('ed.delStop.cancel')}</button>
+          <button type="button" class="btn btn-danger" data-del-go>{t('ed.delStop.go')}</button>
+        </div>
+      </dialog>
     </div>
   </div>
 
@@ -952,6 +975,9 @@ const strings = {
   }
   const drop = (sel: string) => qa(sel).forEach((el) => el.remove());
   if (!features.questions) {
+    // The stop's text has no question to sit above: it goes to the bottom of
+    // the Place step, the same fields moved rather than a second set.
+    q('[data-panel="place"]')!.append(q('[data-text-block]')!);
     q('[data-step="question"]')?.closest('li')?.remove();
     drop('[data-panel="question"]');
     // The steps that are left count 1, 2, 3, 4.
@@ -1228,8 +1254,6 @@ const strings = {
       }
     });
 
-    text(q('[data-level-hint]'), here === 'public' ? S.lvPublicHint : S.lvCodeHint);
-
     // A refusal comes with a sentence. Not showing it leaves somebody pressing
     // the same button again wondering why nothing happened the first time.
     const note = q('[data-level-note]');
@@ -1384,10 +1408,12 @@ const strings = {
 
   // The steps this line of work has; a broker has no Question. Always found by
   // name (STEPS.indexOf), never by a number, since the numbers move.
-  type Step = 'basics' | 'visual' | 'place' | 'question' | 'media';
-  const STEPS: Step[] = (['basics', 'visual', 'place', 'question', 'media'] as Step[])
+  type Step = 'place' | 'visual' | 'question' | 'media' | 'review';
+  const STEPS: Step[] = (['place', 'visual', 'question', 'media', 'review'] as Step[])
     .filter((st) => st !== 'question' || features.questions);
-  const QUESTION = STEPS.indexOf('question'), MEDIA = STEPS.indexOf('media');
+  const QUESTION = STEPS.indexOf('question'), MEDIA = STEPS.indexOf('media'), REVIEW = STEPS.indexOf('review');
+  // Where the stop's text is written: above the question, or under the place.
+  const TEXT_STEP: Step = features.questions ? 'question' : 'place';
   const OPTIONAL = new Set([QUESTION]);
   let step = 0;
   let ready = false;
@@ -1412,13 +1438,30 @@ const strings = {
     flashTimer = window.setTimeout(() => el.classList.remove('is-on'), 1800);
   }
 
-  function paintTitle() {
-    const own = S.lang === 'en' ? val('titleEn') : val('titleBg');
-    text(q('[data-wiz-title]'), own || val('titleBg') || val('titleEn') || S.wiz.untitled);
-  }
-  form.addEventListener('input', (e) => {
-    const name = (e.target as HTMLInputElement)?.name;
-    if (name === 'titleBg' || name === 'titleEn') paintTitle();
+  // The header is the BG title's own field (round 7). Typing writes the form
+  // value and marks the stop changed, like any field; Enter and leaving keep
+  // it, Escape puts back what it held when it was entered.
+  const titleBox = q('[data-wiz-title]') as HTMLInputElement;
+  let titleBefore = '';
+  titleBox.addEventListener('focus', () => { titleBefore = titleBox.value; });
+  titleBox.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') {
+      // Not the form's Next: Enter only finishes the name.
+      e.preventDefault();
+      titleBox.blur();
+    } else if (e.key === 'Escape') {
+      e.preventDefault();
+      titleBox.value = titleBefore;
+      titleBox.dispatchEvent(new Event('input', { bubbles: true }));
+      titleBox.blur();
+    }
+  });
+  titleBox.addEventListener('blur', () => {
+    const clean = titleBox.value.replace(/\s+/g, ' ').trim();
+    if (clean !== titleBox.value) {
+      titleBox.value = clean;
+      titleBox.dispatchEvent(new Event('input', { bubbles: true }));
+    }
   });
 
   function paintSteps() {
@@ -1434,7 +1477,7 @@ const strings = {
       const sub = button.querySelector('[data-step-sub]') as HTMLElement;
       text(sub, skippedSteps.has(i) && !cur ? S.wiz.skipped : sub.dataset.sub ?? '');
     });
-    text(q('[data-wiz-count]'), S.wiz.of.replace('{0}', String(ready ? STEPS.length : step + 1)));
+    text(q('[data-wiz-count]'), S.wiz.of.replace('{0}', String(ready ? STEPS.length : step + 1)).replace('{1}', String(STEPS.length)));
     (q('[data-wiz-prev]') as HTMLButtonElement).disabled = step === 0;
     q('[data-wiz-skip]')!.classList.toggle('hidden', !OPTIONAL.has(step));
     const last = step === STEPS.length - 1;
@@ -1445,38 +1488,9 @@ const strings = {
 
   function show(panel: string) {
     qa('[data-panel]').forEach((p) => p.classList.toggle('hidden', (p as HTMLElement).dataset.panel !== panel));
-    if (panel === 'question') paintRead();
+    (q('[data-ready-box]') as HTMLElement).hidden = !ready;
+    if (panel === 'review') paintReport();
   }
-
-  /**
-   * The stop's text in the current language, read-only above the question, so
-   * the creator can see what a walker has just read. Long text folds to eight
-   * lines with a button to open it.
-   */
-  function paintRead() {
-    const body = ((field(S.lang === 'en' ? 'bodyEn' : 'bodyBg') as HTMLTextAreaElement | null)?.value ?? '').trim();
-    const out = q('[data-read-text]') as HTMLElement;
-    const more = q('[data-read-more]') as HTMLButtonElement;
-    out.textContent = body;
-    out.hidden = !body;
-    (q('[data-read-empty]') as HTMLElement).hidden = Boolean(body);
-    out.classList.remove('is-open');
-    more.setAttribute('aria-expanded', 'false');
-    text(more, S.read.all);
-    // Measured while it is clamped; the pane must be showing for that to mean anything.
-    more.hidden = !body || out.scrollHeight <= out.clientHeight + 1;
-  }
-  (q('[data-read-more]') as HTMLElement).addEventListener('click', () => {
-    const out = q('[data-read-text]') as HTMLElement;
-    const more = q('[data-read-more]') as HTMLElement;
-    const open = out.classList.toggle('is-open');
-    more.setAttribute('aria-expanded', String(open));
-    text(more, open ? S.read.less : S.read.all);
-  });
-  form.addEventListener('input', (e) => {
-    const n = (e.target as HTMLInputElement)?.name;
-    if (n === 'bodyBg' || n === 'bodyEn') paintRead();
-  });
 
   /** Keeps the top of the form in view; on a phone it sits below the map. */
   function bringFormIntoView(always: boolean) {
@@ -1492,8 +1506,9 @@ const strings = {
    * title is listed as optional.
    */
   function missingItems() {
-    const items: { label: string; panel: Step; field: string | null; required: boolean }[] = [];
-    if (!val('titleBg')) items.push({ label: S.miss.titleBg, panel: 'basics', field: 'titleBg', required: true });
+    // panel null: the field is in the header, on every step.
+    const items: { label: string; panel: Step | null; field: string | null; required: boolean }[] = [];
+    if (!val('titleBg')) items.push({ label: S.miss.titleBg, panel: null, field: 'titleBg', required: true });
     const lat = num('lat'), lng = num('lng');
     if (lat === null || lng === null || Number.isNaN(lat) || Number.isNaN(lng)
         || lat < -90 || lat > 90 || lng < -180 || lng > 180) {
@@ -1534,7 +1549,7 @@ const strings = {
         go.append(' ', tag);
       }
       go.addEventListener('click', () => {
-        goTo(STEPS.indexOf(it.panel));
+        if (it.panel) goTo(STEPS.indexOf(it.panel));
         if (it.field) (field(it.field) as HTMLElement | null)?.focus();
       });
       li.append(go);
@@ -1557,14 +1572,15 @@ const strings = {
     bringFormIntoView(false);
   }
 
+  /** Done: Review stays, with what to do next under the summary. */
   function showReady() {
     ready = true;
-    show('ready');
+    step = REVIEW;
     text(q('[data-ready-title]'), S.wiz.ready.replace('{0}', String(stopNumber(selected))));
     const names = [...skippedSteps].sort().map((i) => S.wiz.names[STEPS[i]]);
     text(q('[data-ready-skipped]'), names.length ? S.wiz.skippedList.replace('{0}', names.join(', ')) : '');
+    show('review');
     paintSteps();
-    paintReport();
   }
 
   /** The stop summary, from what the editor already holds (round 4). */
@@ -1586,6 +1602,8 @@ const strings = {
       bodyBg: m.content?.bg?.body ?? '', bodyEn: m.content?.en?.body ?? '',
       lat: Number(m.lat), lng: Number(m.lng),
       colour: m.colour_hex || DEFAULT_STOP_COLOUR,
+      // Each part of the summary opens the step where it is edited.
+      links: { place: 'place', text: TEXT_STEP, media: 'media', look: 'visual', question: 'question' },
       shape: shapeInput?.closest('label')?.textContent?.trim() ?? '',
       answerKind: kind,
       answerLabel: (form.querySelector(`[name="kind"] option[value="${kind}"]`) as HTMLOptionElement | null)?.textContent ?? kind,
@@ -1625,6 +1643,16 @@ const strings = {
     });
   }
 
+  // "Edit" on a part of the summary: to its step (round 7).
+  // The English title above it is saved on the way, as the step bar does.
+  q('[data-report]')!.addEventListener('click', async (e) => {
+    const go = (e.target as HTMLElement).closest('[data-rep-go]') as HTMLElement | null;
+    const i = go ? STEPS.indexOf(go.dataset.repGo as Step) : -1;
+    if (i < 0) return;
+    if (!ready && (await save(true))) flash(S.wiz.saved);
+    goTo(i);
+  });
+
   /** Opens the summary of a stop that is already finished. */
   async function openReport(id: string) {
     await editorReady;
@@ -1647,7 +1675,7 @@ const strings = {
   });
 
   /**
-   * A stop just placed on the map starts at Basics and opens its steps one by
+   * A stop just placed on the map starts at Place and opens its steps one by
    * one. A stop that already exists can be entered at any step.
    */
   function startSteps(m: any, fresh: boolean) {
@@ -1657,18 +1685,18 @@ const strings = {
     doneSteps = new Set<number>();
     skippedSteps = new Set<number>();
     if (!fresh) {
-      if (m.content?.bg?.title) doneSteps.add(0);
-      doneSteps.add(STEPS.indexOf('visual'));
       doneSteps.add(STEPS.indexOf('place'));
-      if (QUESTION >= 0 && ((m.answer_kind ?? 'none') !== 'none' || Number(m.hint_count))) doneSteps.add(QUESTION);
+      doneSteps.add(STEPS.indexOf('visual'));
+      if (QUESTION >= 0 && ((m.answer_kind ?? 'none') !== 'none' || Number(m.hint_count) || m.content?.bg?.body)) doneSteps.add(QUESTION);
       if (Number(m.media_count)) doneSteps.add(MEDIA);
+      if (m.status === 'published' && m.content?.bg?.title) doneSteps.add(REVIEW);
     }
     text(q('[data-wiz-kind]'), fresh ? S.wiz.newStop : S.wiz.stop.replace('{0}', String(stopNumber(m.id))));
     text(q('[data-wiz-pin]'), String(stopNumber(m.id)));
-    paintTitle();
     goTo(0);
     bringFormIntoView(true);
-    if (fresh) (field('titleBg') as HTMLInputElement).focus({ preventScroll: true });
+    // A new stop has no name yet: the header waits for one.
+    if (fresh) titleBox.focus({ preventScroll: true });
   }
 
   async function next() {
@@ -1688,13 +1716,15 @@ const strings = {
   });
 
   // Skipping puts the step back the way it was saved: a question half-chosen
-  // and then skipped is not a question.
-  q('[data-wiz-skip]')?.addEventListener('click', () => {
+  // and then skipped is not a question. The stop's text above it is kept and
+  // saved: skipping the question is not skipping what a walker reads.
+  q('[data-wiz-skip]')?.addEventListener('click', async () => {
     const m = markers.find((x) => x.id === selected);
     if (step === QUESTION && m) fillAnswer(m);
     if (step === QUESTION) {
       (q('[data-hint-bg]') as HTMLInputElement).value = '';
       (q('[data-hint-en]') as HTMLInputElement).value = '';
+      await save(true);
     }
     if (!doneSteps.has(step)) skippedSteps.add(step);
     flash(S.wiz.skipped);
@@ -2305,7 +2335,9 @@ const strings = {
 
     const titleBg = val('titleBg');
     if (!titleBg) {
-      fail(S.lang === 'bg' ? 'Дай заглавие на български.' : 'Give the stop a Bulgarian title.', 'basics');
+      fail(S.lang === 'bg' ? 'Дай заглавие на български.' : 'Give the stop a Bulgarian title.');
+      // The field is the header, on every step: no step to go to, just there.
+      if (!quiet) titleBox.focus();
       return false;
     }
 
@@ -2461,11 +2493,27 @@ const strings = {
     q('[data-marker-error]')!.classList.add('hidden');
   });
 
-  q('[data-marker-delete]')?.addEventListener('click', async () => {
+  // Deleting a stop asks first, in the page's own dialog (round 7).
+  const delDialog = q('[data-del-dialog]') as HTMLDialogElement;
+  q('[data-marker-delete]')?.addEventListener('click', () => {
     if (!selected) return;
+    const name = val('titleBg') || S.wiz.untitled;
+    text(q('[data-del-body]'), S.delStop.body.replace('{0}', name));
+    delDialog.showModal();
+    (q('[data-del-cancel]') as HTMLElement).focus();
+  });
+  q('[data-del-cancel]')?.addEventListener('click', () => delDialog.close());
+  // A click on the backdrop is a click on the dialog itself: it cancels.
+  delDialog.addEventListener('click', (e) => { if (e.target === delDialog) delDialog.close(); });
+  q('[data-del-go]')?.addEventListener('click', async () => {
+    const go = q('[data-del-go]') as HTMLButtonElement;
+    if (!selected) { delDialog.close(); return; }
+    go.disabled = true;
     const { data: files } = await client.rpc('media_paths', { p_world: worldId, p_marker: selected });
     if (files?.length) await client.storage.from('marker-media').remove(files);
     const { error } = await client.from('markers').delete().eq('id', selected);
+    go.disabled = false;
+    delDialog.close();
     if (error) { alert(error.message); return; }
     await select(null);
     await load();
@@ -2799,7 +2847,6 @@ const strings = {
     // the camera".
     (q('[data-shapes]') as HTMLElement)?.style.setProperty('--shape-tint', hex);
 
-    text(q('[data-hue-value]'), chosen ? hex : `${DEFAULT_STOP_COLOUR} · ${S.colourNone}`);
     const badge = q('[data-wiz-pin]') as HTMLElement | null;
     if (badge) badge.style.background = hex;
   }
@@ -2936,10 +2983,10 @@ const strings = {
     form.querySelectorAll<HTMLElement>('[data-src-panel]').forEach((p) => {
       p.hidden = p.dataset.srcPanel !== (chosenTile() === 'ai' ? 'ai' : 'file');
     });
-    // The file instructions belong to a file, not to AI.
     const ai = chosenTile() === 'ai';
-    mq<HTMLElement>('hint').hidden = ai;
     text(mq<HTMLElement>('empty-label'), ai ? S.ai3d.emptyStage : S.mdl.choose);
+    // The colour is for the shapes; a file or an AI model has its own (round 7).
+    (q('[data-colour-box]') as HTMLElement).hidden = on;
     if (on) showPreview(modelUrl);
   }
 
@@ -2977,7 +3024,10 @@ const strings = {
     if (isStl(file)) {
       modelSay(S.mdl.stl, false);
       try {
-        const glb = await stlToGlb(file, hue === null ? DEFAULT_STOP_COLOUR : hueToHex(hue));
+        // STL has no colours. The stop's colour picker is gone from the model
+        // tiles (round 7) and a trail has no colour of its own, so lib/stl's
+        // neutral grey.
+        const glb = await stlToGlb(file);
         file = new File([glb], file.name.replace(/\.stl$/i, '.glb'), { type: 'model/gltf-binary' });
       } catch {
         input.value = ''; modelSay(S.mdl.stlBad, true); return;
@@ -3536,10 +3586,30 @@ const strings = {
     background: var(--signal); color: #fff; font-size: 1rem; font-weight: 600;
     transition: background-color .3s ease;
   }
-  .wiz-title { margin-top: 3px; font-size: 1.25rem; line-height: 1.2; letter-spacing: -.02em; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  /* The BG title in the header: an input that reads as the heading, with a
+     pencil and a dashed line to say it can be typed in. */
+  .wiz-name {
+    position: relative; display: flex; align-items: center; gap: .375rem; margin-top: 1px;
+    max-width: 100%; cursor: text; color: var(--ink-faint);
+  }
+  .wiz-title {
+    min-width: 0; flex: 1; margin: 0; padding: 2px 4px 3px; margin-left: -4px;
+    font-family: var(--font-display); font-size: 1.25rem; font-weight: 600; line-height: 1.2; letter-spacing: -.02em;
+    color: var(--ink); background: transparent; border: 0; border-radius: 8px;
+    border-bottom: 1.5px dashed var(--line); border-bottom-left-radius: 0; border-bottom-right-radius: 0;
+    text-overflow: ellipsis; outline: none; cursor: text;
+    transition: background-color .15s ease, border-color .15s ease;
+  }
+  .wiz-title::placeholder { color: var(--ink-faint); font-weight: 600; }
+  .wiz-name:hover .wiz-title { background: var(--surface-2); border-bottom-color: var(--ink-faint); }
+  .wiz-title:focus { background: var(--surface-2); border-bottom: 1.5px solid var(--signal); }
+  .wiz-title:focus-visible { outline: 2px solid var(--signal); outline-offset: 2px; }
+  .wiz-pencil { flex: none; transition: color .15s ease; }
+  .wiz-name:hover .wiz-pencil, .wiz-title:focus + .wiz-pencil { color: var(--signal); }
   .wiz-count { flex: none; font-size: .8125rem; color: var(--ink-faint); }
 
-  .stepper { list-style: none; margin: 1.25rem 0 0; padding: 0; display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 6px; }
+  /* As many columns as there are steps: four for a line of work without questions. */
+  .stepper { list-style: none; margin: 1.25rem 0 0; padding: 0; display: grid; grid-auto-flow: column; grid-auto-columns: minmax(0, 1fr); gap: 6px; }
   .st {
     width: 100%; display: flex; flex-direction: column; gap: 8px; padding: 8px 6px 10px; text-align: left;
     border-radius: 14px; cursor: pointer; transition: background-color .2s ease;
@@ -3609,18 +3679,13 @@ const strings = {
   .kind-name { font-weight: 600; font-size: .90625rem; }
   .kind-body { font-size: .8125rem; color: var(--ink-dim); }
 
-  /* The stop's text, read-only, at the top of the question step. */
-  .read-box { padding: .75rem 1rem; border-radius: 14px; background: var(--surface); border: 1px solid var(--line-soft); }
-  .read-label { font-size: .75rem; font-weight: 600; color: var(--ink-faint); margin-bottom: .375rem; }
-  .read-text {
-    font-size: .875rem; line-height: 1.5; color: var(--ink-dim); white-space: pre-line; overflow-wrap: anywhere;
-    display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 8; overflow: hidden;
-  }
-  .read-text.is-open { display: block; -webkit-line-clamp: unset; }
-  .read-text[hidden], .read-empty[hidden], .read-more[hidden] { display: none; }
-  .read-empty { font-size: .8125rem; color: var(--ink-faint); }
-  .read-more { margin-top: .375rem; font-size: .8125rem; font-weight: 600; color: var(--signal); }
-  .read-more:hover { text-decoration: underline; }
+  /* The stop's text (round 7): above the question, or under the place. */
+  .text-block { display: flex; flex-direction: column; gap: 1rem; }
+  [data-panel="place"] > .text-block { margin-top: .5rem; padding-top: 1.25rem; border-top: 1px solid var(--line-soft); }
+  [data-panel="question"] > .text-block { padding-bottom: 1.25rem; border-bottom: 1px solid var(--line-soft); }
+  .text-block .ai-row { margin-bottom: 0; }
+  .sub-head h4 { font-size: 1.0625rem; font-weight: 600; letter-spacing: -.01em; }
+  .sub-head p { margin-top: .25rem; font-size: var(--text-sm); color: var(--ink-dim); }
 
   .add-box { padding: 1rem; border-radius: 18px; border: 1px dashed var(--line); }
 
@@ -3694,9 +3759,14 @@ const strings = {
   :global(.rep-grid) { margin-top: 1rem; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .75rem; align-items: start; }
   :global(.rep-gap) { margin-top: 1rem; }
   .stops-head { margin-top: 1.25rem; }
-  .pane.ready { padding-top: .75rem; }
-  /* The summary's own header names the stop: the big tick and line go. */
-  .ready .ready-check, .ready [data-ready-title] { display: none; }
+  /* Each part of the summary links back to its step. */
+  :global(.rep-card-head) { display: flex; align-items: baseline; justify-content: space-between; gap: .5rem; margin-bottom: .625rem; }
+  :global(.rep-card-head h4) { margin-bottom: 0 !important; }
+  :global(.rep-go) { flex: none; padding: .125rem .25rem; font-size: .8125rem; font-weight: 600; color: var(--signal); border-radius: 6px; cursor: pointer; }
+  :global(.rep-go:hover) { text-decoration: underline; }
+  :global(.rep-body) { margin-top: .625rem; display: grid; gap: .5rem; }
+  :global(.rep-body p) { font-size: .875rem; line-height: 1.5; color: var(--ink); white-space: pre-line; overflow-wrap: anywhere; text-align: left; }
+  :global(.rep-body .rep-tag) { display: block; margin-bottom: .125rem; font-size: .75rem; font-weight: 600; color: var(--ink-faint); }
   @media (max-width: 640px) { :global(.rep-grid) { grid-template-columns: minmax(0, 1fr); } }
   :global(.rep-card) { min-width: 0; padding: 1rem; border-radius: 14px; border: 1px solid var(--line); background: var(--surface); }
   :global(.rep-wide) { grid-column: 1 / -1; }
@@ -3721,13 +3791,27 @@ const strings = {
   :global(.rep-answers .is-right) { color: var(--signal); font-weight: 600; }
   :global(.rep-hints) { list-style: decimal inside; font-size: .875rem; display: grid; gap: .25rem; }
 
-  .ready { align-items: flex-start; padding: 2rem 0 1rem; }
-  .ready h3 { font-size: 1.5rem; letter-spacing: -.02em; }
+  /* After Done, under the summary in Review. */
+  .ready-box { display: flex; flex-direction: column; align-items: flex-start; gap: .75rem; padding-top: 1.25rem; border-top: 1px solid var(--line-soft); }
+  .ready-box[hidden] { display: none; }
+  .ready-line { display: flex; align-items: center; gap: .625rem; font-size: 1.0625rem; font-weight: 600; }
   .ready-check {
-    width: 64px; height: 64px; border-radius: 20px; display: grid; place-items: center;
+    flex: none; width: 32px; height: 32px; border-radius: 10px; display: grid; place-items: center;
     background: color-mix(in srgb, var(--tier-1) 16%, transparent); color: var(--tier-1);
     animation: ready-pop .5s cubic-bezier(.3,1.6,.5,1);
   }
+  /* The delete question. */
+  .del-dialog {
+    /* Centred: the site's reset takes the dialog's own auto margins away. */
+    position: fixed; inset: 0; margin: auto; height: fit-content;
+    width: min(26rem, calc(100vw - 2rem)); padding: 1.5rem; border: 0; border-radius: 22px;
+    background: var(--surface); color: var(--ink);
+  }
+  .del-dialog::backdrop { background: rgba(0, 0, 0, .45); }
+  .del-dialog h3 { font-size: 1.25rem; letter-spacing: -.02em; }
+  .del-dialog p { margin-top: .5rem; font-size: .9375rem; line-height: 1.47; color: var(--ink-dim); text-align: left; }
+  .del-actions { margin-top: 1.25rem; display: flex; justify-content: flex-end; gap: .5rem; flex-wrap: wrap; }
+  @media (max-width: 420px) { .del-actions .btn { flex: 1; } }
   @keyframes ready-pop { from { transform: scale(.5); opacity: 0; } to { transform: none; opacity: 1; } }
 
   .wiz-error {
@@ -3758,6 +3842,29 @@ const strings = {
      gives way first (round 5: the row pushed the form 50 px past 390). */
   .wiz-flash { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   @media (max-width: 420px) { .hide-xs { display: none; } .wiz-next { min-width: 0; flex: 1; } .wiz-foot { padding-left: 1rem; padding-right: 1rem; } .wiz-skip { padding: 0 .75rem; } }
+  /* The code and the two levels: one row, one height, one centre line; stacked
+     full width on a phone (round 7). */
+  .share-row { display: flex; flex-wrap: wrap; align-items: center; justify-content: flex-end; gap: .5rem; }
+  .code-box {
+    display: flex; align-items: center; gap: .5rem; height: 48px; padding: 0 .375rem 0 1rem;
+    border: 1px solid var(--line); border-radius: 999px; background: var(--surface);
+  }
+  .code-box .code { line-height: 1; }
+  .code-box .btn-sm { min-height: 38px; }
+  .code-rotate { padding: 0 .625rem 0 .25rem; font-size: var(--text-xs); color: var(--ink-faint); white-space: nowrap; cursor: pointer; }
+  .code-rotate:hover { color: var(--ink); text-decoration: underline; text-underline-offset: 2px; }
+  .level-box[hidden] { display: none; }
+  .level-tabs { height: 48px; align-items: center; }
+  .level-tabs .tab { min-height: 40px; }
+  .level-note { flex-basis: 100%; font-size: var(--text-xs); color: var(--lamp); text-align: right; }
+  @media (max-width: 639px) {
+    .share-row { width: 100%; flex-direction: column; align-items: stretch; }
+    /* Four things do not fit 358 px on one line: the label and code, then
+       the two buttons, inside one rounded box. */
+    .code-box { height: auto; min-height: 48px; flex-wrap: wrap; justify-content: space-between; row-gap: .125rem; padding: .375rem .375rem .375rem 1rem; border-radius: 22px; }
+    .code-box .eyebrow { white-space: nowrap; }
+    .level-note { text-align: left; }
+  }
   .trail-status:not(:empty)::before { content: "·"; margin-right: .75rem; color: var(--ink-faint); }
   .ed-tabs { width: fit-content; max-width: 100%; overflow-x: auto; }
   /* Phones: the four tabs share the full width instead of running off the

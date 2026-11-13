@@ -87,7 +87,7 @@ try {
   const bstop = await stop(bid, br.id, 'Апартамент');
   const p = await open(br, bid);
   await p.waitForSelector(`[data-pick="${bstop}"]`, { timeout: 20000 });
-  check('broker: four steps', (await steps(p)).join() === 'basics,visual,place,media', (await steps(p)).join());
+  check('broker: four steps', (await steps(p)).join() === 'place,visual,media,review', (await steps(p)).join());
   check('broker: no question step or pane in the page', !(await p.$('[data-step="question"]')) && !(await p.$('[data-panel="question"]')));
   check('broker: no Results tab', !(await p.$('[data-ed-tab="results"]')) && !(await p.$('[data-ed-panel="results"]')));
   check('broker: no team size, start or one-at-a-time rows', !(await p.$('[data-team-row]')) && !(await p.$('[data-start-mode]')) && !(await p.$('[data-reveal-row]')));
@@ -157,7 +157,7 @@ try {
   const gstop = await stop(gid, gu.id, 'Безистен');
   const pg = await open(gu, gid);
   await pg.waitForSelector(`[data-pick="${gstop}"]`, { timeout: 20000 });
-  check('guide: five steps with Question', (await steps(pg)).join() === 'basics,visual,place,question,media', (await steps(pg)).join());
+  check('guide: five steps with Question', (await steps(pg)).join() === 'place,visual,question,media,review', (await steps(pg)).join());
   check('guide: no Results tab, team size or start', !(await pg.$('[data-ed-tab="results"]')) && !(await pg.$('[data-team-row]')) && !(await pg.$('[data-start-mode]')));
   check('guide: one-at-a-time offered on an ordered trail', !!(await pg.$('[data-reveal-row]')));
   await pg.click(`[data-pick="${gstop}"]`);
@@ -178,7 +178,7 @@ try {
   await sql(`insert into world_members (world_id, user_id, role) values ($1, $2, 'editor')`, [tid, br.id]);
   const pt = await open(br, tid);
   await pt.waitForSelector(`[data-pick="${tstop}"]`, { timeout: 20000 });
-  check('editor sees by their own work: broker on a teacher trail has four steps', (await steps(pt)).join() === 'basics,visual,place,media', (await steps(pt)).join());
+  check('editor sees by their own work: broker on a teacher trail has four steps', (await steps(pt)).join() === 'place,visual,media,review', (await steps(pt)).join());
   await pt.close();
   const ptt = await open(te, tid);
   await ptt.waitForSelector(`[data-pick="${tstop}"]`, { timeout: 20000 });
