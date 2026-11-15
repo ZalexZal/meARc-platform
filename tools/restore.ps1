@@ -26,7 +26,7 @@ $Pass = Join-Path $env:USERPROFILE 'keys\backup.pass'
 if (-not (Test-Path $Pass)) { throw "Missing $Pass - without it the backup cannot be opened." }
 
 $bytes = [IO.File]::ReadAllBytes($Backup)
-if ([Text.Encoding]::ASCII.GetString($bytes, 0, 5) -ne 'ARTB1') { throw 'Not an AR Trail backup.' }
+if ([Text.Encoding]::ASCII.GetString($bytes, 0, 5) -ne 'ARTB1') { throw 'Not a meARc backup.' }
 
 $salt = $bytes[5..20]
 $iv   = $bytes[21..36]

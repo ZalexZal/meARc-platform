@@ -44,7 +44,7 @@ const t = useTranslations(lang);
 
   <div class="card mt-8 hidden max-w-lg p-6" data-trails-noapp>
     <p class="text-sm">{t('games.noApp')}</p>
-    <a class="btn btn-primary mt-4" href="/ARTrail.apk" download>{t('app.download')}</a>
+    <a class="btn btn-primary mt-4" href="/meARc.apk" download>{t('app.download')}</a>
   </div>
 
   <!-- Three states, all of them designed. A list that can only render rows is a
@@ -145,7 +145,7 @@ const t = useTranslations(lang);
   // fallback back here with a note, instead of to a Play Store page that does
   // not exist yet.
   const appLink = (id) =>
-    `intent://join/${id}#Intent;scheme=artrail;package=com.alex.artrail;` +
+    `intent://join/${id}#Intent;scheme=mearc;package=com.alex.mearc;` +
     `S.browser_fallback_url=${encodeURIComponent(pageFor(id) + '&noapp=1')};end`;
 
   // Great-circle distance, in metres. The page does the arithmetic itself so

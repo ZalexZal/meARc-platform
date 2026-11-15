@@ -11,7 +11,7 @@ faces = [(0, 2, 1), (0, 3, 2), (0, 1, 5), (0, 5, 4), (1, 2, 6), (1, 6, 5), (2, 3
          (4, 5, 8), (7, 9, 6), (5, 6, 9), (5, 9, 8), (4, 8, 9), (4, 9, 7)]
 
 with open(os.path.join(here, 'fixtures', 'house.stl'), 'wb') as f:
-    f.write(b'AR Trail lab house'.ljust(80, b' '))
+    f.write(b'meARc lab house'.ljust(80, b' '))
     f.write(struct.pack('<I', len(faces)))
     for face in faces:
         f.write(struct.pack('<3f', 0, 0, 0))

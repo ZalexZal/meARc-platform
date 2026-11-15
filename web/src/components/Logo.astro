@@ -1,0 +1,14 @@
+---
+// The meARc logo, inline so its ink takes the text colour (currentColor) and
+// follows the theme; the blue "flag" and "ar" stay blue. `horizontal` is the
+// lockup for bars (header, footer); `mark` is the flag and ring alone.
+import horizontal from '../assets/brand/horizontal-cc.svg?raw';
+import mark from '../assets/brand/mark-cc.svg?raw';
+
+interface Props { variant?: 'horizontal' | 'mark'; height?: number; class?: string; }
+const { variant = 'horizontal', height = 30, class: cls = '' } = Astro.props;
+const svg = (variant === 'mark' ? mark : horizontal)
+  .replace(/\s(width|height)="[^"]*"/g, '')
+  .replace('<svg ', `<svg class="brand-logo ${cls}" height="${height}" style="height:${height}px;width:auto" aria-hidden="true" focusable="false" `);
+---
+<Fragment set:html={svg} />

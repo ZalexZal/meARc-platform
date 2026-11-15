@@ -1,11 +1,12 @@
 ---
 import Base from '../layouts/Base.astro';
+import { brandName } from '../i18n/ui';
 import View from '../components/View.astro';
 import GetApp from '../components/GetApp.astro';
 import { langFromUrl } from '../i18n/ui';
 const lang = langFromUrl(Astro.url);
 ---
-<Base title={(lang === 'bg' ? 'Маршрут' : 'Trail') + ' — AR Trail'}>
+<Base title={(lang === 'bg' ? 'Маршрут' : 'Trail') + ' — ' + brandName[lang]}>
   <View lang={lang} />
   <GetApp lang={lang} />
 </Base>

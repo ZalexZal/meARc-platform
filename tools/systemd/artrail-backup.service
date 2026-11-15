@@ -1,5 +1,5 @@
 [Unit]
-Description=AR Trail weekly encrypted backup (database + media)
+Description=meARc weekly encrypted backup (database + media)
 Wants=network-online.target
 After=network-online.target
 

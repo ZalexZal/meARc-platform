@@ -41,7 +41,7 @@ async function place(lat: number, lng: number, lang: 'bg' | 'en', fetchImpl: typ
   const url = `${ENDPOINT}?format=jsonv2&zoom=10&lat=${lat}&lon=${lng}&accept-language=${lang}`;
   // A browser forbids setting User-Agent; Nominatim's policy needs one from scripts.
   const init: RequestInit | undefined =
-    typeof window === 'undefined' ? { headers: { 'User-Agent': 'ARTrail/1.0 (artrails.netlify.app)' } } : undefined;
+    typeof window === 'undefined' ? { headers: { 'User-Agent': 'meARc/1.0 (artrails.netlify.app)' } } : undefined;
   const res = await fetchImpl(url, init);
   if (!res.ok) return null;
   const body = await res.json();

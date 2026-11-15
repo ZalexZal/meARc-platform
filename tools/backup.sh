@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Weekly backup of AR Trail's database and media, on Kubuntu: the same backup
+# Weekly backup of meARc's database and media, on Kubuntu: the same backup
 # as tools/backup.ps1 on Windows, in the same encrypted format, so either
 # restore script opens either one.
 #

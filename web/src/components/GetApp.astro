@@ -10,7 +10,7 @@ import AppShot from './AppShot.astro';
 interface Props { lang: Lang; id?: string; }
 const { lang, id = 'app' } = Astro.props;
 const t = useTranslations(lang);
-const url = new URL('/ARTrail.apk', Astro.site).toString();
+const url = new URL('/meARc.apk', Astro.site).toString();
 const qr = await QRCode.toString(url, { type: 'svg', margin: 0, color: { dark: '#1d1d1f', light: '#ffffff' } });
 const mb = Math.round(app.bytes / 1048576);
 const date = new Date(app.date).toLocaleDateString(lang === 'bg' ? 'bg-BG' : 'en-GB', { day: 'numeric', month: 'long', year: 'numeric' });
@@ -23,7 +23,7 @@ const meta = t('app.meta').replace('{0}', app.version).replace('{1}', String(mb)
       <h2 class="display-lg">{t('app.title')}</h2>
       <p class="lede">{t('app.lede')}</p>
       <div class="get-row">
-        <a class="btn btn-primary btn-lg" href="/ARTrail.apk" download>{t('app.download')}</a>
+        <a class="btn btn-primary btn-lg" href="/meARc.apk" download>{t('app.download')}</a>
         <span class="get-meta data">{meta}</span>
       </div>
       <ol class="get-steps">

@@ -1,4 +1,4 @@
-# Weekly backup of AR Trail's database and media, run by the operator.
+# Weekly backup of meARc's database and media, run by the operator.
 #
 # Supabase Free keeps no backups at all, so this is the only copy there is if
 # the project is lost, paused past recovery, or damaged by a bad migration.

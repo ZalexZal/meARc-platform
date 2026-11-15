@@ -28,7 +28,7 @@ test('nothing chosen: a dashed question mark', () => {
   assert.equal(s.shape, 'ask');
   assert.equal(s.glyph, 'ask');
   assert.equal(s.pip, false);
-  assert.equal(s.title, 'Как ще използваш AR Trail?');
+  assert.equal(s.title, 'Как ще използваш меАРк?');
   assert.equal(s.body, 'Избери отдясно. Знакът тук се сменя с избора ти и после стои до името ти.');
   assert.deepEqual(s.gets, []);
   // A work without a role is still "nothing chosen" here.
@@ -80,7 +80,7 @@ test('creator states: square, job glyph, pencil pip', () => {
 });
 
 test('English: every state has its own words', () => {
-  assert.equal(sealState(null, null, 'en').title, 'How will you use AR Trail?');
+  assert.equal(sealState(null, null, 'en').title, 'How will you use meARc?');
   assert.equal(sealState('viewer', null, 'en').title, 'Viewer');
   assert.equal(sealState('creator', null, 'en').title, 'Creator');
   assert.equal(sealState('creator', 'teacher', 'en').title, 'Education · creator');
@@ -206,7 +206,7 @@ test('stageFor: nothing chosen and creator without work', () => {
   const n = stageFor(null, null, 'bg');
   assert.equal(n.tag, 'Нов профил');
   assert.equal(n.head, 'Едно място. Една история. Твоят телефон.');
-  assert.equal(n.sub, 'Избери вдясно как ще ползваш AR Trail — и виж какво те чака.');
+  assert.equal(n.sub, 'Избери вдясно как ще ползваш меАРк — и виж какво те чака.');
   assert.deepEqual(n.signs, []);
   assert.equal(n.card, null);
   assert.equal(n.moment, null);

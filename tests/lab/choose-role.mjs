@@ -39,7 +39,7 @@ try {
 
   // Nothing chosen: the dashed question mark, the waiting CTA.
   await p.waitForSelector('[data-role-form]:not([hidden])', { timeout: 15000 });
-  check('heading is the question', (await p.textContent('h1')).trim() === 'Как ще използваш AR Trail?');
+  check('heading is the question', (await p.textContent('h1')).trim() === 'Как ще използваш меАРк?');
   check('nothing pre-selected for a never-asked account', (await p.$$('input[name="role"]:checked')).length === 0);
   let s = await seal(p);
   check('seal starts as the dashed question', s.shape === 'ask' && s.glyph === 'ask' && s.pip === 'false', JSON.stringify(s));
@@ -136,7 +136,7 @@ try {
     const u = await settle(p3, 2000);
     check(`exempt: ${at} stays`, u.pathname === at, p3.url());
   }
-  check('EN screen heading', (await p3.textContent('h1')).trim() === 'How will you use AR Trail?');
+  check('EN screen heading', (await p3.textContent('h1')).trim() === 'How will you use meARc?');
   await p3.goto(`${BASE}/en/view/?id=00000000-0000-0000-0000-000000000000#map`);
   await p3.waitForURL((u) => u.pathname.startsWith('/en/choose-role'), { timeout: 15000 }).catch(() => {});
   check('EN page sends to /en/choose-role/', new globalThis.URL(p3.url()).pathname === '/en/choose-role/', p3.url());
@@ -190,7 +190,7 @@ try {
   await sp.check('[data-auth-agree]');
   await sp.click('[data-auth-submit]');
   await sp.waitForTimeout(500);
-  check('sign-up without a role: err.role, no request', (await sp.textContent('[data-auth-error]')).includes('Избери как ще използваш AR Trail.') && signups.length === 0);
+  check('sign-up without a role: err.role, no request', (await sp.textContent('[data-auth-error]')).includes('Избери как ще използваш меАРк.') && signups.length === 0);
   await sp.check('input[name="role"][value="creator"]');
   s = await seal(sp);
   check('sign-up seal repaints on click (creator)', s.shape === 'square' && s.glyph === 'pencil', JSON.stringify(s));
@@ -232,7 +232,7 @@ try {
   const en = await page(1280, 900);
   await en.goto(`${BASE}/en/signup/`);
   await en.waitForSelector('[data-stage] [data-seal]');
-  check('EN sign-up question', (await en.textContent('[data-role-question]')).trim() === 'How will you use AR Trail?');
+  check('EN sign-up question', (await en.textContent('[data-role-question]')).trim() === 'How will you use meARc?');
   for (const [w, h, name] of [[1280, 900, 'r2-signup-desktop-dark.png'], [390, 900, 'r2-signup-phone-dark.png']]) {
     const d = await page(w, h, 'dark');
     await d.goto(`${BASE}/signup/`);

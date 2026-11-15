@@ -53,7 +53,7 @@ type StateKey = 'ask' | 'viewer' | 'creator' | Work;
 const COPY: Record<Lang, Record<StateKey, Copy>> = {
   bg: {
     ask: {
-      title: 'Как ще използваш AR Trail?',
+      title: 'Как ще използваш меАРк?',
       body: 'Избери отдясно. Знакът тук се сменя с избора ти и после стои до името ти.',
       gets: [],
     },
@@ -90,7 +90,7 @@ const COPY: Record<Lang, Record<StateKey, Copy>> = {
   },
   en: {
     ask: {
-      title: 'How will you use AR Trail?',
+      title: 'How will you use meARc?',
       body: 'Choose on the right. This sign changes with your choice and then stays beside your name.',
       gets: [],
     },
@@ -247,7 +247,7 @@ const STAGE: Record<Lang, Record<Exclude<StageKey, 'none'>, StageCopy> & { none:
     viewer: sc('Зрител', 'Тръгни. Телефонът ще ти покаже останалото.', 'Маршрут наблизо или код от учител или екскурзовод — и приложението те води.',
       [['map', 'Обществени маршрути'], ['key', 'Влизане с код'], ['camera', 'AR камера']],
       ['Ямбол през вековете', 'наблизо · 350 м до началото', 4], ['arrow', 'Следваща · 180 м']),
-    none: { tag: 'Нов профил', tagCreator: 'Създател', head: 'Едно място. Една история. Твоят телефон.', sub: 'Избери вдясно как ще ползваш AR Trail — и виж какво те чака.' },
+    none: { tag: 'Нов профил', tagCreator: 'Създател', head: 'Едно място. Една история. Твоят телефон.', sub: 'Избери вдясно как ще ползваш меАРк — и виж какво те чака.' },
   },
   en: {
     teacher: sc('Education · creator', 'Lessons go outside.', 'The class heads out in teams, questions pop up on the spot, the leaderboard moves live.',
@@ -265,7 +265,7 @@ const STAGE: Record<Lang, Record<Exclude<StageKey, 'none'>, StageCopy> & { none:
     viewer: sc('Viewer', 'Set off. The phone will show the rest.', 'A trail nearby, or a code from a teacher or guide — and the app leads you.',
       [['map', 'Public trails'], ['key', 'Join with a code'], ['camera', 'AR camera']],
       ['Yambol through the ages', 'nearby · 350 m to the start', 4], ['arrow', 'Next · 180 m']),
-    none: { tag: 'New profile', tagCreator: 'Creator', head: 'One place. One story. Your phone.', sub: 'Choose on the right how you will use AR Trail — and see what awaits you.' },
+    none: { tag: 'New profile', tagCreator: 'Creator', head: 'One place. One story. Your phone.', sub: 'Choose on the right how you will use meARc — and see what awaits you.' },
   },
 };
 

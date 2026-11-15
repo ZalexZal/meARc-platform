@@ -16,7 +16,7 @@ set -euo pipefail
 BACKUP="${1:?Usage: tools/restore.sh <file.backup>}"
 PASS="$HOME/keys/backup.pass"
 [ -f "$PASS" ] || { echo "Missing $PASS - without it the backup cannot be opened." >&2; exit 1; }
-[ "$(dd if="$BACKUP" bs=1 count=5 status=none)" = "ARTB1" ] || { echo 'Not an AR Trail backup.' >&2; exit 1; }
+[ "$(dd if="$BACKUP" bs=1 count=5 status=none)" = "ARTB1" ] || { echo 'Not a meARc backup.' >&2; exit 1; }
 
 SALT="$(dd if="$BACKUP" bs=1 skip=5 count=16 status=none | xxd -p)"
 IV="$(dd if="$BACKUP" bs=1 skip=21 count=16 status=none | xxd -p)"

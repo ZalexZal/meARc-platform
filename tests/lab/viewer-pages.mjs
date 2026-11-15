@@ -161,7 +161,7 @@ try {
   await ap.goto(`${BASE}/account/#settings`);
   await ap.waitForSelector('[data-role-settings] [data-role-picker]', { timeout: 20000 });
   await ap.waitForTimeout(1200);
-  check('settings: section titled Как ползваш AR Trail', (await ap.textContent('[data-role-settings] h2').catch(() => '')).trim() === 'Как ползваш AR Trail');
+  check('settings: section titled Как ползваш меАРк', (await ap.textContent('[data-role-settings] h2').catch(() => '')).trim() === 'Как ползваш меАРк');
   check('settings: creator pre-selected', await ap.isChecked('[data-role-settings] input[name="role"][value="creator"]'));
   check('settings: teacher pre-selected', await ap.isChecked('[data-role-settings] input[name="work"][value="teacher"]'));
   check('settings: old standalone work form gone', (await ap.$$('[data-work-form]')).length === 0);
@@ -212,7 +212,7 @@ try {
   check('EN: badge label Viewer', (await badge(ep))?.label === 'Viewer');
   await ep.goto(`${BASE}/en/account/#settings`);
   await ep.waitForSelector('[data-role-settings] h2', { timeout: 20000 });
-  check('EN: settings title', (await ep.textContent('[data-role-settings] h2')).trim() === 'How you use AR Trail');
+  check('EN: settings title', (await ep.textContent('[data-role-settings] h2')).trim() === 'How you use meARc');
 
   // 4. No role yet: no badge (on the exempt choose-role screen).
   const n = await makeUser('vp-null', { role: null });

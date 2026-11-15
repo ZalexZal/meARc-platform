@@ -1,5 +1,5 @@
 [Unit]
-Description=AR Trail weekly backup, Sundays 20:00 (caught up if the laptop was off)
+Description=meARc weekly backup, Sundays 20:00 (caught up if the laptop was off)
 
 [Timer]
 OnCalendar=Sun 20:00

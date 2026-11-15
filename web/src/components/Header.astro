@@ -1,6 +1,7 @@
 ---
 import { useTranslations, localise, type Lang, type UIKey } from '../i18n/ui';
 import NameSeal from './NameSeal.astro';
+import Logo from './Logo.astro';
 
 interface Props { lang: Lang; otherHref: string; }
 const { lang, otherHref } = Astro.props;
@@ -24,16 +25,11 @@ const current = (to: string) => !to.includes('#') && here === to;
      trails itself, where the trails already are. -->
 <header class="site-header" data-site-header>
   <div class="bar">
-    <a href={href('/')} class="logo" aria-label="AR Trail">
-      <!-- A pin standing on a ring: the marker and the distance around it. -->
-      <svg width="26" height="26" viewBox="0 0 26 26" fill="none" aria-hidden="true">
-        <ellipse cx="13" cy="20.5" rx="7.5" ry="3" stroke="currentColor" stroke-opacity=".45" stroke-width="1.2" />
-        <path d="M13 3.5c-3.3 0-6 2.6-6 5.9 0 4.4 6 9.6 6 9.6s6-5.2 6-9.6c0-3.3-2.7-5.9-6-5.9Z" fill="var(--signal)" />
-        <circle cx="13" cy="9.3" r="2.1" fill="var(--signal-ink)" />
-      </svg>
-      <!-- The wordmark stands down on the narrowest phones, where "Регистрация"
-           would otherwise push the row off the side. -->
-      <span class="word">AR&nbsp;Trail</span>
+    <a href={href('/')} class="logo" aria-label="meARc">
+      <!-- The lockup (flag and ring, then "mearc"). Below 360 px the
+           mark stands alone, so "Регистрация" never pushes the row off the side. -->
+      <Logo variant="horizontal" height={30} class="word" />
+      <Logo variant="mark" height={30} class="mark-only" />
     </a>
 
     <nav class="nav" aria-label={t('nav.menu')}>
@@ -206,8 +202,8 @@ const current = (to: string) => !to.includes('#') && here === to;
     display: flex; align-items: center; gap: .625rem; flex-shrink: 0;
     font-family: var(--font-display); font-weight: 600; font-size: 15px; letter-spacing: -.01em;
   }
-  .word { display: none; }
-  @media (min-width: 420px) { .word { display: inline; } }
+  .logo :global(.word) { display: none; }
+  @media (min-width: 360px) { .logo :global(.word) { display: block; } .logo :global(.mark-only) { display: none; } }
 
   .nav { display: none; margin-left: 1.25rem; gap: 2px; }
   @media (min-width: 900px) { .nav { display: flex; } }

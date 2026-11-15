@@ -1,5 +1,6 @@
 ---
-import { useTranslations, localise, type Lang } from '../i18n/ui';
+import Logo from './Logo.astro';
+import { useTranslations, localise, brandName, type Lang } from '../i18n/ui';
 
 interface Props { lang: Lang; }
 const { lang } = Astro.props;
@@ -13,17 +14,12 @@ const year = new Date().getFullYear();
 <footer class="map site-footer" data-map-texture>
   <div class="mx-auto grid max-w-6xl gap-10 px-4 py-16 sm:px-6 md:grid-cols-[1.5fr_1fr_1fr]">
     <div>
-      <a href={href('/')} class="flex w-fit items-center gap-2.5">
-        <svg width="24" height="24" viewBox="0 0 26 26" fill="none" aria-hidden="true">
-          <ellipse cx="13" cy="20.5" rx="7.5" ry="3" stroke="currentColor" stroke-opacity=".45" stroke-width="1.2" />
-          <path d="M13 3.5c-3.3 0-6 2.6-6 5.9 0 4.4 6 9.6 6 9.6s6-5.2 6-9.6c0-3.3-2.7-5.9-6-5.9Z" fill="var(--signal)" />
-          <circle cx="13" cy="9.3" r="2.1" fill="var(--signal-ink)" />
-        </svg>
-        <span class="font-[family-name:var(--font-display)] text-[15px] font-semibold">AR&nbsp;Trail</span>
+      <a href={href('/')} class="flex w-fit items-center" aria-label="meARc">
+        <Logo variant="horizontal" height={30} />
       </a>
       <p class="mt-4 max-w-xs text-sm text-[var(--ink-dim)]">{t('footer.tagline')}</p>
       <a class="mt-5 inline-flex items-center gap-2 rounded-full border border-[var(--line)] px-3.5 py-2 text-xs text-[var(--ink-dim)] hover:text-[var(--ink)]"
-         href="/ARTrail.apk" download>
+         href="/meARc.apk" download>
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4v11M7 10l5 5 5-5M5 20h14" /></svg>
         {t('home.soon')}
       </a>
@@ -52,7 +48,7 @@ const year = new Date().getFullYear();
 
   <div class="border-t border-[var(--line-soft)]">
     <p class="mx-auto max-w-6xl px-4 py-6 text-2xs text-[var(--ink-faint)] sm:px-6">
-      © {year} AR Trail. {t('footer.rights')}
+      © {year} {brandName[lang]}. {t('footer.rights')}
     </p>
   </div>
 </footer>

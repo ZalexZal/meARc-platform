@@ -51,8 +51,16 @@
 # Android type makes a phone offer to install it; no-cache so a new build at
 # the same address is never served stale.
 [[headers]]
-  for = "/ARTrail.apk"
+  for = "/meARc.apk"
   [headers.values]
     Content-Type = "application/vnd.android.package-archive"
-    Content-Disposition = "attachment; filename=\"ARTrail.apk\""
+    Content-Disposition = "attachment; filename=\"meARc.apk\""
     Cache-Control = "public, max-age=0, must-revalidate"
+
+# The APK was called ARTrail.apk before the app became meARc. Links already
+# shared (QR codes, messages) keep working.
+[[redirects]]
+  from = "/ARTrail.apk"
+  to = "/meARc.apk"
+  status = 301
+  force = true

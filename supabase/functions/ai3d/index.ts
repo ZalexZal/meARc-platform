@@ -97,7 +97,7 @@ Deno.serve(async (req) => {
     await asCaller.rpc('ai_count_model');
     return reply({ ok: true, url: link, source: 'trellis2' });
   } catch (e) {
-    // Hugging Face's own daily limit on AR Trail's token is shared by everyone:
+    // Hugging Face's own daily limit on meARc's token is shared by everyone:
     // 'allowance', not 'quota', so nobody is told they used up their own.
     const reason = e instanceof SpaceError ? (e.reason === 'quota' ? 'allowance' : e.reason) : 'failed';
     console.log('ai3d', action, reason, String((e as Error)?.message ?? e).slice(0, 200));

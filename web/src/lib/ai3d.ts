@@ -6,7 +6,7 @@
  *   photo, when TRELLIS's free allowance is used up -> Gemini, from the photo
  *
  * Both are free Hugging Face Spaces, run by our ai3d Edge Function with
- * AR Trail's own Hugging Face token. The browser only sends the picture and
+ * meARc's own Hugging Face token. The browser only sends the picture and
  * downloads the result.
  *
  * Why not straight from the browser (as first built on 7 Nov): the Spaces

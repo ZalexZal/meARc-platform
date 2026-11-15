@@ -1,7 +1,8 @@
 ---
 import Base from '../layouts/Base.astro';
+import { brandName } from '../i18n/ui';
 import LegalPage from '../components/LegalPage.astro';
 import { langFromUrl } from '../i18n/ui';
 const lang = langFromUrl(Astro.url);
 ---
-<Base title={(lang === 'bg' ? 'GDPR и бисквитки' : 'GDPR & cookies') + ' — AR Trail'}><LegalPage lang={lang} kind="privacy" /></Base>
+<Base title={(lang === 'bg' ? 'GDPR и бисквитки' : 'GDPR & cookies') + ' — ' + brandName[lang]}><LegalPage lang={lang} kind="privacy" /></Base>

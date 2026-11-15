@@ -73,13 +73,13 @@ const strings = { ...copy, lang, boardHref: href('/board'), listHref: href('/tra
            6 Nov 2026). -->
       <div class="view-actions phone-actions">
         <a class="btn btn-primary" data-v-app>{copy.openApp}</a>
-        <a class="text-sm text-[var(--signal)] underline-offset-2 hover:underline" href="/ARTrail.apk" download>{copy.getApp}</a>
+        <a class="text-sm text-[var(--signal)] underline-offset-2 hover:underline" href="/meARc.apk" download>{copy.getApp}</a>
       </div>
       <div class="view-qr desk-qr" data-v-qrbox>
         <canvas></canvas>
         <div>
           <p class="text-sm text-[var(--ink-dim)]">{copy.qrDesk}</p>
-          <a class="mt-2 inline-block text-sm text-[var(--signal)] underline-offset-2 hover:underline" href="/ARTrail.apk" download>{copy.getApp}</a>
+          <a class="mt-2 inline-block text-sm text-[var(--signal)] underline-offset-2 hover:underline" href="/meARc.apk" download>{copy.getApp}</a>
         </div>
       </div>
     </div>
@@ -138,13 +138,13 @@ const strings = { ...copy, lang, boardHref: href('/board'), listHref: href('/tra
     const scored = isScored(summary.mode) && !estate, ordered = isOrdered(summary.mode) && !estate;
     text(q('[data-v-mode]'), trailLine(summary.mode, summary.category ?? 'other', summary.city ?? null, S.lang));
     text(q('[data-v-name]'), summary.name);
-    document.title = `${summary.name} — AR Trail`;
+    document.title = `${summary.name} — ${S.lang === 'bg' ? 'меАРк' : 'meARc'}`;
     text(q('[data-v-meta]'), [fmt(S.stopN, summary.stop_count), scored && Number(summary.team_count) > 0 ? fmt(S.teams, summary.team_count) : '']
       .filter(Boolean).join(' · '));
 
     // The app link, and a QR code of this page for the phone that has the app.
     const app = q<HTMLAnchorElement>('[data-v-app]')!;
-    app.href = `intent://join/${id}#Intent;scheme=artrail;package=com.alex.artrail;` +
+    app.href = `intent://join/${id}#Intent;scheme=mearc;package=com.alex.mearc;` +
       `S.browser_fallback_url=${encodeURIComponent(`${location.origin}${S.listHref}?t=${id}&noapp=1`)};end`;
     if (matchMedia('(pointer: fine)').matches) {
       await QRCode.toCanvas(q('[data-v-qrbox] canvas'), location.href, { width: 168, margin: 1 });

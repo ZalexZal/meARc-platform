@@ -25,7 +25,7 @@ export function wirePicker(root: ParentNode, { cta }: { cta?: HTMLElement | null
   let painted = false;
 
   // Before a choice the drawings walk through the roles, so the first thing a
-  // visitor sees is what AR Trail does, not an empty frame. The words stay on
+  // visitor sees is what meARc does, not an empty frame. The words stay on
   // the welcome; the walk stops the moment a role (and work) is chosen.
   const PREVIEW = ['guide', 'teacher', 'broker', 'viewer', 'other'] as const;
   let previewAt = 0;

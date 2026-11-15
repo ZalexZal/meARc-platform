@@ -33,7 +33,7 @@ for (const [w, h, tag] of [[1280, 900, 'desk'], [390, 844, 'phone']]) {
     // A phone opens the app; a computer gets the QR code instead (7 Nov 2026).
     if (phone) check(`${t}: open-in-app button, no QR`, await p.isVisible('[data-v-app]') && !(await p.isVisible('[data-v-qrbox]')));
     else check(`${t}: QR shown, no app button`, await p.isVisible('[data-v-qrbox] canvas') && !(await p.isVisible('[data-v-app]')));
-    check(`${t}: download link to the APK`, (await p.$$eval('a[href="/ARTrail.apk"]', (a) => a.length)) > 0);
+    check(`${t}: download link to the APK`, (await p.$$eval('a[href="/meARc.apk"]', (a) => a.length)) > 0);
     const sw = await p.evaluate(() => document.documentElement.scrollWidth);
     check(`${t}: no horizontal scroll`, sw <= w, `${sw}`);
     await p.screenshot({ path: `${SHOTS}/view-${tag}-${scheme}.png`, fullPage: true });

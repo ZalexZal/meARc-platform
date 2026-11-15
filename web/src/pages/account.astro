@@ -1,10 +1,11 @@
 ---
 import Base from '../layouts/Base.astro';
+import { brandName } from '../i18n/ui';
 import Account from '../components/Account.astro';
 import { langFromUrl, useTranslations } from '../i18n/ui';
 const lang = langFromUrl(Astro.url);
 const t = useTranslations(lang);
 ---
-<Base title={t('acct.title') + ' — AR Trail'}>
+<Base title={t('acct.title') + ' — ' + brandName[lang]}>
   <Account lang={lang} />
 </Base>
