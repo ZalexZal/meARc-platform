@@ -1,4 +1,4 @@
-# AR Trails: the optimisation phase, a roadmap
+# meARc: the optimisation phase, a roadmap
 
 > Written 29 October 2026 with Alex. The base is built (README versions 1–15,
 > app 0.6.3 build 23, migrations 0001–0055). This phase makes it a product
@@ -24,11 +24,11 @@ stability, and "completeness" (a lite way in without installing anything).
 
 | Area | Decision |
 |---|---|
-| Name and domain | **AR Trails**. The domain ending is decided when it is bought. |
+| Name and domain | **meARc**. The domain ending is decided when it is bought. |
 | Map tiles | Stadia stays during development; **MapTiler** before launch. |
 | Email | **Brevo**, a separate account and project. Later. |
 | Auto-translate | BG ↔ EN with a **Gemini API key, in a Supabase Edge Function**. |
-| From YambolTrails | The builder's ease of use, XP and levels, Google sign-in, the contact form, auto-translate. AR Trails keeps its own 11 badges. |
+| From YambolTrails | The builder's ease of use, XP and levels, Google sign-in, the contact form, auto-translate. meARc keeps its own 11 badges. |
 | Levels | **50 levels** to begin with, based on **stops reached**. |
 | Which stops count | Stops on **public (approved) trails and other people's trails**, never on a trail you own or edit. A stop reached from the map (inside its radius, when the camera can't calibrate) counts the same as one tapped in the camera. Each stop once per person. The practice trail never counts. |
 | Finished trails | A finished trail gives **extra XP**, with a **cap** so it can't be farmed. |
@@ -94,7 +94,7 @@ page's total height before and after at 390 px and 1440 px.
 
 ### 6. Web lite: walk a trail on the website
 
-YambolTrails' play screen, rebuilt on AR Trails' backend: a full-screen map, the
+YambolTrails' play screen, rebuilt on meARc's backend: a full-screen map, the
 next stop, check-in by GPS inside the stop's radius, the stop's contents and its
 question, the team and the board. No camera. It calls the same functions as the
 app (`markers_near`, `marker_detail`, `check_answer`, `record_visit`), so the

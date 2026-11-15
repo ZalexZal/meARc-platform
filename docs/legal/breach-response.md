@@ -30,7 +30,7 @@ database URL, a trail showing someone's personal data.
 
 ## Template for the CPDP notice
 
-- Controller: Alexander Zamov (AR Trail), zalex8623@gmail.com
+- Controller: Alexander Zamov (meARc), zalex8623@gmail.com
 - Nature of the breach, categories and approximate number of people and records
 - Likely consequences
 - Measures taken and proposed

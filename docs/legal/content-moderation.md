@@ -1,11 +1,11 @@
 # Content moderation (EU Digital Services Act)
 
-AR Trail stores content its users publish (trails, stops, media, questions,
+meARc stores content its users publish (trails, stops, media, questions,
 team names) and shows it to others, so it is a hosting service and, for the
 public library, an online platform. As a micro enterprise it is exempt from
 most platform duties (art. 19), but not from these:
 
-| Article | Duty | How AR Trail meets it |
+| Article | Duty | How meARc meets it |
 |---|---|---|
 | 11-12 | Points of contact for authorities and users | zalex8623@gmail.com, named in the terms and privacy policy |
 | 14 | Terms explain moderation | Terms: "What may and may not be published", "Reporting, blocking and moderation" |

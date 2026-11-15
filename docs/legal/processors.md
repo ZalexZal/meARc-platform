@@ -7,7 +7,7 @@
 | Email provider (Gmail SMTP, once connected) | Processor | Recipients' addresses and email contents | Google, global | Google Workspace/Gmail terms | If a paid provider (Resend, Brevo) replaces Gmail, sign its DPA |
 | Google (ARCore) | Independent controller | Camera-derived visual features, approximate location, device and usage data | Global | Google's terms; disclosed in-app and in the privacy policy as ARCore's terms require | None |
 | Google (Play) | Independent controller | Store and install data | Global | Play Developer Distribution Agreement | Accept when opening the Play account |
-| Stadia Maps | Independent controller (tile server) | IP, viewed map area | EU/US | Stadia's terms (free non-commercial plan) | Move to a paid plan if AR Trail ever earns money |
+| Stadia Maps | Independent controller (tile server) | IP, viewed map area | EU/US | Stadia's terms (free non-commercial plan) | Move to a paid plan if meARc ever earns money |
 | Esri (fallback tiles) | Independent controller | IP, viewed map area | US | Esri's terms | None |
 | OpenFreeMap | Independent controller | IP, viewed map area (website) | EU | Open service | None |
 

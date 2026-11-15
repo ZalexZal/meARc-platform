@@ -7,7 +7,7 @@ Play reviewer account and screenshots now.
 
 ## Goal
 
-Move AR Trail from "built" to "ready for Google Play's closed test"
+Move meARc from "built" to "ready for Google Play's closed test"
 (12 testers, 14 days), keep every promise the privacy policy makes, and give
 the closed test a way to collect what testers say.
 

@@ -113,7 +113,7 @@ a safety net.
 
 ### 5. The guest warning (website, app)
 
-YambolTrails' gate, in AR Trails' terms (a guest's walk is kept on the server
+YambolTrails' gate, in meARc's terms (a guest's walk is kept on the server
 under the guest session, so it is lost with the browser or the phone, not at
 once): "You are walking as a guest. Your walk is kept only on this
 {phone/browser}; make an account to keep your XP, level and badges anywhere."

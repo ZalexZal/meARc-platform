@@ -95,7 +95,7 @@ You choose the password - it must not pass through a chat transcript. Back the f
 
 ### 4. Package identity
 
-`com.alex.artrail.dev`, labelled "AR Trail (dev)" - what students see under the icon. Renaming later creates a different app that cannot update in place, so decide before distributing, not after.
+`com.alex.artrail.dev`, labelled "meARc (dev)" - what students see under the icon. Renaming later creates a different app that cannot update in place, so decide before distributing, not after.
 
 ### 5. Deploy the site
 

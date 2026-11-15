@@ -4,7 +4,7 @@
 
 ## Why
 
-AR Trail now serves three different jobs (Direction, 6 Nov): teachers,
+meARc now serves three different jobs (Direction, 6 Nov): teachers,
 tour guides and estate brokers. The builder shows everyone everything:
 teams, order, questions, hints, standings, start times. A broker placing a
 building on a plot sees a school quiz tool; a tour guide wades through

@@ -1,12 +1,12 @@
 # Records of processing (GDPR art. 30)
 
-**Controller:** Alexander Zamov, operator of AR Trail - zalex8623@gmail.com.
-No representative (established in the EU). No DPO: AR Trail's core activity is
+**Controller:** Alexander Zamov, operator of meARc - zalex8623@gmail.com.
+No representative (established in the EU). No DPO: meARc's core activity is
 not large-scale systematic monitoring, nor large-scale special-category data
 (art. 37).
 
 Art. 30(5) exempts organisations under 250 people only when processing is
-occasional, low-risk and has no special categories. AR Trail's processing is
+occasional, low-risk and has no special categories. meARc's processing is
 continuous and includes children, so this record is kept.
 
 | # | Purpose | People | Data | Legal basis | Kept for |

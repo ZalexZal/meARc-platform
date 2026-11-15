@@ -1,6 +1,6 @@
-# AR Trail - legal file
+# meARc - legal file
 
-The operator's own records: what the law asks AR Trail to have written down,
+The operator's own records: what the law asks meARc to have written down,
 kept up to date, and be able to show a regulator (the Bulgarian Commission for
 Personal Data Protection, CPDP) or a NOIT jury. Written 2026-09-27; review
 whenever the app starts keeping a new kind of data.
@@ -9,7 +9,7 @@ whenever the app starts keeping a new kind of data.
 |---|---|---|
 | [records-of-processing.md](records-of-processing.md) | GDPR art. 30 | Every kind of personal data, why, for how long, who else touches it |
 | [dpia.md](dpia.md) | GDPR art. 35 | The risk assessment for children's data and location, with the measures taken |
-| [processors.md](processors.md) | GDPR art. 28, 44-49 | The companies that process data for AR Trail, and the contracts to sign |
+| [processors.md](processors.md) | GDPR art. 28, 44-49 | The companies that process data for meARc, and the contracts to sign |
 | [breach-response.md](breach-response.md) | GDPR art. 33-34 | What to do in the 72 hours after a leak |
 | [content-moderation.md](content-moderation.md) | DSA art. 14-17 | How reports are handled and how removals are explained |
 
@@ -38,7 +38,7 @@ whenever the app starts keeping a new kind of data.
 | 2026-09-29 | Feedback from the app and website, kept 12 months; not accepted from a 13-year-old before a parent agrees | Operator / legal review |
 
 Why 13 and not younger: Google's ARCore terms forbid the Geospatial API in any
-service "directed to children" under COPPA (under 13), and AR Trail is built on
+service "directed to children" under COPPA (under 13), and meARc is built on
 it. Why a parent at 13: Bulgaria sets the age of digital consent at 14
 (Personal Data Protection Act art. 25c, under GDPR art. 8).
 

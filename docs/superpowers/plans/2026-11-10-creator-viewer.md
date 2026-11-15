@@ -41,7 +41,7 @@
 
   | Element | BG | EN |
   |---|---|---|
-  | Question | "Как ще използвате AR Trail?" | "How will you use AR Trail?" |
+  | Question | "Как ще използвате меАРк?" | "How will you use meARc?" |
   | Creator card | "Създавам маршрути" / "Строя маршрути за ученици, туристи или клиенти" | "I make trails" / "For students, visitors or clients" |
   | Viewer card | "Разглеждам и вървя" / "Вървя по маршрути — с код или от библиотеката" | "I explore and walk" / "Walk trails with a code or from the library" |
   | Work question (creators only) | "С какво се занимавате?" | "What do you do?" |
@@ -55,7 +55,7 @@
   **Left-panel copy per state.** Each state has a title, a body, and up to three "what you get" bullets.
 
   - **Nothing chosen**
-    - Title: "Как ще използвате AR Trail?"
+    - Title: "Как ще използвате меАРк?"
     - Body: "Изберете отдясно. Знакът тук се сменя с избора ви и после стои до името ви."
     - Bullets: none.
   - **Viewer**
@@ -166,7 +166,7 @@
 - Modify:
   - `web/src/components/MyTrails.astro`: for a viewer, show a "Стани създател" card instead of the create form. It shows the four job seals; picking one saves role=creator + work and reveals the create form without a reload. A viewer's own existing trails, if any, still list normally.
   - `web/src/components/TrailEditor.astro`: a viewer who opens the builder sees a slim notice with the "Стани създател" action at the top. They are never blocked from a trail they own or edit.
-  - `web/src/components/Account.astro`, Settings panel: a "Как ползвате AR Trail" choice. It reuses the role + work picker from ChooseRole (extract a shared component if needed) and replaces the current standalone line-of-work radios.
+  - `web/src/components/Account.astro`, Settings panel: a "Как ползвате меАРк" choice. It reuses the role + work picker from ChooseRole (extract a shared component if needed) and replaces the current standalone line-of-work radios.
   - The account header and site header show the user's small seal next to their name, wherever the name appears today. Find where the header shows the signed-in name.
 - Test: `tests/lab/viewer-pages.mjs`.
 
@@ -182,4 +182,4 @@
 ### Task R4: Release
 
 - [ ] Merge `roles` into main (fast-forward) and push once. Wait for Netlify, then run choose-role.mjs, viewer-pages.mjs, signup-work.mjs and trails-filter.mjs with `LAB_BASE=https://artrails.netlify.app`.
-- [ ] Confirm /ARTrail.apk serves 0.6.5 (Content-Length ≈ 46.7 MB) and that the download section shows 0.6.5.
+- [ ] Confirm /meARc.apk (old /ARTrail.apk redirects) serves 0.6.5 (Content-Length ≈ 46.7 MB) and that the download section shows 0.6.5.

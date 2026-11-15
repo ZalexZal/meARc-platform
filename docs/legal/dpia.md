@@ -1,6 +1,6 @@
 # Data protection impact assessment (GDPR art. 35)
 
-**Service:** AR Trail - app and website. **Assessed:** 2026-09-27.
+**Service:** meARc - app and website. **Assessed:** 2026-09-27.
 **Assessor:** the operator. **Next review:** before the production release on
 Google Play, and whenever a new kind of data is collected.
 
