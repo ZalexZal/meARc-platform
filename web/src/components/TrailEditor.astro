@@ -92,7 +92,8 @@ const strings = {
   reorderFailed: t('ed.reorderFailed'),
   teamSizeHint: t('ed.teamSizeHint'),
   impNoHeader: t('imp.noHeader'), impNoRows: t('imp.noRows'),
-  impNeedName: t('imp.needName'), impBadCoords: t('imp.badCoords'),
+  impNeedName: t('imp.needName'), impBadCoords: t('imp.badCoords'), impBadRadius: t('imp.badRadius'),
+  radiusBad: t('ed.radiusBad'),
   impBadKind: t('imp.badKind'), impNeedAccepted: t('imp.needAccepted'),
   impBadOnWrong: t('imp.badOnWrong'), impDupe: t('imp.dupe'),
   impBadShape: t('imp.badShape'), impLongSign: t('imp.longSign'),
@@ -541,7 +542,7 @@ const strings = {
               </label>
               <label class="block text-sm">
                 <span class="mb-1.5 block font-medium">{t('ed.radius')}</span>
-                <input class="field data" name="radius" inputmode="numeric" />
+                <input class="field data" name="radius" type="number" min="5" max="200" step="1" inputmode="numeric" />
               </label>
             </div>
             <p class="-mt-2 text-xs text-[var(--ink-faint)]">{t('ed.radiusHint')}</p>
@@ -1301,6 +1302,9 @@ const strings = {
   // Drawn by the Sharing tab's code further down; load() calls it once stops are in.
   let paintShare: () => void = () => {};
   let pins = new Map<string, any>();
+  // The radius rings' source, and pins mid-drag (see "radius rings" below).
+  const RING_SRC = 'stop-rings';
+  const ringDrag = new Map<string, [number, number]>();
   let selected: string | null = null;
   let fitted = false;   // the map has been fitted to the trail's markers
   let choices: { bg: string; en: string; correct: boolean }[] = [];
@@ -1324,6 +1328,22 @@ const strings = {
     form.elements.namedItem(n) as HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement;
   const val = (n: string) => (field(n) as HTMLInputElement).value.trim();
   const num = (n: string) => { const v = val(n); return v === '' ? null : Number(v); };
+
+  // A stop's radius: a whole number of metres from 5 to 200 (migration 0073).
+  const RADIUS_MIN = 5, RADIUS_MAX = 200, RADIUS_DEFAULT = 100;
+  /** The radius in some text, or null when it is not a whole 5-200. */
+  function radiusOf(v: string): number | null {
+    if (!/^\d+$/.test(v)) return null;
+    const n = Number(v);
+    return n >= RADIUS_MIN && n <= RADIUS_MAX ? n : null;
+  }
+  /** The form's radius: empty means the default, anything unusable is null. */
+  function readRadius(): number | null {
+    const input = field('radius') as HTMLInputElement;
+    if (input.validity.badInput) return null;   // "abc" in a number field reads as ''
+    const v = input.value.trim();
+    return v === '' ? RADIUS_DEFAULT : radiusOf(v);
+  }
 
   function showKindFields() {
     if (!features.questions) return;
@@ -1775,7 +1795,7 @@ const strings = {
 
     q('[data-no-selection]')!.classList.toggle('hidden', Boolean(id));
     form.classList.toggle('hidden', !id);
-    if (!id) return;
+    if (!id) { paintRings(); return; }
 
     const m = markers.find((x) => x.id === id);
     if (!m) return;
@@ -1791,6 +1811,7 @@ const strings = {
     (field('lat') as HTMLInputElement).value = String(m.lat ?? '');
     (field('lng') as HTMLInputElement).value = String(m.lng ?? '');
     (field('radius') as HTMLInputElement).value = String(m.radius_m ?? 100);
+    paintRings();
 
     // trail_markers already returns colour_hex; nothing has ever written one.
     hue = hexToHue(m.colour_hex ?? null);
@@ -1942,13 +1963,19 @@ const strings = {
         .setLngLat([m.lng, m.lat]).addTo(map);
       el.addEventListener('click', (e) => { e.stopPropagation(); editorReady.then(() => select(m.id)); });
 
+      pin.on('drag', () => {
+        const { lng, lat } = pin.getLngLat();
+        ringDrag.set(m.id, [lng, lat]);
+        paintRings();
+      });
       pin.on('dragend', async () => {
         const { lng, lat } = pin.getLngLat();
         if (selected === m.id) savingNow = true;
         const { data, error } = await client.rpc('move_marker', { p_marker: m.id, p_lat: lat, p_lng: lng });
         savingNow = false;
-        if (error) { alert(error.message); await load(); return; }
+        if (error) { ringDrag.delete(m.id); alert(error.message); await load(); return; }
         m.lat = lat; m.lng = lng;
+        ringDrag.delete(m.id);
         if (Array.isArray(data) ? data[0]?.version : (data as any)?.version) {
           m.version = Array.isArray(data) ? data[0].version : (data as any).version;
           if (selected === m.id) formVersion = m.version;
@@ -1957,11 +1984,14 @@ const strings = {
           (field('lat') as HTMLInputElement).value = String(lat);
           (field('lng') as HTMLInputElement).value = String(lng);
         }
+        paintRings();
         void findCity();
       });
 
       pins.set(m.id, pin);
     });
+
+    paintRings();
 
     // Once, on the first draw with anything in it: every trail opened on
     // Yambol, so one built anywhere else showed an empty map of the wrong town.
@@ -1994,6 +2024,98 @@ const strings = {
   function drawPinsWhenReady() {
     if (map.loaded()) drawPins(); else map.once('load', drawPins);
   }
+
+  // ---------------------------------------------------------- radius rings
+  // The circle each stop opens within, drawn on the ground in metres: every
+  // stop faintly, the one being edited strongly, so overlaps show before the
+  // overlap warning has to say so. The pins are HTML on top, so the rings are
+  // always under them.
+
+  /** A geodesic circle around [lng, lat], radius in metres, as a closed ring. */
+  function circleRing(lng: number, lat: number, metres: number, points = 64): [number, number][] {
+    const R = 6371008.8, d = metres / R, toRad = Math.PI / 180;
+    const p1 = lat * toRad, l1 = lng * toRad;
+    const ring: [number, number][] = [];
+    for (let i = 0; i <= points; i++) {
+      const b = ((i % points) / points) * 2 * Math.PI;
+      const p2 = Math.asin(Math.sin(p1) * Math.cos(d) + Math.cos(p1) * Math.sin(d) * Math.cos(b));
+      const l2 = l1 + Math.atan2(Math.sin(b) * Math.sin(d) * Math.cos(p1), Math.cos(d) - Math.sin(p1) * Math.sin(p2));
+      ring.push([l2 / toRad, p2 / toRad]);
+    }
+    return ring;
+  }
+
+  function ringData() {
+    const features: any[] = [];
+    for (const m of markers) {
+      let lng = m.lng, lat = m.lat;
+      let r: number | null = Math.min(RADIUS_MAX, Math.max(RADIUS_MIN, Number(m.radius_m) || RADIUS_DEFAULT));
+      const on = m.id === selected;
+      if (on) {
+        // What the form says, while it is being typed; a radius the save
+        // would refuse draws nothing rather than a circle it will not be.
+        r = readRadius();
+        const fl = num('lat'), fg = num('lng');
+        if (fl !== null && fg !== null && Math.abs(fl) <= 90 && Math.abs(fg) <= 180) { lat = fl; lng = fg; }
+      }
+      const dragged = ringDrag.get(m.id);
+      if (dragged) [lng, lat] = dragged;
+      if (r === null || !Number.isFinite(lng) || !Number.isFinite(lat)) continue;
+      features.push({
+        type: 'Feature',
+        properties: { id: m.id, on, radius: r },
+        geometry: { type: 'Polygon', coordinates: [circleRing(lng, lat, r)] },
+      });
+    }
+    return { type: 'FeatureCollection', features };
+  }
+
+  function ringColour() {
+    return getComputedStyle(document.documentElement).getPropertyValue('--signal').trim() || '#0066cc';
+  }
+
+  /** Source and layers, again after any style change wipes them. */
+  function ensureRings() {
+    if (!map.isStyleLoaded() || map.getSource(RING_SRC)) return;
+    map.addSource(RING_SRC, { type: 'geojson', data: ringData() as any });
+    // Under the map's labels, so street names stay readable through the fill.
+    const firstSymbol = map.getStyle().layers?.find((l: any) => l.type === 'symbol')?.id;
+    const c = ringColour();
+    map.addLayer({
+      id: 'stop-rings-fill', type: 'fill', source: RING_SRC,
+      paint: { 'fill-color': c, 'fill-opacity': ['case', ['get', 'on'], 0.16, 0.06] },
+    }, firstSymbol);
+    map.addLayer({
+      id: 'stop-rings-line', type: 'line', source: RING_SRC,
+      paint: {
+        'line-color': c,
+        'line-opacity': ['case', ['get', 'on'], 0.9, 0.35],
+        'line-width': ['case', ['get', 'on'], 2, 1],
+      },
+    }, firstSymbol);
+  }
+
+  function paintRings() {
+    const src = map.getSource(RING_SRC) as any;
+    if (src) src.setData(ringData());
+    else ensureRings();
+  }
+
+  map.on('style.load', ensureRings);
+  if (map.isStyleLoaded()) ensureRings(); else map.once('load', ensureRings);
+  // Light and dark carry different blues; the map's own style stays the same.
+  const recolourRings = () => {
+    if (!map.getLayer('stop-rings-fill')) return;
+    const c = ringColour();
+    map.setPaintProperty('stop-rings-fill', 'fill-color', c);
+    map.setPaintProperty('stop-rings-line', 'line-color', c);
+  };
+  new MutationObserver(recolourRings).observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
+  matchMedia('(prefers-color-scheme: dark)').addEventListener('change', recolourRings);
+  form.addEventListener('input', (e) => {
+    const n = (e.target as HTMLInputElement | null)?.name;
+    if (n === 'radius' || n === 'lat' || n === 'lng') paintRings();
+  });
 
   async function load() {
     const { data, error } = await client.rpc('trail_markers', { p_world: worldId });
@@ -2332,6 +2454,13 @@ const strings = {
       fail(S.lang === 'bg' ? 'Координатите са извън обхват.' : 'Coordinates are out of range.', 'place');
       return false;
     }
+    // Refused like the coordinates, not quietly clamped: a 250 turned into a
+    // 200 behind the creator's back is a different stop from the one they meant.
+    const radius = readRadius();
+    if (radius === null) {
+      fail(S.radiusBad, 'place');
+      return false;
+    }
 
     const titleBg = val('titleBg');
     if (!titleBg) {
@@ -2420,7 +2549,7 @@ const strings = {
     const { data: wrote, error: upErr } = await client.from('markers')
       .update({
         content,
-        radius_m: num('radius') ?? 100,
+        radius_m: radius,
         colour_hex: hue === null ? DEFAULT_STOP_COLOUR : hueToHex(hue),
         style_key: shape,
         status: 'published',
@@ -3342,6 +3471,9 @@ const strings = {
       problems.push(S.impBadCoords);
     }
 
+    const radiusText = (row.radius_m ?? '').trim();
+    if (radiusText && radiusOf(radiusText) === null) problems.push(S.impBadRadius);
+
     const kind = (row.kind ?? '').trim().toLowerCase() || 'none';
     if (!KINDS.includes(kind)) problems.push(S.impBadKind);
     if (kind === 'exact' && !(row.accepted ?? '').trim()) problems.push(S.impNeedAccepted);
@@ -3482,8 +3614,9 @@ const strings = {
         continue;
       }
 
-      const radius = Number(r.radius_m);
-      if (Number.isFinite(radius) && radius > 0) {
+      // Checked in checkRow; looked at again so nothing over 200 m is ever sent.
+      const radius = radiusOf((r.radius_m ?? '').trim());
+      if (radius !== null) {
         await client.from('markers').update({ radius_m: radius }).eq('id', id);
       }
 
