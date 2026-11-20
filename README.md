@@ -3,11 +3,12 @@
 
 The website, the database and the paperwork behind **meARc**, city trails
 in augmented reality. The Android app is in
-[`AR-Trails`](https://github.com/ZalexZal/AR-Trails).
+[`meARc`](https://github.com/ZalexZal/meARc).
 
 **Live site:** [artrails.netlify.app](https://artrails.netlify.app) ·
-**App:** 0.6.3 (build 23) · **Database:** migrations 0001–0055 ·
-**Terms version:** 2026-09-29
+**App:** 0.6.7 (build 27) · **Database:** migrations 0001–0073 ·
+**Terms version:** 2026-09-29 ·
+**Documentation (НОИТ 2026/27):** [`docs/documentation`](docs/documentation)
 
 ## Contents
 
@@ -114,7 +115,7 @@ The two repositories:
 | Repository | What is in it |
 |---|---|
 | [`noit-platform`](https://github.com/ZalexZal/noit-platform) | The website (`web/`), every database migration (`supabase/migrations/`), the end-to-end seam test (`tests/`), the legal file (`docs/legal/`), the Play Store kit (`docs/play-store/`) and the design handbooks |
-| [`AR-Trails`](https://github.com/ZalexZal/AR-Trails) | The Unity project for the Android app: scripts, the generated UI, the build and preview tools, the icon |
+| [`meARc`](https://github.com/ZalexZal/meARc) | The Unity project for the Android app: scripts, the generated UI, the build and preview tools, the icon |
 
 ## What it does
 
@@ -228,8 +229,8 @@ proven on a real phone and what still waits for a field test.
   email confirmation (it continues by itself when you come back from the
   email), changing email and password, hidden stops, blocked people, and
   deleting the account.
-- Help: How it works, **Send feedback** (a message to the person running AR
-  Trail, with the app version and phone model shown before it goes, and "you
+- Help: How it works, **Send feedback** (a message to the person running
+  meARc, with the app version and phone model shown before it goes, and "you
   may reply by email" for accounts that have one), replaying the practice
   trail, the terms, the privacy policy, Data and sources, and About.
 
@@ -571,7 +572,7 @@ netlify.toml            deploy settings
 ## Version history
 
 meARc was built in fifteen versions between 26 August and 6 October 2026.
-Package ids and file names in this history are as they were at the time; the project was renamed from AR Trail to meARc, and the package from `com.alex.artrail` to `com.alex.mearc`, on 16 November 2026.
+Package ids and file names in this history are as they were at the time; the project was renamed from AR Trail to meARc, and the package from `com.alex.artrail` to `com.alex.mearc`, on 16 November 2026; the app's repository on GitHub is now `meARc` (formerly `AR-Trails`).
 Each one ended with something working end to end. The numbers below are the
 project's own names for those stages. The **Android build** column is what the
 app itself reported: `versionName` 0.1.0 until 23 September, 0.2.0 from 25
