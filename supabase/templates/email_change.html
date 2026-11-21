@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="bg">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="color-scheme" content="light">
+<meta name="supported-color-schemes" content="light">
+<title>Потвърди новия имейл</title>
+</head>
+<body style="margin:0;padding:0;background:#f5f5f7">
+<div style="display:none;max-height:0;overflow:hidden;opacity:0">Потвърди имейла на профила си в meARc.</div>
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#f5f5f7">
+<tr><td align="center" style="padding:32px 16px">
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="max-width:560px;background:#ffffff;border:1px solid #dde8ea;border-radius:18px">
+    <tr><td style="padding:32px 32px 8px">
+      <a href="https://artrails.netlify.app"><img src="https://artrails.netlify.app/email/mearc-logo.png" width="150" height="41" alt="meARc" style="display:block;border:0;width:150px;height:auto"></a>
+    </td></tr>
+    <tr><td style="padding:16px 32px 28px">
+      <h1 style="margin:0 0 16px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Inter,Roboto,Helvetica,Arial,sans-serif;font-size:26px;line-height:1.15;font-weight:600;letter-spacing:-0.3px;color:#0a1418">Потвърди новия имейл</h1>
+      <p style="margin:0 0 14px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Inter,Roboto,Helvetica,Arial,sans-serif;font-size:17px;line-height:1.47;color:#0a1418">{{ if .Data.display_name }}Здравей, {{ .Data.display_name }}!{{ else }}Здравей!{{ end }}</p><p style="margin:0 0 14px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Inter,Roboto,Helvetica,Arial,sans-serif;font-size:17px;line-height:1.47;color:#0a1418">{{ if .Email }}Поиска имейлът на профила ти в meARc да стане {{ .NewEmail }} вместо {{ .Email }}.{{ else }}Поиска {{ .NewEmail }} да е имейлът на профила ти в meARc.{{ end }} Натисни бутона, за да потвърдиш.</p>
+      
+<table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin:28px 0 8px">
+  <tr><td style="border-radius:980px;background:#0066cc">
+    <a href="{{ .ConfirmationURL }}" style="display:inline-block;padding:13px 28px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Inter,Roboto,Helvetica,Arial,sans-serif;font-size:17px;line-height:1.2;color:#ffffff;text-decoration:none;border-radius:980px">Потвърди имейла</a>
+  </td></tr>
+</table>
+<p style="margin:16px 0 0;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Inter,Roboto,Helvetica,Arial,sans-serif;font-size:13px;line-height:1.5;color:#7d95a0">Ако бутонът не работи, копирай този адрес в браузъра:<br>
+<a href="{{ .ConfirmationURL }}" style="color:#0066cc;word-break:break-all">{{ .ConfirmationURL }}</a></p>
+      <p style="margin:20px 0 0;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Inter,Roboto,Helvetica,Arial,sans-serif;font-size:14px;line-height:1.5;color:#4a626e">Ако не си искал(а) тази промяна, игнорирай този имейл. Имейлът на профила няма да се смени.</p>
+    </td></tr>
+    <tr><td style="padding:0 32px"><div style="border-top:1px solid #dde8ea;font-size:0;line-height:0">&nbsp;</div></td></tr>
+    <tr><td lang="en" style="padding:20px 32px 28px">
+      <p style="margin:0 0 6px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Inter,Roboto,Helvetica,Arial,sans-serif;font-size:14px;font-weight:600;line-height:1.4;color:#0a1418">Confirm your new email</p>
+      <p style="margin:0 0 8px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Inter,Roboto,Helvetica,Arial,sans-serif;font-size:14px;line-height:1.5;color:#4a626e">Use the button above to confirm the new email address of your meARc account. If you didn't ask for this, ignore this email and nothing changes.</p>
+    </td></tr>
+  </table>
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="max-width:560px">
+    <tr><td style="padding:20px 32px 0;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Inter,Roboto,Helvetica,Arial,sans-serif;font-size:12px;line-height:1.5;color:#7d95a0;text-align:center">
+      Този имейл е изпратен автоматично, не отговаряй на него.<br><span lang="en">This email was sent automatically; please don't reply to it.</span><br>
+      <a href="https://artrails.netlify.app" style="color:#7d95a0">meARc</a> &middot; приложение за маршрути с добавена реалност
+    </td></tr>
+  </table>
+</td></tr>
+</table>
+</body>
+</html>
