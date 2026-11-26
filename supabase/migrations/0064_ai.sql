@@ -1,7 +1,7 @@
 -- 0064 - AI in the builder: translation and models made by AI (7 Nov 2026)
 --
 -- 1. The Gemini key for the translate Edge Function lives in Supabase Vault
---    (put there by tools/set-gemini-key.mjs, never in a file in the repo, the
+--    (put there by tools/set-ai-keys.mjs, never in a file in the repo, the
 --    site or a deploy panel). ai_secret() hands it to the service role only:
 --    the Edge Function asks with the service key it is given by Supabase.
 -- 2. ai_usage counts each person's translations per day, so one account

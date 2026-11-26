@@ -23,12 +23,16 @@ continuous and includes children, so this record is kept.
 | 10 | Data requests | Anyone | Emails and what they ask | Legal obligation (6(1)(c)) | 3 years after closing the request |
 | 11 | Feedback | Users, guests (not 13-year-olds before a parent agrees) | Message, source (app version and phone model, or website page and browser), whether we may reply, the account's email only if so | Legitimate interest (6(1)(f)) - fixing and improving the service | 12 months; deleted with the account |
 | 12 | Backups | Everyone in the database | A copy of all of the above | Legitimate interest (6(1)(f)); art. 32(1)(c) - restoring availability | 8 weeks, encrypted, on the operator's computer |
+| 13 | Line of work and role | Users | Line of work (teacher, guide, broker, other) and whether the person creates or only walks trails; a preference that hides things, not a permission | Contract (6(1)(b)) - operator to confirm | Until deletion |
+| 14 | AI help and city search in the builder | Creators | The text of a stop (Translate; a model from a description) sent to Gemini; a photo or description (a 3D model) sent to Hugging Face, photos scaled down and stripped of location first; a place name typed into the city search sent to Nominatim; per-person daily counts (`ai_usage`) | Contract (6(1)(b)), at the creator's own press of the button - operator to confirm | Nothing is kept beyond the stop itself; counts per day |
 
 ## Recipients
 
-Processors: Supabase (database, auth, email sending), Netlify (website hosting).
-Independent controllers: Google (ARCore; Google Play), Stadia Maps, Esri and
-OpenFreeMap (map tiles; see IP address and viewed area). Details and transfer
+Processors: Supabase (database, auth, email sending), Netlify (website hosting),
+Gmail (the SMTP service that sends the account emails, since 20 November 2026).
+Independent controllers: Google (ARCore; Gemini; Google Play), Hugging Face,
+Nominatim (city search), Stadia Maps, Esri and OpenFreeMap (map tiles; see IP
+address and viewed area). Details and transfer
 safeguards in [processors.md](processors.md).
 
 ## Security measures (art. 32)
@@ -39,14 +43,15 @@ safeguards in [processors.md](processors.md).
   parent sessions opened only by emailed links).
 - Answers and correct answers never reach phones; scoring only on the server.
 - No service-role key in the app, the website or the repositories.
-- Release signing key kept offline at `C:\Users\zalex\keys`, backed up.
+- Release signing key kept offline in the operator's keys folder (`~/keys`), with an encrypted copy off the laptop.
 - Retention is enforced by the database itself: a nightly job (pg_cron,
   migration 0052) deletes positions older than a day, used or expired
   parent codes after 30 days, feedback after 12 months, and guest accounts
   unused for 6 months.
-- Weekly backup by `tools/backup.ps1`: AES-256 encrypted, key in
-  `keys\backup.pass`, readable copies deleted after each run, backups kept
-  8 weeks. Restore steps in `tools/restore.ps1`.
+- Weekly backup by `tools/backup.sh` (a systemd timer, Sundays 20:00; `tools/backup.ps1`
+  is the Windows original, same format): AES-256 encrypted, key in
+  `keys/backup.pass`, readable copies deleted after each run, backups kept
+  8 weeks. Restore steps in `tools/restore.sh` and `tools/restore.ps1`.
 - Access to the Supabase dashboard: the operator only.
 
 ## Data subject rights - how each is met

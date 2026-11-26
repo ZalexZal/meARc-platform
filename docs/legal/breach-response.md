@@ -8,7 +8,7 @@ database URL, a trail showing someone's personal data.
 
 1. **Contain.** Rotate whatever leaked (Supabase: Settings → API → roll the
    anon key or JWT secret; database password; the keystore password). Take
-   the affected page or function down if needed.
+   the affected page or function down if needed. Also rotate the Gemini key and the Hugging Face token (put them back in Vault with `tools/set-ai-keys.mjs`) and the Gmail app password, if they could be involved.
 2. **Write down** what happened, when it was noticed, what data, whose, how
    many people. Keep everything in `docs/legal/breaches/<date>.md`.
 

@@ -1,17 +1,22 @@
 ---
 // One of the app's screens in a phone outline, light or dark with the site.
 // The pictures are the app's own preview renders (tools/app-shots.py): the
-// sample Yambol trail, never a real phone's location.
+// sample Yambol trail, never a real phone's location. A real photo from the
+// phone (`src`) is the same in both themes and languages.
 import { langFromUrl } from '../i18n/ui';
-interface Props { name: string; alt: string; class?: string; eager?: boolean; }
-const { name, alt, class: cls = '', eager = false } = Astro.props;
+interface Props { name?: string; src?: string; alt: string; class?: string; eager?: boolean; }
+const { name, src, alt, class: cls = '', eager = false } = Astro.props;
 const lang = langFromUrl(Astro.url);
 ---
 <figure class:list={['shot', cls]}>
+  {src ? (
+  <img src={src} alt={alt} width="540" height="960" loading={eager ? 'eager' : 'lazy'} decoding="async" />
+  ) : (<>
   <img class="shot-light" src={`/app/${name}-${lang}-light.webp`} alt={alt} width="540" height="960"
        loading={eager ? 'eager' : 'lazy'} decoding="async" />
   <img class="shot-dark" src={`/app/${name}-${lang}-dark.webp`} alt="" aria-hidden="true" width="540" height="960"
        loading="lazy" decoding="async" />
+  </>)}
 </figure>
 
 <style>

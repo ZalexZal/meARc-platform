@@ -9,7 +9,7 @@ window.AR_TRAIL_CONFIG = {
   SUPABASE_URL: "https://YOUR-PROJECT-REF.supabase.co",
   SUPABASE_ANON_KEY: "eyJ...",
 
-  // The world to insert markers into. Get it from the SQL in PHASE-0.md step 3.
+  // The world to insert markers into. A trail's id: the id column of the worlds table.
   WORLD_ID: "PASTE-THE-WORLD-UUID-HERE",
 
   // Where the map opens. Yambol town centre.

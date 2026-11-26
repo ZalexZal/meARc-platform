@@ -1,6 +1,6 @@
 # Database clean-up proposal — 9 Nov 2026
 
-**Status: PROPOSAL. Nothing here has been applied.** The matching migration is
+**Status (26 Nov 2026): still a proposal. Nothing here has been applied, and by the author's decision of 21 November it waits until after 15 December 2026.** The matching migration is
 `supabase/migrations/0068_cleanup.sql` (marked "NOT APPLIED — awaiting Alex's review").
 Every number below comes from read-only `SELECT`s on the catalogs of the live database,
 taken on 9 Nov 2026 with 0067 already applied.

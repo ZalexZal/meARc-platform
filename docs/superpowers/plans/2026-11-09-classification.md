@@ -62,7 +62,7 @@
 - [ ] **Step 1: Inventory.** List public tables, views, functions, triggers, storage buckets and policies (pg catalog over `~/keys/supabase-db-url.txt`).
 - [ ] **Step 2: Mark an object unused only if its name has zero hits** in `noit-platform/web/src`, `noit-platform/supabase/functions`, `noit-platform/supabase/migrations` (only in its own creation or helpers), `noit-platform/tools`, `noit-platform/tests`, and `AR-Trails/AR-Trails/Assets/Scripts`. It must also not be called by another live function, trigger or policy (check `pg_proc.prosrc`, `pg_policy`, `pg_trigger`).
 - [ ] **Step 3: Remove leftover data.** Delete `@lab.` / `lab-` test accounts and their trails that `cleanUsers` missed (identify by email pattern from `tests/lab/lib.mjs`), plus orphaned storage objects in `marker-media` whose world no longer exists.
-- [ ] **Step 4: Write and apply** `0068_cleanup.sql` (drops only), after 0067. Run the full lab suite afterwards. Expected: all pass.
+- [ ] **Step 4: Write and apply** `0068_cleanup.sql` _(26 Nov: written, deliberately NOT applied to the live database until after 15 Dec 2026 - do not apply it before then)_ (drops only), after 0067. Run the full lab suite afterwards. Expected: all pass.
 - [ ] **Step 5: Commit.**
 
 ### Task 1: Migration 0067 — line of work, category, city

@@ -2,6 +2,16 @@
 
 4–5 November 2026. Branch `lab/overnight-2026-11-04` in both repos, as git worktrees in `~/Desktop/ARTrails-lab/`. Nothing pushed; the main checkouts are untouched (same commits, same uncommitted files).
 
+## Update, 26 November 2026
+
+The lab was merged into `main` in both repositories on 5 November, and the notes
+below describe the state of that evening. Since then: the one-code-box function
+is migration `0062_one_code_box.sql` (the `supabase/lab/` folder named below is
+not in the repository); the lab app identity (item 10) was dropped when the app
+became meARc (`com.alex.mearc`, 0.6.8); and the Inter font assets point under
+"Found along the way" was not re-checked. The Playwright suites in `tests/lab/`
+began here and have grown into the project's main test set (see `tests/README.md`).
+
 ## Status (5 Nov)
 
 **Website: merged to main and live** (commit `634bcda`, deployed on artrails.netlify.app), except the "one code box" wording on How to play, which waits for the app. **App: lab APK built 5 Nov (`AR-Trails/Build/ARTrail.apk`, com.alex.artrail.lab 0.6.4-lab, release-signed); phone test pending.** Live site: viewer suite 41/41.

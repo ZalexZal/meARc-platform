@@ -1,4 +1,4 @@
--- NOT APPLIED - the controller applies it (node tools/apply-0072.mjs).
+-- Applied to the live database on 12 Nov 2026 (node tools/apply-0072.mjs).
 --
 -- 0072 - two ways to share a trail, and "public" is instant (12 Nov 2026)
 --

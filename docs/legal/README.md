@@ -26,7 +26,7 @@ whenever the app starts keeping a new kind of data.
 
 | Date | Decision | By |
 |---|---|---|
-| 2026-09-25 | Endgame is a Google Play release | Operator |
+| 2026-09-25 | Endgame is a Google Play release (replaced on 2026-11-06, below) | Operator |
 | 2026-09-27 | Minimum age 13. 14 and older alone; 13 only with a parent's account (email link, or a code from the parent's account) | Operator |
 | 2026-09-27 | Badges and walked trails belong to the account and survive team or trail deletion | Operator |
 | 2026-09-27 | Repositories stay private | Operator |
@@ -36,6 +36,10 @@ whenever the app starts keeping a new kind of data.
 | 2026-09-29 | Stay on Supabase Free: a daily keep-alive, and an encrypted weekly backup the operator runs (8 weeks kept) | Operator |
 | 2026-09-29 | Guest accounts unused for 6 months are deleted automatically | Operator |
 | 2026-09-29 | Feedback from the app and website, kept 12 months; not accepted from a 13-year-old before a parent agrees | Operator / legal review |
+| 2026-11-06 | Endgame is the competition on 29 November, not a Play release; meARc is a tool, so badges, XP and levels leave the screens (the tables stay) | Operator |
+| 2026-11-12 | A trail is public when its owner says so, with no review queue (0072) | Operator |
+| 2026-11-20 | Account emails go through Gmail SMTP until there is a domain, then Brevo | Operator |
+| 2026-11 (date not recorded) | The website's sign-up stops asking the age for the competition (`ASK_AGE` false) | Operator |
 
 Why 13 and not younger: Google's ARCore terms forbid the Geospatial API in any
 service "directed to children" under COPPA (under 13), and meARc is built on

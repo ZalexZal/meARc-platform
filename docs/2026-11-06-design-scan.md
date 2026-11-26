@@ -4,6 +4,14 @@
 
 The bar, as set: Apple's own apps and Instagram. Quiet surfaces, one accent, content first, every rule kept, and a small physical response to each touch, never a show.
 
+## What came of it (26 November 2026)
+
+Questions 1 to 3 below were answered: XP, levels and badges were removed (A1, A5:
+off the app's Profile and the website's account page; the tables stay), points,
+teams and standings stay for trails with points, and the website's heading font
+became Inter Tight (W2). The builder now has the tabs Stops, Sharing, Results and
+Settings (W3). The other items were not re-checked for this note.
+
 ## What already meets the bar
 
 - **The tab bar.** A lens springs across, follows the finger, ticks the phone per tab. This is the reference for the rest.

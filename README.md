@@ -6,7 +6,7 @@ in augmented reality. The Android app is in
 [`meARc`](https://github.com/ZalexZal/meARc).
 
 **Live site:** [artrails.netlify.app](https://artrails.netlify.app) ·
-**App:** 0.6.7 (build 27) · **Database:** migrations 0001–0073 ·
+**App:** 0.6.8 (build 28), `com.alex.mearc` · **Database:** migrations 0001–0073 ·
 **Terms version:** 2026-09-29 ·
 **Documentation (НОИТ 2026/27):** [`docs/documentation`](docs/documentation)
 
@@ -61,7 +61,7 @@ Four goals shaped every decision:
 
 1. **Anyone can make a trail without writing code.** The website builds it: a
    map, a form per stop, both languages, a spreadsheet import for long trails,
-   and co-editing for a class or a team of organisers.
+   and 3D models: your own .glb or .stl, or one made by AI from a photo.
 2. **You have to be there.** A stop's contents open only when you stand at it:
    by tapping the AR marker, or from inside the stop's radius when AR can't
    calibrate. On scored trails the server also checks where each answer came
@@ -72,11 +72,10 @@ Four goals shaped every decision:
    order, the hints, the cooldown after a wrong answer, and the end of a game. A
    modified app gains nothing.
 4. **It has to be safe and lawful to put in front of school children.** It has
-   reporting, blocking, a review queue before anything becomes public, removal
-   notices, parental consent at 13, a parent account, and data export and
-   deletion for everyone. GDPR, the Bulgarian Personal Data Protection Act, the
+   reporting on the website, removal notices, parental consent at 13, a parent
+   account, and data export and deletion for everyone. GDPR, the Bulgarian Personal Data Protection Act, the
    EU Digital Services Act, Google Play's policies and ARCore's terms are handled
-   in code and written down in [`docs/legal`](https://github.com/ZalexZal/noit-platform/tree/main/docs/legal).
+   in code and written down in [`docs/legal`](https://github.com/ZalexZal/meARc-platform/tree/main/docs/legal).
 
 ## How it fits together
 
@@ -88,7 +87,7 @@ truth.
 flowchart TB
     subgraph Web["Website · artrails.netlify.app"]
         direction LR
-        W1["Build trails<br/>editor · import · co-editing"]
+        W1["Build trails<br/>builder · import · AI"]
         W2["Run the day<br/>board · levers · review"]
         W3["Accounts<br/>parents · export · delete"]
     end
@@ -101,7 +100,7 @@ flowchart TB
     subgraph SB["Supabase · EU, Frankfurt"]
         direction LR
         DB[("Postgres + PostGIS<br/>row-level security")]
-        RPC["~100 SQL functions<br/>the only door to stops and answers"]
+        RPC["~140 SQL functions<br/>the only door to stops and answers"]
         AU["Auth<br/>guest · email · link"]
         ST["Storage<br/>photos · audio · video"]
     end
@@ -114,7 +113,7 @@ The two repositories:
 
 | Repository | What is in it |
 |---|---|
-| [`noit-platform`](https://github.com/ZalexZal/noit-platform) | The website (`web/`), every database migration (`supabase/migrations/`), the end-to-end seam test (`tests/`), the legal file (`docs/legal/`), the Play Store kit (`docs/play-store/`) and the design handbooks |
+| [`meARc-platform`](https://github.com/ZalexZal/meARc-platform) | The website (`web/`), every database migration (`supabase/migrations/`), the end-to-end seam test (`tests/`), the legal file (`docs/legal/`), the AI Edge Functions and the tools |
 | [`meARc`](https://github.com/ZalexZal/meARc) | The Unity project for the Android app: scripts, the generated UI, the build and preview tools, the icon |
 
 ## What it does
@@ -135,11 +134,17 @@ proven on a real phone and what still waits for a field test.
   first time you open the Camera tab, never earlier.
 
 **Getting onto a trail**
-- A six-letter trail code, typed into six boxes (letters that look alike, such
-  as 0/O and 1/I/L, are never used).
+- A six-letter trail code (letters that look alike, such as 0/O and 1/I/L, are
+  never used), typed into one box that takes a team code as well: a team code
+  leads to its trail, and then to the team (0062).
 - A link or QR code from the website (`mearc://join/<trail>`), which works only
   for trails that are publicly listed.
 - **Near you**: public trails whose first stop is close by, joined with one tap.
+- **The trail menu** at the top of the map lists your own trails and the three
+  nearest public ones, with **Search all trails** (category chips, city,
+  nearest) and **Join with a code**.
+- A **preview** before you join: the trail's stops on a small map, its length, the
+  minutes it takes on foot and how it works, then join, or be led to its start.
 - Games (scored trails) ask you to make or join a team before the first stop,
   and need an account rather than a guest session.
 
@@ -189,8 +194,8 @@ proven on a real phone and what still waits for a field test.
 
 **A stop**
 - Opens as a sheet from the bottom, at half height with the map above it. Pull
-  it up for all of it, down to close it. Its **⋯** menu hides the stop, reports
-  it, or, on your own trail, moves it.
+  it up for all of it, down to close it. Its **⋯** menu hides the stop or, on
+  your own trail, moves it.
 - Its name, distance and description are visible from anywhere. Its contents
   open only when you're standing at it, and until then the sheet says why
   instead of leaving a gap.
@@ -214,13 +219,20 @@ proven on a real phone and what still waits for a field test.
   large boxes, with **Copy** and **Share**; the standings (refreshed every 15 s
   while open); who is on the team; anything a moderator did to your score, with
   the reason; and **Leave**, which asks twice.
+- The captain (whoever made the team) can hand the role to a teammate, remove a
+  player or give up for the whole team. Each phone tells its team once that
+  location works, never where it is.
+- **Teacher panel**, on a trail you own (from the trail menu): who is on the
+  trail and whether their GPS works, kick or ban, disqualify, the scoreboard and
+  Start. Students see a waiting screen until the trail starts.
 
 **Profile tab**
-- Who you are, and three counts: trails, stops and badges.
-- **11 badges**: First trail, Guided walker, Flag runner, Free roamer, Scholar,
-  Flawless, Trailblazer (with levels), Team player, Captain, Summit and Sharp
-  eye. Each opens a sheet with its rule and how far along you are. Badges belong
-  to your account and survive a team or trail being deleted.
+- Who you are: your name, your line of work and whether you create trails or
+  only walk them (a seal shows which).
+- There are no badges, levels or XP. They were taken off the screens on
+  6 November 2026, because meARc is a tool and not a game. The database still
+  holds what was earned (`earned_badges`, `xp_awards`), and it goes with the
+  account when that is deleted.
 - What you are walking now: the trail and your team.
 - Settings: the theme (like the phone, light or dark, in a control you can tap
   or slide), nearby alerts, hiding stops behind buildings, and Bulgarian or
@@ -241,7 +253,9 @@ proven on a real phone and what still waits for a field test.
   whatever is on top.
 
 **Safety**
-- **Report** any stop, trail or team name, with six reasons and one tap.
+- **Report** any stop, trail or team name, with six reasons and one tap. The
+  Report buttons are hidden in the app at present; the database still takes
+  reports, and the website's board can report a team name.
 - **Block** whoever made it (two taps). Their trails leave your library, you
   leave each other's trails, and their team names read "Hidden team". You can
   undo it any time.
@@ -265,49 +279,64 @@ proven on a real phone and what still waits for a field test.
 
 ### For a creator (the website)
 
+- **Sign-up** asks, besides name and password, whether you **create trails or
+  only walk them** and your **line of work** (teacher, guide, broker or other).
+  Both hide what you do not need, such as questions for a broker. They are a
+  preference, not a permission: a viewer can still join any trail with a code.
 - **Create a trail** from **My trails**, the one way in: the New trail tile asks
-  for a name and a mode and opens the builder. Team size, and whether an ordered
-  trail reveals stops one at a time (the ones ahead are then not sent to phones
-  at all), are set in the builder.
-- **The builder**:
-  - A map where you click to place a stop and drag to move it (two fingers on a
-    phone).
+  for a name, a category (education, tourism, estate or other) and two plain
+  questions, **with points or without** and **in order or in any order**, and
+  opens the builder. Team size, whether an ordered trail reveals stops one at a
+  time (the ones ahead are then not sent to phones at all), the start and the
+  city are set in the builder's Settings tab.
+- **The builder** has four tabs: **Stops**, **Sharing**, **Results** and
+  **Settings** (owner only; deleting the trail is there).
+  - A map with a city search above it. Click to place a stop and drag to move it
+    (two fingers on a phone). Every stop is a pin, with a ring showing how far
+    its radius reaches.
   - Each stop is filled in **five guided steps**, with Previous and Next. Each
     step is saved as it is left, and Next checks it first. A stop just placed
     opens at the first step; a stop that exists can be entered at any step from
     the step bar.
-    - **Basics**: title and text in Bulgarian and English.
-    - **Place**: coordinates and an arrival radius (with a warning when radii
-      overlap), the **shape** the stop takes in the camera (pin, sphere, cone,
-      cube, or a **sign** with up to 80 characters of words on it in each
+    - **Place**: the title, coordinates and an arrival radius of 5 to 200 m
+      (with a warning when radii overlap).
+    - **3D visual**: the **shape** the stop takes in the camera (pin, sphere,
+      cone, cube, or a **sign** with up to 80 characters of words on it in each
       language) and its colour, on a hue slider drawn at the exact lightness the
       phone will use.
-    - Or **its own 3D model**: a `.glb` up to 25 MB, checked in the browser
-      (up to 300,000 triangles and 4096 px textures, no compression the phone
-      cannot read, no outside files) and previewed in 3D. You set how tall it
-      stands (0.2–10 m), which way it faces on a compass, and who made it:
-      you, or somebody else, whose name, licence and link are then required.
-      Either way you tick that you have the right to use it.
-    - **Question** (can be skipped): none, an exact answer, multiple choice or
-      free text; options, accepted spellings, points, the wrong-answer rule and
-      the afterword. The rule is one of **retry**, **lock** (a cooldown, 15 s by
-      default), **deduct** (points off what the stop is worth) or **skip** (one
-      try, then the stop is over).
-    - **Hints** (can be skipped): a priced ladder.
+    - Or **its own 3D model**: a `.glb` up to 50 MB, checked in the browser (up
+      to 1,000,000 triangles and 4096 px textures, no compression the phone
+      cannot read, no outside files) and previewed in 3D. An `.stl` is converted
+      to `.glb` in the browser, because the app reads only `.glb`. You set its
+      size (0.2–200 m, so a whole building fits at 1:1), which way it faces on a
+      compass, and who made it: you, somebody else (name, licence and link are
+      then required) or AI. Either way you tick that you have the right to use
+      it. Models can also be made with AI from a photo or a description (see
+      *AI in the builder*).
+    - **Question** (can be skipped): the stop's text in both languages, then
+      none, an exact answer, multiple choice or free text; options, accepted
+      spellings, points, the wrong-answer rule and the afterword. The rule is one
+      of **retry**, **lock** (a cooldown, 15 s by default), **deduct** (points
+      off what the stop is worth) or **skip** (one try, then the stop is over).
+      The priced **hints** ladder is here too. One press on **Translate** fills
+      the empty fields of the other language.
     - **Media**: uploads up to 50 MB each and 200 MB per trail. Links also work.
+    - **Review**: the whole stop on one page, with its English title.
   - Drag to reorder stops.
 - **A trail from a spreadsheet**: one row per stop (CSV or pasted straight from
   Excel), checked row by row in your language before anything is imported, with a
   template that has an example row filled in. The `shape` column takes the
   same five shapes, and `sign_bg` / `sign_en` the words on a sign. A model
   needs a file, so it is added in the builder.
-- **Building together**: an invite link makes someone an editor. Editors see
-  each other live, and a save over someone's newer version is refused instead of
-  silently lost.
-- **Who can see it** is a three-rung ladder: *only me* → *anyone with the code* →
-  *ask to be listed*. Public listing is a request that a reviewer approves or
-  refuses with a reason.
-- The join code (large, with a copy button), a QR code, and deleting a trail.
+- **Sharing** is two levels. A trail starts shared **with its code**, and **Make
+  it public** lists it in the public library at once, on its owner's say-so, with
+  no review queue between (0072). It can go back to the code level any time. A
+  trail needs one finished stop and no stop left as a draft before it can go
+  public. The tab shows the join code (large, with a copy button), a link
+  (`/view?id=…`) and a QR code, and the owner can rotate the code.
+- **Building together** is no longer in the builder: there is no screen to invite
+  editors. `/editor-invite` still accepts old links, and the database keeps
+  editor roles and version-checked saves.
 - **Review typed answers** on free-text questions (correct or not). The score is
   marked provisional until then.
 
@@ -322,19 +351,26 @@ proven on a real phone and what still waits for a field test.
 
   Nothing deletes, and everything can be read back.
 - **End game**: scores freeze at the whistle.
+- **Start**: a trail can wait for its start, set by the organiser's Start button
+  or by a time. Until then nothing is sent to walkers and nothing they do counts,
+  but teams can form, and the organiser sees which phones have location working,
+  team by team (never where they are).
+- **Teacher tools**: everyone on the trail with their team; **kick** someone (they
+  may come back) or **ban** them, and lift a ban (0071).
 
 ### For a reviewer (the operator)
 
-- `/review`: the listing queue and the reports inbox, for stops, trails and team
-  names. Each report carries a snapshot taken when it was filed, plus a map link,
+- `/review`: the reports inbox, for stops, trails and team names, and the
+  feedback inbox. The listing queue is still there but stays empty: since 0072 a
+  trail goes public on its owner's say-so. Each report carries a snapshot taken when it was filed, plus a map link,
   so the evidence outlives the thing reported.
 - **Remove** with a note, or **Dismiss**. A removal leaves the creator a notice on
   My trails: what was removed, when, the reasons, the note, the rule, that a
   person decided, and how to contest it (the EU Digital Services Act's "statement
   of reasons").
-- A trail with its own 3D models shows each one in the queue with its credit,
-  size, a link to the file and a 3D preview, so the licence is checked before
-  the trail is listed.
+- A trail with its own 3D models shows each one in the listing queue with its
+  credit, size, a link to the file and a 3D preview, so a licence can be checked
+  before a trail is listed. With the queue empty this view is not used.
 - Block a player from the queue. Rate limits stop scripts: 200 stops and 20
   trails per person per day.
 
@@ -348,15 +384,24 @@ proven on a real phone and what still waits for a field test.
 - **Add a child**: the parent makes a one-time code (valid 7 days), and the child
   types it into the app or the website at sign-up. The same account can hold
   several children.
+- **The website's sign-up does not ask the age at present.** `ASK_AGE` is
+  `false` in `web/src/lib/config.ts`, switched off for the competition, so web
+  sign-ups are recorded as 14 or older. Everything above stays built, and
+  `ARTRAIL_ASK_AGE=1` in the build environment turns the question back on.
 
 ### For everyone with an account
 
-- Account page: name, email, password, badges, blocked people, **download my
-  data** (JSON), and **delete my account**. A creator can choose whether their
+- Account page: name, email, password, line of work, creator or viewer, blocked
+  people, **download my data** (JSON), and **delete my account**. A creator can choose whether their
   trails go with them or stay, detached and unlisted.
-- Public trails page: sorted by distance on request (worked out in the browser,
-  so your position never leaves the page), a map link to each trail's start, a
-  QR code, and Open in the app.
+- Public trails page: a search, category chips and a city filter (kept in the
+  address), sorted by distance on request (worked out in the browser, so your
+  position never leaves the page), a map link to each trail's start, a QR code,
+  and Open in the app.
+- A trail's own page, `/view?id=…`: the stops a stranger may see on a map, their
+  titles, the standings on trails with points (refreshed every 20 s), Open in the
+  app and a QR code. The website does not play a trail: no question or answer is
+  ever fetched, and old `/walk` links redirect here.
 - How to play, Terms of use and Privacy policy, in both languages.
 - `/feedback`: send feedback from the website. The reviewer reads it in
   `/review`, and marks it handled.
@@ -369,9 +414,9 @@ The public ("anon") key ships inside the APK and in the website's JavaScript, so
 anyone can make any request the clients can. The design assumes that from the
 start:
 
-- **Row-level security is on for all 25 tables.** A client reads only its own
+- **Row-level security is on for all 31 tables.** A client reads only its own
   rows, or rows a policy lets it see.
-- **Reads that cross a privacy line go through functions.** About a hundred
+- **Reads that cross a privacy line go through functions.** About 120
   `security definer` functions do this. `markers` is never selected directly by
   a phone:
   - `markers_near` returns what may be *drawn*. On an ordered trail with one-at-a-
@@ -388,7 +433,8 @@ start:
 - **Deny by default.** New functions are not callable until granted on purpose,
   and the grant list at the end of each migration is the audit.
 - **The `service_role` key is never used by any client** and is not in this
-  repository, the build, or the Netlify settings.
+  repository, the build, or the Netlify settings. The two Edge Functions receive
+  it from Supabase's own environment, never from a file.
 
 ### Answering a question
 
@@ -441,13 +487,14 @@ flowchart TD
 
 | Area | Tables |
 |---|---|
-| People | `profiles` (display name, age band, terms version), `user_blocks`, `platform_admins` |
+| People | `profiles` (display name, age band, terms version, line of work, creator or viewer), `user_blocks`, `platform_admins`, `feedback` |
 | Parents | `parental_consents`, `child_invites` |
-| Trails | `worlds` (mode, visibility, status, join code, team size, reveal, `ended_at`), `world_members` (owner / editor / viewer), `editor_invites` |
+| Trails | `worlds` (mode, category, city, visibility, status, join code, team size, reveal, start, `ended_at`), `world_members` (owner / editor / viewer), `editor_invites`, `world_bans` (who a teacher has banned) |
 | Stops | `markers` (PostGIS point, step, radius, colour, shape, text in both languages, version for safe co-editing), `marker_answers` (the key, readable by nobody), `marker_hints`, `marker_media`, `marker_models` (a creator's own 3D model: file, height, heading, credit) |
 | Play | `teams`, `team_members`, `marker_submissions`, `marker_progress`, `hint_reveals`, `stop_visits`, `team_adjustments` |
 | Fair play | `player_fixes` (last accepted position, one day), `position_flags` |
-| Records | `walked_trails`, `earned_badges`, `reports` (with a snapshot), `moderation_notices` |
+| Records | `walked_trails`, `earned_badges` and `xp_awards` (no longer shown anywhere), `reports` (with a snapshot), `moderation_notices` |
+| Housekeeping | `ai_usage` (translations and models per person per day), `heartbeat` (the daily keep-alive) |
 
 Storage: one public bucket for stop media and 3D models, with policies that cap
 each trail at 200 MB and admit only the trail's editors or a moderator to
@@ -458,24 +505,46 @@ delete. Realtime publishes `markers` and their tables for co-editing.
 | For | Functions |
 |---|---|
 | Reading a trail | `markers_near`, `marker_detail`, `trail_markers`, `trail_summary`, `public_trails`, `trails_near`, `trail_models` |
-| Joining | `join_world` (code), `join_listed` (library), `create_team`, `join_team`, `leave_team`, `my_team`, `my_team_detail` |
+| Joining | `join_world` (code), `join_listed` (library), `lab_trail_code_for_team` (a team code to its trail), `create_team`, `join_team`, `leave_team`, `my_team`, `my_team_detail`, `set_gps_ready` |
 | Playing | `check_answer`, `reveal_hint`, `record_visit`, `my_progress`, `world_leaderboard` |
-| Building | `create_world`, `place_marker`, `move_marker`, `reorder_markers`, `set_marker_answer`, `clear_marker_answer`, `overlapping_stops`, `rotate_join_code`, `my_worlds`, `world_media_usage`, `media_paths` |
+| Building | `create_world`, `place_marker`, `move_marker`, `reorder_markers`, `set_marker_answer`, `clear_marker_answer`, `set_marker_shape`, `overlapping_stops`, `rotate_join_code`, `my_worlds`, `world_media_usage`, `media_paths` |
 | Together | `editor_invite`, `stop_editor_invite`, `join_as_editor`, `trail_editors`, `remove_editor` |
-| Publishing | `request_listing`, `withdraw_listing`, `listing_queue`, `decide_listing` |
-| Running the day | `world_teams`, `moderator_skip`, `moderator_adjust`, `moderator_disqualify`, `moderator_end_game`, `review_queue`, `review_answer` |
+| Publishing | `make_public`, `make_code` (0072: public is instant), `request_listing` (now calls `make_public`), `withdraw_listing`, `listing_queue`, `decide_listing` |
+| Running the day | `world_teams`, `world_readiness`, `world_players`, `moderator_skip`, `moderator_adjust`, `moderator_disqualify`, `moderator_start_game`, `moderator_end_game`, `moderator_kick`, `moderator_ban`, `moderator_unban`, `transfer_captain`, `remove_member`, `give_up_team`, `review_queue`, `review_answer` |
 | Safety | `report_marker`, `report_world`, `report_team`, `block_user`, `reports_queue`, `resolve_report`, `remove_marker`, `remove_world`, `notice_seen` |
-| Account | `my_profile`, `my_history`, `accept_terms`, `export_my_data`, `what_delete_removes`, `delete_my_account` |
+| Account | `my_profile`, `my_history`, `accept_terms`, `send_feedback`, `export_my_data`, `what_delete_removes`, `delete_my_account` |
 | Parents | `consent_state`, `request_parent_consent`, `answer_parent_consent`, `withdraw_parent_consent`, `create_child_invite`, `cancel_child_invite`, `my_child_invites`, `redeem_child_invite`, `my_children`, `export_child_data` |
+
+### AI in the builder
+
+Two Supabase Edge Functions in `supabase/functions/`, both for signed-in
+creators, both on free plans only:
+
+- `translate` translates one stop between Bulgarian and English through Gemini
+  (the lite models first, the bigger ones as fallback), only for someone who may
+  edit the trail, 100 a day each (`ai_count_translation`, 0064).
+- `ai3d` makes a picture from a description (FLUX.1 schnell), a model from a
+  photo (TRELLIS.2) on Hugging Face's free Spaces, and a model from a
+  description (Gemini writes simple shapes and the builder turns them into a
+  `.glb`, 0066). A photo goes to the Spaces from the creator's browser first; when
+  the free allowance is refused it is asked again through this function with the
+  project's own token, a few models a day each (`ai_count_model`, 0065).
+
+The Gemini key and the Hugging Face token live in Supabase Vault, put there by
+`tools/set-ai-keys.mjs`, readable only by the service role through `ai_secret()`.
+They never reach a browser, this repository or Netlify. A model made by AI is
+credited as AI.
 
 ### The website
 
 - **Astro 7**, static output, **Tailwind 4**, GSAP for motion, `supabase-js`.
   MapLibre is loaded from a pinned CDN build (the bundler silently broke its tile
-  worker), with **OpenFreeMap** tiles. `qrcode` draws trail QR codes, and
-  `@google/model-viewer` previews 3D models (loaded only when one is shown).
-  Fonts are Unbounded, Onest and JetBrains Mono, all checked for Cyrillic. The
-  accent is `#0066cc` (`#2997ff` on dark), shared with the app.
+  worker), with **OpenFreeMap** tiles, and city search asks Nominatim
+  (OpenStreetMap). `qrcode` draws trail QR codes, `@google/model-viewer` previews
+  3D models (loaded only when one is shown) and `three` turns an `.stl` into a
+  `.glb` in the browser. Fonts are Inter, Inter Tight and JetBrains Mono, from
+  Google Fonts, all with Cyrillic. The accent is `#0066cc` (`#2997ff` on dark),
+  shared with the app.
 - **No server.** Every page is HTML, and everything live happens in the browser
   talking to Supabase with the visitor's own session. Anything that can serve a
   folder can host it.
@@ -484,42 +553,52 @@ delete. Realtime publishes `markers` and their tables for co-editing.
 
 | Page | What it is |
 |---|---|
-| `/` | Home: a live night map in the hero, then Build, Walk and Find acted out as you scroll, the four modes, the five builder steps, safety, questions |
-| `/trails` | Public trails: distance, map link, QR, open in the app |
-| `/play` | How to play, in order, with the two-codes warning |
-| `/signup`, `/signin`, `/reset`, `/confirmed`, `/accept-terms` | Accounts: age question, terms tick, password reset, email links, new-terms gate |
-| `/account` | Profile, badges, name/email/password, blocked people, export, delete, parent request |
-| `/my-trails`, `/trail?id=…` | Your trails with a New trail tile, the visibility ladder and removal notices; the builder. `/create` redirects to My trails |
-| `/editor-invite` | Accept an invitation to co-edit |
-| `/board?id=…` | Leaderboard; for the owner: teams, codes, warnings, moderator levers, End game |
-| `/review` | Reviewer: listing queue, reports inbox, free-text answers |
+| `/` | Home: a live night map in the hero, then Build, Walk and Find acted out as you scroll, the four modes, the builder's steps, safety |
+| `/trails` | Public trails: search, category and city filters, distance, map link, QR, open in the app |
+| `/view?id=…` | One trail's page: its stops on a map, standings, Open in the app, QR. `/walk` redirects here |
+| `/play` | How to play, in order |
+| `/signup`, `/signin`, `/reset`, `/confirmed`, `/accept-terms`, `/choose-role` | Accounts: sign-up with the creator-or-viewer choice, password reset, email links, new-terms gate, the one-time role screen |
+| `/account` | Profile, name/email/password, line of work, role, blocked people, export, delete, parent request |
+| `/my-trails`, `/trail?id=…` | Your trails with a New trail tile; the builder. `/create` redirects to My trails |
+| `/editor-invite` | Accept an old invitation to co-edit |
+| `/board?id=…` | Leaderboard; for the owner: teams, codes, readiness, warnings, moderator levers, Start and End game |
+| `/review` | Reviewer: reports inbox, feedback inbox, free-text answers (and the listing queue, now empty) |
 | `/parent`, `/consent` | Parent account; a parent's answer to a child's request |
 | `/feedback` | Send feedback (signed in); it lands in `/review` |
 | `/terms`, `/privacy` | Terms of use and privacy policy (`LegalPage.astro`), version in `lib/terms.ts` |
+
+Every route exists in Bulgarian at `/` and in English under `/en/`.
 
 ## Running it
 
 ### The website
 
 ```sh
-cd web
+cd web                   # Node 22.12 or newer (Astro 7)
 npm ci
 PUBLIC_SUPABASE_URL="https://<project>.supabase.co" \
 PUBLIC_SUPABASE_ANON_KEY="<anon key>" \
 npm run build        # writes web/dist
 npm run dev          # local development server
+npm run preview      # serve the build
 ```
 
 Both values are public by design and are baked in at build time. Without them
 the site still builds and every page that needs an account says so. For local
 work, `web/config.local.js` (gitignored, see `config.example.js`) sets them on
-`window`.
+`window`. One more build switch, off by default: `ARTRAIL_ASK_AGE=1` makes
+sign-up ask the age again (see *For a parent*).
 
 **Deploying:** Netlify builds `main` on every push (`netlify.toml`: base `web`,
-Node 22). The two `PUBLIC_` variables are set in Netlify's environment
-settings. On the development laptop, where `web/node_modules` became
-unreadable, `web/rebuild.cmd` builds in a clean temporary folder instead. It
-refuses to install a build that is missing key pages. See `web/DEPLOY.md`.
+Node 22). The two `PUBLIC_` variables are set in Netlify's environment settings,
+and the daily keep-alive function reads the same two. See `web/DEPLOY.md`.
+
+**Publishing a new app build:** `tools/publish-apk.sh [path/to/meARc.apk]`
+checks that the file is the release-signed `com.alex.mearc` build, copies it to
+`web/public/meARc.apk` (the old `/ARTrail.apk` address redirects) and writes
+`web/src/data/app.json` (version, build, size, date), which the download
+sections read. Commit both and push. Today that file says 0.6.8, build 28,
+21 November 2026.
 
 ### The database
 
@@ -529,6 +608,31 @@ and says in its header what it changes and why. After a migration that changes
 a function's arguments, run `notify pgrst, 'reload schema'` so the API sees the
 new signature.
 
+**Not applied on purpose:** `0068_cleanup.sql` and
+`0069_listing_queue_classification.sql` are written but have not been run on the
+live database, and will not be until after 15 December 2026. `0068` drops the
+unused function `consents_to_answer()` and deletes leftover lab-test accounts
+(there were none on 9 November); the evidence and the way back are in
+`docs/db-cleanup-2026-11-09.md`. `0069` gives `listing_queue()` two more columns,
+`category` and `city`, so the review page can show a trail as "Category · City";
+the page works without it, and `tests/lab/review-queue.mjs` skips until it is
+applied. Run both in order after that date; every other migration (0001–0067 and
+0070–0073) is applied.
+
+**Other tools** in `tools/`: `backup.sh` and `restore.sh` (Linux, run weekly by
+the systemd timer in `tools/systemd/`; `backup.ps1` and `restore.ps1` are the
+Windows originals in the same encrypted format), `set-ai-keys.mjs` (AI keys into
+Vault), `apply-0071.mjs` and `apply-0072.mjs` (apply that migration in one
+transaction), `backfill-classification.ts` (a one-off for 0067),
+`email-templates.py` (writes `supabase/templates/`), `app-shots.py` (the app's
+screens for the website, from the Unity preview renders) and
+`render-stage-sprites.mjs` (the sign-up stage drawings for the app). Anything
+that connects to the database reads its URL from `~/keys/supabase-db-url.txt`.
+
+**Auth emails** go through Supabase's SMTP settings, from the project's Gmail
+(a domain and Brevo come later), with the branded templates in
+`supabase/templates/` pasted into the dashboard; see its README.
+
 Checks run **as real users, not in the SQL editor**, which runs with elevated
 rights and proves nothing about what a client can do.
 
@@ -536,42 +640,46 @@ rights and proves nothing about what a client can do.
 
 | Test | What it proves |
 |---|---|
-| `tests/seam.mjs` | 46 checks across the seam: builds a trail with the website's own calls, reads everything back with the app's own calls, then the other direction (reviews, reports, moderator changes, board and team card agreeing). Cleans up after itself. |
-| `web/check.mjs` | Real browser, both languages, both themes, 390 px and 1440 px. It catches sideways scroll, fallback fonts, dead links, raw translation keys, and elements stuck mid-animation. |
-| `web/check_signedin.mjs` | The signed-in pages as a creator with a seeded trail |
-| `web/verify_flow.mjs` | The whole product as a creator, a player and a stranger |
-| `web/verify_phase2.sh` | Row-level security, run as two different users |
+| `tests/seam.mjs` | 46 checks across the seam: builds a trail with the website's own calls, reads everything back with the app's own calls, then the other direction (reviews, reports, moderator changes, board and team card agreeing). Cleans up after itself. `cd tests && npm install`, then `PGPASS=… npm run seam`; needs `web/config.local.js` and a creator account (see `tests/README.md`). |
+| `tests/lab/*.mjs` | About forty Playwright and database suites, one per feature (the builder, the viewer page, roles, classification, teacher tools, visibility, radius ring, sign-up stage …), written during the November rounds. `tests/lab/build.sh` builds the site and serves it on port 4399; `LAB_BASE=https://artrails.netlify.app` points a suite at the live site. They make throwaway `lab-test-…@example.com` accounts straight in the database and delete them afterwards. |
+| `tests/lab/unit/*.test.ts` | Unit tests for the website's `lib/` (roles, work, place, next, config), run with Node's own test runner. |
 
-Throwaway accounts made by tests are deleted at the end of each run.
+The lab suites read the database URL from `~/keys/supabase-db-url.txt` and look
+for Playwright's Chromium in `~/.cache/ms-playwright`. Throwaway accounts made by
+tests are deleted at the end of each run.
 
 ## Repository layout
 
 ```
 web/                    the website (Astro)
   src/pages/            one file per route, Bulgarian; English under en/
-  src/components/       the pages' building blocks (TrailEditor, Board, Review, Consent, …)
-  src/lib/              supabase.ts (client + auth), publishing.ts (visibility ladder),
-                        terms.ts (terms version), session.ts
+  src/components/       the pages' building blocks (TrailEditor, Board, Review, View, Consent, …)
+  src/lib/              supabase.ts (client + auth), publishing.ts (visibility), glb.ts and stl.ts
+                        (3D model checks and conversion), role.ts, work.ts, place.ts,
+                        terms.ts (terms version), config.ts (ASK_AGE), …
   src/i18n/ui.ts        every string, Bulgarian and English
-  legacy/               the Phase 0 marker dropper, kept for the record
-supabase/migrations/    0001–0054, applied in order
-tools/                  backup.ps1 (weekly, encrypted), restore.ps1
-web/netlify/functions/  keep-alive.mjs, daily, so the free database never pauses
-tests/                  seam.mjs, the website↔app contract test
+  src/data/app.json     the published app build (written by tools/publish-apk.sh)
+  public/               icons, app screenshots (public/app), the email logo, meARc.apk
+  netlify/functions/    keep-alive.mjs, daily, so the free database never pauses
+  DEPLOY.md             hosting notes
+supabase/migrations/    0001–0073, applied in order (0068 and 0069 written, not yet applied)
+supabase/functions/     translate and ai3d, the two Edge Functions
+supabase/templates/     the branded sign-up and reset emails (see its README)
+tools/                  backup, restore, publish-apk, email-templates, set-ai-keys, apply-0071/0072, …
+tests/                  seam.mjs, the website↔app contract test; lab/, the suites from the November rounds
 docs/legal/             records of processing, DPIA, processors, breach response,
                         moderation, decisions on record
-docs/play-store/        listing texts, icon, feature graphic, email templates
-AR-TRAIL-PLATFORM-HANDBOOK.md   the original design: two clients, modes, data model, AR, moderation
-PHASE-0.md, PHASE-1.md, PHASE-2-UI.md   plans and field records of the first phases
-MARKER-CONTENT.md       what a stop holds
-WEBSITE-BUILD-PROMPT.md, APP-HANDOFF.md  the website brief and the app changes it required
-DESIGN.md, UI-DESIGN-REVIEW.md, TERMS-DRAFT.md   design system, design review, first terms draft
+docs/documentation/     the project documentation for НОИТ 2026/27 (meARc.odt and .pdf)
+docs/superpowers/       dated design specs and plans: records of what was decided, not instructions
+docs/LAB-REPORT.md, docs/db-cleanup-2026-11-09.md, docs/2026-11-06-design-scan.md   dated reports
+MARKER-CONTENT.md       what a stop holds (the August design note)
 netlify.toml            deploy settings
 ```
 
 ## Version history
 
-meARc was built in fifteen versions between 26 August and 6 October 2026.
+meARc was built in fifteen versions between 26 August and 6 October 2026. The
+optimisation rounds that followed are summarised after version 15.
 Package ids and file names in this history are as they were at the time; the project was renamed from AR Trail to meARc, and the package from `com.alex.artrail` to `com.alex.mearc`, on 16 November 2026; the app's repository on GitHub is now `meARc` (formerly `AR-Trails`).
 Each one ended with something working end to end. The numbers below are the
 project's own names for those stages. The **Android build** column is what the
@@ -1218,6 +1326,55 @@ ran out of memory beside IL2CPP.
 
 Commits: website 5 October, app 6 October
 
+### After version 15: optimisation rounds (29 October – 26 November)
+
+The goal moved from a Play Store release to a finished, convincing product for
+three audiences (schools, tourism, estate brokers) for the competition on
+29 November. Dates are 2026.
+
+- **29–30 Oct, migrations 0056–0061.** XP and levels, visits checked against the
+  phone's position, captains, a start time and a GPS lobby, answers from the
+  website marked as such, and a stop without a question counting as done once
+  reached. XP and levels were taken off the screens on 6 November (the tables
+  stay).
+- **4–5 Nov, the lab, 0062.** The website shows a trail (`/view`) and no longer
+  plays it; modes became two plain answers; one code box takes a trail or a team
+  code (`docs/LAB-REPORT.md`). Merged to main on 5 November.
+- **6 Nov, 0063.** A design scan (`docs/2026-11-06-design-scan.md`) turned the
+  product from a game into a tool: no badges, XP or levels, calmer copy, trail
+  settings in tabs. Models raised to 200 m, 50 MB and 1,000,000 triangles so a
+  broker can place a building at full size.
+- **7–9 Nov, 0064–0066.** AI in the builder: translation and 3D models from a
+  photo or a description (see *AI in the builder*), and `.stl` upload.
+- **9 Nov, 0067.** Line of work, trail category and city; a trail picker and a
+  trail preview in the app (0.6.5). The database clean-up was written as 0068 and
+  0069 and held back (see *The database*).
+- **10 Nov, 0070.** Creator or viewer, a sign-up and profile seal, the one-time
+  choose-role screen; in the app from 0.6.6.
+- **11–12 Nov, 0071–0072.** Teacher tools (kick, ban, players list, a teacher
+  panel in the app, 0.6.7) and two ways to share a trail, with public instant.
+  The Sharing tab got a QR code; editor invites went out of the builder.
+- **13 Nov.** The stop editor lost its Basics step; its text moved next to the
+  question.
+- **16 Nov.** The product became meARc / меАРк: new logo, package
+  `com.alex.mearc`, links `mearc://`. The web address stays
+  `artrails.netlify.app` until a domain is bought.
+- **20–21 Nov, 0073.** A stop's radius is 5 to 200 m. Auth emails now go through
+  Gmail SMTP with branded templates. App 0.6.8 (build 28) is published on the
+  site. All earlier trails were deleted, with a backup taken first.
+- **23–24 Nov, the demo trails.** Nine public trails owned by the author, one
+  each for education, tourism and estate in Sofia, Burgas and Yambol:
+
+  | | Education | Tourism | Estate |
+  |---|---|---|---|
+  | Sofia | `9SRXVV` | `ZGNFPX` | `CRXNKK` |
+  | Burgas | `67J9SQ` | `958AYF` | `5V8GS8` |
+  | Yambol | `EBQTC7` | `JPDP8M` | `79RTDR` |
+
+  The estate trails are demonstration buildings standing on park lawns and say so
+  in their texts ("ДЕМО ПРОЕКТ – не е реална оферта"); they are not offers. Some
+  stops carry credited CC BY models from Sketchfab; the rest are pins.
+
 ## Database migrations
 
 Each file's header explains the problem it solves. In order:
@@ -1279,15 +1436,39 @@ Each file's header explains the problem it solves. In order:
 | 0053 | A name is a name: the account's name reaches the profile |
 | 0054 | Shapes in the street: five marker shapes, a sign's words, drafts sent to their creators, `set_marker_shape` |
 | 0055 | A model of your own: the sixth shape, `marker_models` with its credit, a check that the file is in the stop's folder and under 25 MB, `trail_models` |
+| 0056 | Levels: XP for stops reached and finished trails (`xp_awards`); no longer shown anywhere |
+| 0057 | A stop is reached where it stands: `record_visit` checks the position, and a finish counts at once |
+| 0058 | Captains, a start for live events, and the GPS lobby |
+| 0059 | Answers from the website are marked, for the organiser |
+| 0060 | A stop without a question counts as done once it is reached |
+| 0061 | `world_readiness` names each team by its id |
+| 0062 | One code box: a team code leads to its trail (`lab_trail_code_for_team`) |
+| 0063 | Models at full size: 200 m, 50 MB, 1,000,000 triangles |
+| 0064 | AI in the builder: the Gemini key in Vault, `ai_usage`, models credited as AI |
+| 0065 | AI models through our server when the free browser route is used up |
+| 0066 | Models made by Gemini from a description |
+| 0067 | Line of work, trail category and city |
+| 0068 | **Not applied** (until after 15 Dec 2026): drops `consents_to_answer()`, removes leftover lab-test accounts |
+| 0069 | **Not applied** (until after 15 Dec 2026): `listing_queue()` also returns category and city |
+| 0070 | Creator or viewer (`profiles.role`) |
+| 0071 | Teacher tools: kick, ban, unban, `world_players`, `world_bans` |
+| 0072 | Two ways to share a trail (code, public); public is instant (`make_public`, `make_code`); the listing queue is emptied |
+| 0073 | A stop's radius is at most 200 m |
 
 ## Status
 
-*As of 6 October 2026. The goal is a Google Play release; the date is not
-set.*
+*As of 26 November 2026. Since 6 November the goal is a finished, working
+product for the competition on 29 November, not a Google Play release.*
 
-**Proven.** Each of these has been checked on a Samsung Galaxy A54 (Android 16),
-against the live database, or in a real browser, with the throwaway accounts
-deleted afterwards:
+**Live now.** The website at artrails.netlify.app (built from `main` on every
+push); app 0.6.8 (build 28), downloadable from the site; migrations 0001–0067 and
+0070–0073 on the database (0068 and 0069 are held back until after 15 December);
+the nine demo trails listed under *After version 15*; branded sign-up emails
+through Gmail.
+
+**Proven before 6 October.** Each of these has been checked on a Samsung Galaxy
+A54 (Android 16), against the live database, or in a real browser, with the
+throwaway accounts deleted afterwards:
 
 - A stop placed in a browser stands on its spot in Yambol (0.5 m reported
   accuracy).
@@ -1300,31 +1481,29 @@ deleted afterwards:
   (2 October).
 - The Daylight interface: every screen and control on the phone, in both
   languages and both themes (3–5 October).
-- 46/46 seam checks between website and app.
+- 46/46 seam checks between website and app (not re-run since the November
+  migrations).
 - On the live site, 31/31 stage-2 checks and 20/20 parent-account checks.
-- Every database migration is applied and tested.
 
-**Built, waiting for a phone or an outdoor test:**
+**Built, waiting for a phone or an outdoor test** (from the author's notes of
+12 November; not re-checked since):
+- 0.6.7 and 0.6.8 on the phone: the trail menu and preview, teacher panel, roles.
 - Version 6 and 7 on the phone: block, the fake-GPS refusal, capture mode, the
-  parent-consent door and parent code, and email confirmation.
+  parent-consent door and parent code.
 - Outdoors: Stop here, switching a shape from the camera, and the next-stop
   card opening by itself on arrival.
 - Two phones racing at one stop outdoors.
-- Creators' own 3D models in the street (0.6.3): the switch between pin and
-  model at 60 m, colours, heading and tapping. The upload and every server
-  check are proven on the live site.
+- Creators' own 3D models at building size in the street.
 
 **Waiting on the operator:**
-- An email service in Supabase, so email confirmation and parent emails reach
-  anyone.
-- The Google Play developer account, store listing and 14-day closed test with
-  12 testers.
 - Signing Supabase's data processing agreement.
 - A lawyer's read of the terms and privacy policy (the pages say they are an
   unreviewed draft until then).
-- Reviewing the three Yambol trails, now public, on foot.
+- Applying 0068 and 0069 after 15 December.
+- A domain, and with it Brevo for email and a new web address.
+- A Google Play developer account is no longer planned for the competition.
 
-**The original roadmap**, from the platform handbook:
+**The original roadmap**, from the platform handbook (no longer in the repository):
 
 | Phase | | |
 |---|---|---|
@@ -1337,7 +1516,7 @@ deleted afterwards:
 | 7 Capture mode | ✅ built | Versions 6 and 9 (add a stop, shape), outdoor test pending |
 | 8 Competition mode with server-side answers and anti-spoofing | ✅ | Versions 3, 6 |
 | 9 Creators' own 3D models | ✅ built | Version 9: five built-in shapes; version 15: uploads, checks, credit and the model in the camera. Outdoor test pending |
-| 10 Store preparation | 🟡 | Built; the operator's steps remain |
+| 10 Store preparation | ⏸ | Dropped on 6 November: the competition does not need a store release |
 | 11 iPhone | ⏸ | Needs a Mac |
 
 ## Law, privacy and safety
@@ -1345,7 +1524,9 @@ deleted afterwards:
 - **Who may use it:**
   - 14 and older alone.
   - 13 only with a parent's consent (Bulgarian Personal Data Protection Act art.
-    25c, GDPR art. 8), given by an emailed link or through a parent account.
+    25c, GDPR art. 8), given by an emailed link or through a parent account. The
+    website's sign-up does not ask the age at present (`ASK_AGE`, see *For a
+    parent*).
   - Nobody under 13, because Google's ARCore terms forbid the Geospatial API in
     any service directed to children under the US COPPA rule.
   - Answering "13" is final, and answering "12 or younger" locks sign-up on that
@@ -1361,18 +1542,21 @@ deleted afterwards:
   takes fewer taps than signing up), block people, and see why something of
   yours was removed and how to contest it.
 - **Content:**
-  - Nothing is public until a person approves it.
-  - Every stop, trail and team name can be reported.
+  - A trail is public only when its owner makes it so (since 0072 no reviewer
+    approves it first), and a reviewer can remove anything reported.
+  - Every stop, trail and team name can be reported in the database; the app's
+    Report buttons are hidden at present.
   - Removal takes the files with it and leaves a statement of reasons (EU
     Digital Services Act art. 17).
 - **Paperwork:** records of processing (GDPR art. 30), a data protection impact
   assessment, the list of processors, a 72-hour breach plan and the moderation
-  rules are in [`docs/legal`](https://github.com/ZalexZal/noit-platform/tree/main/docs/legal).
+  rules are in [`docs/legal`](https://github.com/ZalexZal/meARc-platform/tree/main/docs/legal).
 - **Google Play and ARCore:**
   - ARCore's required notices appear on the terms screen, in Data and sources,
     and before the first camera session.
-  - The Data Safety answers and the account-deletion URL
-    (`/en/privacy/#delete`) are prepared in `docs/play-store`.
+  - The account-deletion address is `/en/privacy/#delete`. The Play Store kit
+    (listing texts, Data Safety answers) was removed from the repository when the
+    store release was dropped.
 
 ## Credits
 
@@ -1385,7 +1569,7 @@ the commits that were written together say so.
 Maps © Stadia Maps, © OpenMapTiles, © OpenStreetMap contributors (app);
 OpenFreeMap © OpenStreetMap contributors (website). AR by Google ARCore. Backend
 by Supabase. Creators' 3D models are loaded with Unity glTFast (app) and
-previewed with Google's model-viewer (website), both under the Apache License 2.0. Typefaces Inter (app), Unbounded, Onest and JetBrains Mono (website), all
+previewed with Google's model-viewer (website), both under the Apache License 2.0. Typefaces Inter (app and website), Inter Tight and JetBrains Mono (website), all
 under the SIL Open Font License.
 
 Both repositories are private, and no licence to reuse the code is granted.

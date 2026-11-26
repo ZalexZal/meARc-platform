@@ -9,7 +9,7 @@ most platform duties (art. 19), but not from these:
 |---|---|---|
 | 11-12 | Points of contact for authorities and users | zalex8623@gmail.com, named in the terms and privacy policy |
 | 14 | Terms explain moderation | Terms: "What may and may not be published", "Reporting, blocking and moderation" |
-| 16 | Notice and action | Report on every stop, trail and team name in the app; Report on board rows and library cards on the website; email |
+| 16 | Notice and action | Report on every stop, trail and team name in the database; the app's Report buttons are hidden at present; on the website, Report on team names on the board; email |
 | 17 | Statement of reasons | Every removal leaves a notice on the creator's My trails: what, when, reasons reported, reviewer's note, ground, that a person decided, how to contest |
 | 18 | Report suspected crimes threatening life or safety | See below |
 

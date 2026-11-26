@@ -5,6 +5,14 @@
 > for a wrong answer, and game modes — CTF and Freefall to begin with.
 >
 > This is the design note for that. The screens are the easy half.
+>
+> **Historical (the August design note).** What was built differs in places:
+> there are four modes (`guide`, `educational`, `freefall`, `ctf`), so
+> `educational` stayed (0028, which also made order and one-at-a-time reveal
+> server rules); every scored game needs a real account (0035); the question is
+> of three kinds (exact, choice, free text); media are rows in `marker_media`, not a
+> `media` list in the content; and "Phase 2.5" is long finished. The current
+> description is the main `README.md`.
 
 ## Settled
 

@@ -7,6 +7,9 @@ serve a folder of files will do.
 
 ## Building it
 
+You need Node 22.12 or newer (`web/package.json` says so, because Astro 7
+does).
+
 ```sh
 cd web
 npm ci
@@ -31,6 +34,24 @@ Without the two variables the build still succeeds and the site renders, but
 breaking. `web/config.local.js` sets the same two values on `window` for local
 work; it is gitignored and is not involved in a deploy.
 
+## How meARc is deployed
+
+On Netlify, from this repository (ZalexZal/meARc-platform). `netlify.toml` at
+the root sets base `web`, command `npm run build`, publish `dist` and Node 22,
+and every push to `main` builds and publishes. The two `PUBLIC_` variables are
+set once under Site configuration, Environment variables. The same file sends
+the security headers, serves `/meARc.apk` as an Android package (the old
+`/ARTrail.apk` redirects to it) and points Netlify at `web/netlify/functions`.
+
+`keep-alive.mjs` there runs once a day and asks the database a question, so the
+free Supabase project never pauses. It reads the same two variables, and logs a
+500 if they are missing.
+
+A new app build reaches the site through `tools/publish-apk.sh`, which copies
+the APK to `web/public/meARc.apk` and writes `web/src/data/app.json`; commit
+both and push. The auth email templates are not deployed with the site: they
+are pasted into Supabase by hand (`supabase/templates/README.md`).
+
 ## What the host needs to do
 
 - Serve `dist/` as the site root.
@@ -53,7 +74,11 @@ grep -o 'https://[a-z]*\.supabase\.co' dist/_astro/*.js | head -1
 
 ## Adding a domain later
 
-Nothing in the site knows its own URL, so a domain change needs no rebuild.
-The one place that cares is Supabase: **Authentication → URL Configuration →
+Almost nothing in the site knows its own URL. `site` in `web/astro.config.mjs`
+and the Nominatim user-agent in `web/src/lib/place.ts` name
+`artrails.netlify.app` and should be changed with the domain; the web address
+is deliberately unchanged from the name meARc until the real domain is bought.
+Then there is Supabase: **Authentication → URL Configuration →
 Site URL and Redirect URLs** have to list the new origin, or the confirmation
-and password-reset links will point at the old one.
+and password-reset links will point at the old one. The app's own link scheme,
+`mearc://`, is separate and needs nothing.
